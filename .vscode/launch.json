@@ -2,10 +2,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "HXCPP",
+            "name": "Debug Haxe Engine",
             "type": "hxcpp",
-            "request": "launch",
-            "program": "${workspaceFolder}/bin/yourExecutable.exe"
+            "request": "launch", 
+            "program": "${workspaceFolder}/bin/debug/Main-debug.exe"
         }
     ]
 }

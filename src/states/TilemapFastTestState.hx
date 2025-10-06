@@ -4,8 +4,6 @@ import State;
 import App;
 import Entity;
 import display.TilemapFast;
-import ProgramInfo;
-import Renderer;
 
 /**
  * Test state to demonstrate TilemapFast performance optimizations
@@ -67,8 +65,8 @@ class TilemapFastTestState extends State {
         createInitialPattern();
         
         // Position the tilemap at center of screen
-        tilemap.x = (App.WINDOW_WIDTH / 2) - (10 * 32 / 2);   // Center horizontally 
-        tilemap.y = (App.WINDOW_HEIGHT / 2) - (8 * 32 / 2);   // Center vertically
+        tilemap.x = (app.WINDOW_WIDTH / 2) - (10 * 32 / 2);   // Center horizontally 
+        tilemap.y = (app.WINDOW_HEIGHT / 2) - (8 * 32 / 2);   // Center vertically
         tilemap.z = 0.0;   // Default Z position
         
         // Create entity and add to state

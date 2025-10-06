@@ -4,7 +4,6 @@ import sys.FileSystem;
 
 import Promise;
 import loaders.TGALoader;
-import data.Resource;
 import data.TextureData;
 
 typedef Resource = {
