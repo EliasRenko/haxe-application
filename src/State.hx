@@ -177,8 +177,8 @@ class State {
      * Called when state becomes active
      * Override in subclasses for state-specific initialization
      */
-    public function onActivate():Void {
-        trace("State '" + name + "' activated");
+    public function init():Void {
+        trace("State '" + name + "' initialized");
         active = true;
     }
     
@@ -186,8 +186,8 @@ class State {
      * Called when state becomes inactive
      * Override in subclasses for state-specific cleanup
      */
-    public function onDeactivate():Void {
-        trace("State '" + name + "' deactivated");
+    public function release():Void {
+        trace("State '" + name + "' released");
         active = false;
     }
     

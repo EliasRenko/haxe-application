@@ -15,8 +15,8 @@ class ImageTestState extends State {
         super("ImageTestState", app);
     }
     
-    override public function onActivate():Void {
-        super.onActivate();
+    override public function init():Void {
+        super.init();
         
         trace("ImageTestState activated - creating image test");
         
@@ -64,9 +64,8 @@ class ImageTestState extends State {
         trace("Window size: " + __app.WINDOW_WIDTH + "x" + __app.WINDOW_HEIGHT + " pixels");
     }
     
-    override public function onDeactivate():Void {
-        super.onDeactivate();
-        trace("ImageTestState deactivated");
+    override public function release():Void {
+        super.release();
     }
     
     override public function update(deltaTime:Float):Void {

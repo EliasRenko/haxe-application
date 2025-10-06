@@ -16,6 +16,16 @@ class App extends Runtime {
         return true;
     }
 
+    override function release():Void {
+
+        // Release current state
+        if (currentState != null) {
+            currentState.release();
+        }
+
+        super.release();
+    }
+
     override public function run():Void {
         super.run();
     }
@@ -117,9 +127,9 @@ class App extends Runtime {
         if (removed) {
             __log.engineInfo("Removed state '" + state.name + "' from app");
             
-            // If this was the current state, deactivate it
+            // If this was the current state, release it
             if (currentState == state) {
-                currentState.onDeactivate();
+                currentState.release();
                 currentState = null;
                 
                 // Switch to first available state if any
@@ -170,14 +180,14 @@ class App extends Runtime {
             return false;
         }
         
-        // Deactivate current state
+        // Release current state
         if (currentState != null) {
-            currentState.onDeactivate();
+            currentState.release();
         }
         
         // Switch to new state
         currentState = state;
-        currentState.onActivate();
+        currentState.init();
         
         __log.engineInfo("Switched to state '" + state.name + "'");
         return true;

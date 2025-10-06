@@ -18,8 +18,8 @@ class TilemapFastTestState extends State {
         super("TilemapFastTestState", app);
     }
     
-    override public function onActivate():Void {
-        super.onActivate();
+    override public function init():Void {
+        super.init();
         trace("TilemapFastTestState activated - creating optimized tilemap test");
         
         // Set up orthographic camera for 2D tilemap
