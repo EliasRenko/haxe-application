@@ -2,6 +2,19 @@ package;
 
 class App extends Runtime {
     
+    // State Management
+    public var states:Array<State> = [];
+    public var currentState:State = null;
+
+    // Publics
+    public var input(get, null):Input;
+    public var resources(get, null):Resources;
+    public var log(get, null):Log;
+
+    // Privates
+    private var __input:Input;
+    private var __resources:Resources;
+
     public function new() {
         super();
 
@@ -11,9 +24,7 @@ class App extends Runtime {
     }
 
     override function init():Bool {
-        super.init();
-
-        return true;
+        return super.init();
     }
 
     override function release():Void {
@@ -21,6 +32,25 @@ class App extends Runtime {
         // Release current state
         if (currentState != null) {
             currentState.release();
+        }
+
+        for (state in states) {
+            state.clearEntities(__renderer);
+        }
+
+        states = [];
+        currentState = null;
+
+        // Release resources first
+        if (__resources != null) {
+            __resources.release();
+            __resources = null;
+        }
+
+        // Release input system
+        if (__input != null) {
+            __input.release();
+            __input = null;
         }
 
         super.release();
@@ -216,5 +246,66 @@ class App extends Runtime {
             }
         }
         return null;
+    }
+
+    override function update():Void {
+        
+        // Use a fixed deltaTime for stable animation (60 FPS target)
+        var deltaTime:Float = 1.0 / 60.0; // 0.0167 seconds per frame
+        
+        // Update input system
+        if (__input != null) {
+            __input.update();
+        }
+        
+        // Update current state if one is active
+        if (currentState != null && currentState.active) {
+            currentState.update(deltaTime);
+        }
+        
+        // Post-update input (clear pressed/released states)
+        if (__input != null) {
+            __input.postUpdate();
+        }
+    }
+
+    override function render():Void {
+       
+        __renderer.clearScreen();
+        __renderer.initializeRenderState();
+        
+        if (currentState != null && currentState.active) {
+            currentState.render(__renderer);
+        }
+    }
+
+    // // Keyboard event handlers
+    override function onKeyDown(keycode:Int, scancode:Int, repeat:Bool, mod:Int, windowId:Int):Void {
+        #if use_scancodes
+        @:privateAccess __input.keyboard.onKeyDown(scancode, repeat, mod);
+        #else
+        @:privateAccess __input.keyboard.onKeyDown(keycode, repeat, mod);
+        #end
+    }
+
+    override function onKeyUp(keycode:Int, scancode:Int, repeat:Bool, mod:Int, windowId:Int):Void {
+        #if use_scancodes
+        @:privateAccess __input.keyboard.onKeyUp(scancode, repeat, mod);
+        #else
+        @:privateAccess __input.keyboard.onKeyUp(keycode, repeat, mod);
+        #end
+    }
+
+    // Getters and setters
+    public function get_input():Input {
+        return __input;
+    }
+
+    public function get_resources():Resources {
+        return __resources;
+    }
+
+    public function get_log():Log {
+        return __log;
     }
 }

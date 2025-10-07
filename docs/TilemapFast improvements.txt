@@ -1,0 +1,6 @@
+Remaining Optimizations to Consider:
+Frustum Culling: Only render visible tiles
+Instanced Rendering: More efficient for repeated tiles
+Adaptive Thresholds: Scale thresholds based on map size
+Sparse Representation: Don't allocate vertices for empty tiles
+Memory Pooling: Reuse arrays to reduce GC pressure
