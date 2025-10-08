@@ -15,6 +15,10 @@ class App extends Runtime {
     private var __input:Input;
     private var __resources:Resources;
 
+    // Timing variables for deltaTime calculation
+    private var __lastTime:Float = 0.0;
+    private var __currentTime:Float = 0.0;
+
     public function new() {
         super();
 

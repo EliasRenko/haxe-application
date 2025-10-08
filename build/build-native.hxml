@@ -18,6 +18,12 @@
 -D HXCPP_NO_PRECOMPILED_HEADERS
 -D no-deprecation-warnings
 
+#// Framework exclusive flags
+#-D no_audio
+#-D no_joystick
+#-D no_gamepad
+#-D no_haptic
+
 -lib hxcpp-debug-server
 -lib haxe-native
 

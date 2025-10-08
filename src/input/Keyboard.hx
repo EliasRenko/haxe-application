@@ -1,6 +1,5 @@
 package input;
 
-import sys.ssl.Key;
 import haxe.ds.Vector;
 
 class Keyboard {
