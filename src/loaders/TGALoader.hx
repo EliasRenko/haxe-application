@@ -19,6 +19,54 @@ class TGALoader {
     private static inline var TGA_RLE_RGB = 10;
     private static inline var TGA_RLE_GRAYSCALE = 11;
 
+    /**
+     * Decompresses RLE-encoded TGA data
+     */
+    private static function decompressRLE(input:BytesInput, width:Int, height:Int, bytesPerPixel:Int):Bytes {
+        var expectedSize = width * height * bytesPerPixel;
+        var output = new UInt8Array(expectedSize);
+        var outIndex = 0;
+        
+        while (outIndex < expectedSize) {
+            var header = input.readByte();
+            var isRLE = (header & 0x80) != 0;
+            var count = (header & 0x7F) + 1;
+            
+            if (isRLE) {
+                // RLE packet - repeat next pixel 'count' times
+                var pixel = new UInt8Array(bytesPerPixel);
+                for (i in 0...bytesPerPixel) {
+                    pixel[i] = input.readByte();
+                }
+                
+                for (i in 0...count) {
+                    for (j in 0...bytesPerPixel) {
+                        if (outIndex < expectedSize) {
+                            output[outIndex++] = pixel[j];
+                        }
+                    }
+                }
+            } else {
+                // Raw packet - copy next 'count' pixels directly
+                for (i in 0...count) {
+                    for (j in 0...bytesPerPixel) {
+                        if (outIndex < expectedSize) {
+                            output[outIndex++] = input.readByte();
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Convert UInt8Array to Bytes properly
+        var result = Bytes.alloc(expectedSize);
+        for (i in 0...expectedSize) {
+            result.set(i, output[i]);
+        }
+        
+        return result;
+    }
+
     public static function loadFromBytes(bytes:Bytes):TextureData {
         if (bytes.length < TGA_HEADER_SIZE) {
             throw "Invalid TGA file: too small";
@@ -49,54 +97,182 @@ class TGALoader {
             input.read(idLength);
         }
 
-        // We'll support uncompressed RGB/RGBA for now
-        if (imageType != TGA_UNCOMPRESSED_RGB && imageType != TGA_UNCOMPRESSED_GRAYSCALE) {
-            throw "Unsupported TGA format: only uncompressed RGB/RGBA supported (type: " + imageType + ")";
-        }
+        trace("TGA Header - Type: " + imageType + ", PixelDepth: " + pixelDepth + ", Width: " + width + ", Height: " + height);
 
-        // Determine bytes per pixel
-        var bytesPerPixel = Math.floor(pixelDepth / 8);
-        if (bytesPerPixel < 1 || bytesPerPixel > 4) {
-            throw "Unsupported pixel depth: " + pixelDepth + " bits";
-        }
-
-        // Calculate expected data size
-        var expectedDataSize = width * height * bytesPerPixel;
-        var remainingBytes = bytes.length - input.position;
+        // Support multiple TGA formats
+        var isColorMapped = (imageType == TGA_UNCOMPRESSED_COLOR_MAPPED || imageType == TGA_RLE_COLOR_MAPPED);
+        var isGrayscale = (imageType == TGA_UNCOMPRESSED_GRAYSCALE || imageType == TGA_RLE_GRAYSCALE);
+        var isRGB = (imageType == TGA_UNCOMPRESSED_RGB || imageType == TGA_RLE_RGB);
+        var isRLE = (imageType == TGA_RLE_COLOR_MAPPED || imageType == TGA_RLE_RGB || imageType == TGA_RLE_GRAYSCALE);
         
-        if (remainingBytes < expectedDataSize) {
-            throw "Invalid TGA file: insufficient image data";
+        if (!isColorMapped && !isGrayscale && !isRGB) {
+            throw "Unsupported TGA format: type " + imageType;
         }
 
-        // Read pixel data
-        var pixelData = new UInt8Array(expectedDataSize);
-        var rawData = input.read(expectedDataSize);
+        // Handle color map for indexed images
+        var colorMap:UInt8Array = null;
+        if (isColorMapped && colorMapType == 1) {
+            var colorMapSize = colorMapLength * Math.floor(colorMapDepth / 8);
+            var colorMapData = input.read(colorMapSize);
+            colorMap = new UInt8Array(colorMapSize);
+            for (i in 0...colorMapSize) {
+                colorMap[i] = colorMapData.get(i);
+            }
+            trace("TGA: Loaded color map with " + colorMapLength + " entries, " + colorMapDepth + " bits each");
+        }
+
+        // Determine output format - always convert to standard formats
+        var outputBytesPerPixel:Int;
+        if (isGrayscale) {
+            outputBytesPerPixel = 1; // Always output grayscale as 1 BPP
+        } else if (isColorMapped) {
+            // Color mapped images are converted to RGB or RGBA
+            outputBytesPerPixel = (colorMapDepth >= 32) ? 4 : 3;
+        } else {
+            // RGB images
+            if (pixelDepth <= 16) {
+                outputBytesPerPixel = 3; // 15/16-bit RGB -> 24-bit RGB
+            } else if (pixelDepth == 24) {
+                outputBytesPerPixel = 3; // 24-bit RGB
+            } else {
+                outputBytesPerPixel = 4; // 32-bit RGBA
+            }
+        }
+
+        // Calculate input bytes per pixel (what's stored in file)
+        var inputBytesPerPixel = Math.floor(pixelDepth / 8);
+        if (inputBytesPerPixel < 1) {
+            inputBytesPerPixel = 1; // Handle sub-byte formats (like 1-bit)
+        }
         
-        // TGA stores data as BGR(A), we need RGB(A)
-        for (i in 0...Math.floor(expectedDataSize / bytesPerPixel)) {
-            var srcOffset = i * bytesPerPixel;
-            var dstOffset = i * bytesPerPixel;
+        // Special handling for 1-bit monochrome (common in bitmap fonts)
+        var is1Bit = (pixelDepth == 1);
+        if (is1Bit) {
+            inputBytesPerPixel = Math.ceil(width / 8); // 1 bit per pixel, packed into bytes
+        }
+
+        // Calculate expected data size based on input format
+        var expectedDataSize:Int;
+        if (is1Bit) {
+            expectedDataSize = Math.ceil(width * height / 8); // 1 bit per pixel, packed
+        } else {
+            expectedDataSize = width * height * inputBytesPerPixel;
+        }
+        
+        // Read raw pixel data (handle RLE compression if present)
+        var rawData:Bytes;
+        if (isRLE) {
+            trace("TGA: Decompressing RLE data...");
+            if (is1Bit) {
+                // For 1-bit RLE, we need special handling
+                rawData = decompressRLE(input, width, height, 1);
+            } else {
+                rawData = decompressRLE(input, width, height, inputBytesPerPixel);
+            }
+        } else {
+            var remainingBytes = bytes.length - input.position;
+            if (remainingBytes < expectedDataSize) {
+                throw "Invalid TGA file: insufficient image data (expected " + expectedDataSize + ", got " + remainingBytes + ")";
+            }
+            rawData = input.read(expectedDataSize);
+        }
+        
+        // Create output pixel data array
+        var outputDataSize = width * height * outputBytesPerPixel;
+        var pixelData = new UInt8Array(outputDataSize);
+        
+        // Convert pixel data based on format
+        for (i in 0...(width * height)) {
+            var dstOffset = i * outputBytesPerPixel;
             
-            if (bytesPerPixel >= 3) {
-                // Swap B and R channels (BGR -> RGB)
-                pixelData[dstOffset + 0] = rawData.get(srcOffset + 2); // R
-                pixelData[dstOffset + 1] = rawData.get(srcOffset + 1); // G
-                pixelData[dstOffset + 2] = rawData.get(srcOffset + 0); // B
-                
-                if (bytesPerPixel == 4) {
-                    pixelData[dstOffset + 3] = rawData.get(srcOffset + 3); // A
+            if (is1Bit) {
+                // 1-bit monochrome - unpack bits
+                var byteIndex = Math.floor(i / 8);
+                var bitIndex = i % 8;
+                var byte = rawData.get(byteIndex);
+                var bit = (byte >> (7 - bitIndex)) & 1; // MSB first
+                pixelData[dstOffset] = bit * 255; // Convert 0/1 to 0/255
+            } else if (isColorMapped) {
+                // Color-mapped image - look up color in palette
+                var srcOffset = i * inputBytesPerPixel;
+                var index = rawData.get(srcOffset);
+                if (colorMap != null && index < colorMapLength) {
+                    var palOffset = index * Math.floor(colorMapDepth / 8);
+                    if (outputBytesPerPixel >= 3) {
+                        // BGR -> RGB conversion for color map
+                        pixelData[dstOffset + 0] = colorMap[palOffset + 2]; // R
+                        pixelData[dstOffset + 1] = colorMap[palOffset + 1]; // G
+                        pixelData[dstOffset + 2] = colorMap[palOffset + 0]; // B
+                        if (outputBytesPerPixel == 4) {
+                            pixelData[dstOffset + 3] = (colorMapDepth >= 32) ? colorMap[palOffset + 3] : 255; // A
+                        }
+                    }
+                } else {
+                    // Invalid index - fill with black
+                    for (j in 0...outputBytesPerPixel) {
+                        pixelData[dstOffset + j] = 0;
+                    }
+                }
+            } else if (isGrayscale) {
+                // Grayscale image - direct copy or convert
+                var srcOffset = i * inputBytesPerPixel;
+                if (pixelDepth == 8) {
+                    pixelData[dstOffset] = rawData.get(srcOffset);
+                } else if (pixelDepth == 16) {
+                    // 16-bit grayscale with alpha - take the intensity
+                    pixelData[dstOffset] = rawData.get(srcOffset);
+                } else {
+                    // Handle other bit depths by scaling
+                    var value = rawData.get(srcOffset);
+                    pixelData[dstOffset] = value;
                 }
             } else {
-                // Grayscale - direct copy
-                pixelData[dstOffset] = rawData.get(srcOffset);
+                // RGB image
+                var srcOffset = i * inputBytesPerPixel;
+                if (pixelDepth == 15 || pixelDepth == 16) {
+                    // 15/16-bit RGB - packed format
+                    var pixel = rawData.get(srcOffset) | (rawData.get(srcOffset + 1) << 8);
+                    if (pixelDepth == 15) {
+                        // 5-5-5 RGB
+                        pixelData[dstOffset + 0] = ((pixel >> 10) & 0x1F) << 3; // R
+                        pixelData[dstOffset + 1] = ((pixel >> 5) & 0x1F) << 3;  // G
+                        pixelData[dstOffset + 2] = (pixel & 0x1F) << 3;         // B
+                    } else {
+                        // 5-6-5 RGB
+                        pixelData[dstOffset + 0] = ((pixel >> 11) & 0x1F) << 3; // R
+                        pixelData[dstOffset + 1] = ((pixel >> 5) & 0x3F) << 2;  // G
+                        pixelData[dstOffset + 2] = (pixel & 0x1F) << 3;         // B
+                    }
+                } else if (pixelDepth == 24) {
+                    // 24-bit RGB - BGR -> RGB conversion
+                    pixelData[dstOffset + 0] = rawData.get(srcOffset + 2); // R
+                    pixelData[dstOffset + 1] = rawData.get(srcOffset + 1); // G
+                    pixelData[dstOffset + 2] = rawData.get(srcOffset + 0); // B
+                } else if (pixelDepth == 32) {
+                    // 32-bit RGBA - BGRA -> RGBA conversion
+                    pixelData[dstOffset + 0] = rawData.get(srcOffset + 2); // R
+                    pixelData[dstOffset + 1] = rawData.get(srcOffset + 1); // G
+                    pixelData[dstOffset + 2] = rawData.get(srcOffset + 0); // B
+                    pixelData[dstOffset + 3] = rawData.get(srcOffset + 3); // A
+                }
             }
         }
 
         // Check if image has alpha channel
-        var hasAlpha = (bytesPerPixel == 4) || (bytesPerPixel == 2);
+        var hasAlpha = (outputBytesPerPixel == 4) || (outputBytesPerPixel == 2);
 
-        trace("Loaded TGA: " + width + "x" + height + ", " + pixelDepth + " bits, " + bytesPerPixel + " BPP");
+        // Debug: Sample a few pixel values to verify conversion
+        if (isGrayscale && outputDataSize > 100) {
+            var sampleValues = [];
+            for (i in 0...10) {
+                var index = Math.floor(i * outputDataSize / 10);
+                sampleValues.push(pixelData[index]);
+            }
+            trace("TGA Debug: First 10 sample pixel values: " + sampleValues);
+        }
 
-        return new TextureData(pixelData, bytesPerPixel, width, height, hasAlpha);
+        trace("TGA converted: " + width + "x" + height + ", " + pixelDepth + " -> " + (outputBytesPerPixel * 8) + " bits, " + outputBytesPerPixel + " BPP output");
+
+        return new TextureData(pixelData, outputBytesPerPixel, width, height, hasAlpha);
     }
 }
