@@ -1,7 +1,7 @@
 package;
 
 import states.ImageTestState;
-//import states.TilemapFastTestState;
+import states.TextTestState;
 import App;
 
 class Main {
@@ -13,7 +13,7 @@ class Main {
             return;
         }
 
-        app.addState(new ImageTestState(app));
+        app.addState(new TextTestState(app));
         app.run();
     }
 }

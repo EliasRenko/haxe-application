@@ -90,6 +90,13 @@ class TilemapFast extends DisplayObject {
      * @param tilePixelSize Size of each tile in atlas (pixels)
      */
     public function setAtlas(texture:Texture, tilePixelSize:Int = 32):Void {
+        trace("TilemapFast: setAtlas() called with texture=" + (texture != null ? ("ID=" + texture.id + " size=" + texture.width + "x" + texture.height) : "null"));
+        
+        if (texture == null) {
+            trace("TilemapFast: ERROR - Cannot set atlas with null texture!");
+            return;
+        }
+        
         this.atlasTexture = texture;
         this.atlasWidth = texture.width;
         this.atlasHeight = texture.height;
@@ -108,9 +115,8 @@ class TilemapFast extends DisplayObject {
             needsBufferUpdate = true;
         }
         
-        trace("TILEMAPFAST ATLAS DEBUG: Setting atlas texture ID=" + texture.id + " size=" + atlasWidth + "x" + atlasHeight);
-        trace("TILEMAPFAST ATLAS DEBUG: Tile pixel size=" + tilePixelSize + ", Grid=" + tilesPerRow + "x" + tilesPerColumn + " tiles");
-        trace("TILEMAPFAST ATLAS DEBUG: UV tile size=" + (tilePixelSize/atlasWidth) + "x" + (tilePixelSize/atlasHeight));
+        trace("TilemapFast: Atlas set successfully - Tile pixel size=" + tilePixelSize + ", Grid=" + tilesPerRow + "x" + tilesPerColumn + " tiles");
+        trace("TilemapFast: UV tile size=" + (tilePixelSize/atlasWidth) + "x" + (tilePixelSize/atlasHeight) + ", entireMapDirty=" + __entireMapDirty);
     }
     
     /**
@@ -355,6 +361,8 @@ class TilemapFast extends DisplayObject {
      * High-performance buffer update with intelligent optimization selection
      */
     override public function updateBuffers(renderer:Renderer):Void {
+        trace("TilemapFast: updateBuffers() called - initialized=" + initialized + ", atlasTexture=" + (atlasTexture != null ? "set" : "null") + ", needsBufferUpdate=" + needsBufferUpdate);
+        
         if (!initialized || atlasTexture == null) return;
         
         // If entire map is dirty, do a full rebuild
@@ -462,25 +470,16 @@ class TilemapFast extends DisplayObject {
         
         // Check if we actually have vertices to render
         if (__verticesToRender == 0 || __indicesToRender == 0) {
+            trace("TilemapFast: No vertices to render - verticesToRender: " + __verticesToRender + ", indicesToRender: " + __indicesToRender);
             return;
         }
         
-        // Save current render state and set up for 2D rendering
-        // var savedDepthTest = renderer.pushRenderState();
-        // renderer.setDepthTest(false);
+        trace("TilemapFast: Rendering " + __verticesToRender + " vertices, " + __indicesToRender + " indices, atlas texture ID: " + (atlasTexture != null ? Std.string(atlasTexture.id) : "null"));
         
-        // Update transformation matrix based on current properties
-        updateTransform();
+        // Call parent render to set up the transformation matrix and uniforms
+        super.render(cameraMatrix);
         
-        // Create final matrix by combining object matrix with camera matrix
-        var finalMatrix = math.Matrix.copy(matrix);
-        finalMatrix.append(cameraMatrix);
-        
-        // Set uniforms for tilemap rendering
-        uniforms.set("uMatrix", finalMatrix.data);
-        
-        // Restore previous render state
-        //renderer.popRenderState(savedDepthTest);
+        // Additional tilemap-specific rendering setup can go here if needed
     }
 
     /**

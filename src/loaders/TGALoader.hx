@@ -49,6 +49,8 @@ class TGALoader {
             input.read(idLength);
         }
 
+        trace("TGA Header - Type: " + imageType + ", PixelDepth: " + pixelDepth + ", Width: " + width + ", Height: " + height);
+
         // We'll support uncompressed RGB/RGBA for now
         if (imageType != TGA_UNCOMPRESSED_RGB && imageType != TGA_UNCOMPRESSED_GRAYSCALE) {
             throw "Unsupported TGA format: only uncompressed RGB/RGBA supported (type: " + imageType + ")";

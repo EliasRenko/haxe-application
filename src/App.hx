@@ -90,7 +90,7 @@ class App extends Runtime {
                             case "tga": {
                                 files.push(__resources.loadTexture(path));
                             }
-                            case "vert" | "frag": {
+                            case "vert" | "frag" | "json": {
                                 files.push(__resources.loadText(path));
                             }
                             default: {
