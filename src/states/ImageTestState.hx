@@ -5,6 +5,7 @@ import App;
 import Entity;
 import Renderer;
 import display.Image;
+import display.TileBatch;
 
 /**
  * A test state that demonstrates Image rendering
@@ -18,7 +19,9 @@ class ImageTestState extends State {
     override public function init():Void {
         super.init();
         
-        trace("ImageTestState activated - creating image test");
+        trace("=============================================");
+        trace("IMAGETEST: ImageTestState activated - creating image test");
+        trace("=============================================");
         
         // Use camera at default position to understand baseline coordinate system
         camera.ortho = true;
@@ -76,17 +79,49 @@ class ImageTestState extends State {
             
             // Create entity and add to state
             var fontEntity = new Entity("font", fontDisplay);
-            addEntity(fontEntity);
+            //addEntity(fontEntity);
             
             trace("Added Nokia FC22 font texture: " + fontTexture.width + "x" + fontTexture.height);
         } else {
             trace("Warning: Could not load Nokia FC22 font texture or create mono shader");
         }
         
-        trace("ImageTestState setup complete - images created");
-        trace("Camera configured: pixel-perfect orthographic (0,0 at top-left)");
-        trace("Main image positioned at: " + imageDisplay.x + ", " + imageDisplay.y);
-        trace("Window size: " + __app.WINDOW_WIDTH + "x" + __app.WINDOW_HEIGHT + " pixels");
+        // Add TileBatch example using dev_tiles.tga
+        var tilesTextureData = app.resources.getTexture("textures/dev_tiles.tga");
+        trace("DEBUG: tilesTextureData = " + tilesTextureData);
+        if (tilesTextureData != null) {
+            trace("DEBUG: tilesTextureData size = " + tilesTextureData.width + "x" + tilesTextureData.height + ", BPP=" + tilesTextureData.bytesPerPixel);
+        }
+        if (tilesTextureData != null && imageProgramInfo != null) {
+            var tilesTexture = renderer.uploadTexture(tilesTextureData);
+            trace("DEBUG: Uploaded tilesTexture ID = " + tilesTexture.id + ", size = " + tilesTexture.width + "x" + tilesTexture.height);
+            
+            // Create TileBatch using the regular textured shader
+            var tileBatch = new TileBatch(imageProgramInfo, tilesTexture);
+            
+            // Position TileBatch below the other images
+            tileBatch.x = 50;  // Left side of screen
+            tileBatch.y = 300; // Below other content
+            tileBatch.z = 0.0;
+            
+            // Test: Add one tile that samples the ENTIRE texture to see if texture sampling works
+            var testTile = tileBatch.addTile(0, 0, 64, 64, 0.0, 0.0, 1.0, 1.0); // Full texture UV (0,0) to (1,1)
+            
+            trace("DEBUG: Added test tile with full texture UV mapping");
+            
+            // Create entity and add to state
+            var tileBatchEntity = new Entity("tilebatch", tileBatch);
+            addEntity(tileBatchEntity);
+            
+            trace("Added TileBatch: " + tileBatch.getTileCount() + " tiles from dev_tiles.tga (" + tilesTexture.width + "x" + tilesTexture.height + ")");
+        } else {
+            trace("Warning: Could not load dev_tiles.tga texture or create shader program");
+        }
+        
+        // trace("ImageTestState setup complete - images created");
+        // trace("Camera configured: pixel-perfect orthographic (0,0 at top-left)");
+        // trace("Main image positioned at: " + imageDisplay.x + ", " + imageDisplay.y);
+        // trace("Window size: " + __app.WINDOW_WIDTH + "x" + __app.WINDOW_HEIGHT + " pixels");
     }
     
     override public function release():Void {

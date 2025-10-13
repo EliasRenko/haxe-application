@@ -91,6 +91,10 @@ class TGALoader {
         var height = input.readUInt16();           // 14-15: Height
         var pixelDepth = input.readByte();         // 16: Pixel depth
         var imageDescriptor = input.readByte();    // 17: Image descriptor
+        
+        // Extract origin information from image descriptor
+        var originTop = (imageDescriptor & 0x20) != 0;  // Bit 5: 0=bottom origin, 1=top origin
+        var originLeft = (imageDescriptor & 0x10) == 0; // Bit 4: 0=left origin, 1=right origin
 
         // Skip ID field if present
         if (idLength > 0) {
@@ -98,6 +102,7 @@ class TGALoader {
         }
 
         trace("TGA Header - Type: " + imageType + ", PixelDepth: " + pixelDepth + ", Width: " + width + ", Height: " + height);
+        trace("TGA Origin - Top: " + originTop + ", Left: " + originLeft);
 
         // Support multiple TGA formats
         var isColorMapped = (imageType == TGA_UNCOMPRESSED_COLOR_MAPPED || imageType == TGA_RLE_COLOR_MAPPED);
@@ -182,8 +187,26 @@ class TGALoader {
         var pixelData = new UInt8Array(outputDataSize);
         
         // Convert pixel data based on format
+        var isFlipping = originTop;
+        if (isFlipping) {
+            trace("TGA: Y-flipping enabled (originTop=true, flipping for OpenGL)");
+        }
+        
         for (i in 0...(width * height)) {
-            var dstOffset = i * outputBytesPerPixel;
+            // Calculate source and destination offsets
+            var srcX = i % width;
+            var srcY = Math.floor(i / width);
+            
+            // Apply Y-flipping - OpenGL expects textures with origin at bottom-left
+            // So if TGA has origin at top (originTop=true), we need to flip it
+            var dstY = originTop ? (height - 1 - srcY) : srcY;
+            var dstIndex = dstY * width + srcX;
+            var dstOffset = dstIndex * outputBytesPerPixel;
+            
+            // Debug the first few pixels to verify flipping
+            if (i < 5) {
+                trace("Pixel " + i + ": src(" + srcX + "," + srcY + ") -> dst(" + srcX + "," + dstY + ") index=" + dstIndex);
+            }
             
             if (is1Bit) {
                 // 1-bit monochrome - unpack bits
