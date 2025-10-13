@@ -22,9 +22,11 @@ class TileBatch extends DisplayObject {
     // Tile data structure
     public var tiles:Map<Int, TileInstance> = new Map(); // tileId -> TileInstance
     public var atlasTexture:Texture = null;
+    public var atlasRegions:Map<Int, AtlasRegion> = new Map(); // regionId -> AtlasRegion
     
     // Buffer management
     private var __nextTileId:Int = 1; // Auto-incrementing tile ID
+    private var __nextRegionId:Int = 1; // Auto-incrementing region ID
     private var __bufferDirty:Bool = true;
     private var __vertexCache:Array<Float> = [];
     private var __indexCache:Array<UInt> = [];
@@ -54,23 +56,53 @@ class TileBatch extends DisplayObject {
         
         // Set the texture for the display object
         setTexture(texture);
-        
-        trace("TileBatch: Created with texture ID=" + texture.id + " size=" + texture.width + "x" + texture.height);
     }
     
     /**
-     * Add a tile to the batch
+     * Define an atlas region using pixel coordinates
+     * @param atlasX Atlas X coordinate in pixels
+     * @param atlasY Atlas Y coordinate in pixels
+     * @param atlasWidth Atlas width in pixels
+     * @param atlasHeight Atlas height in pixels
+     * @return Region ID for use in addTile
+     */
+    public function defineRegion(atlasX:Int, atlasY:Int, atlasWidth:Int, atlasHeight:Int):Int {
+        var regionId = __nextRegionId++;
+        
+        var region = new AtlasRegion();
+        region.x = atlasX;
+        region.y = atlasY;
+        region.width = atlasWidth;
+        region.height = atlasHeight;
+        
+        // Convert pixel coordinates to UV coordinates
+        // No V-flipping needed since TGA loader now handles proper orientation
+        region.u1 = atlasX / atlasTexture.width;
+        region.v1 = atlasY / atlasTexture.height;
+        region.u2 = (atlasX + atlasWidth) / atlasTexture.width;
+        region.v2 = (atlasY + atlasHeight) / atlasTexture.height;
+        
+        atlasRegions.set(regionId, region);
+        
+        trace("TileBatch: Defined region " + regionId + " at (" + atlasX + "," + atlasY + ") size=" + atlasWidth + "x" + atlasHeight + " UV=(" + region.u1 + "," + region.v1 + "," + region.u2 + "," + region.v2 + ")");
+        return regionId;
+    }
+    
+    /**
+     * Add a tile to the batch using a predefined atlas region
      * @param x World X position
      * @param y World Y position
      * @param width Tile width in world units
      * @param height Tile height in world units
-     * @param u1 Left UV coordinate (0.0-1.0)
-     * @param v1 Top UV coordinate (0.0-1.0)
-     * @param u2 Right UV coordinate (0.0-1.0)
-     * @param v2 Bottom UV coordinate (0.0-1.0)
+     * @param regionId Atlas region ID (from defineRegion)
      * @return Tile ID for future reference
      */
-    public function addTile(x:Float, y:Float, width:Float, height:Float, u1:Float, v1:Float, u2:Float, v2:Float):Int {
+    public function addTile(x:Float, y:Float, width:Float, height:Float, regionId:Int):Int {
+        if (!atlasRegions.exists(regionId)) {
+            trace("TileBatch: Error - Region ID " + regionId + " does not exist!");
+            return -1;
+        }
+        
         var tileId = __nextTileId++;
         
         var tile = new TileInstance();
@@ -78,10 +110,7 @@ class TileBatch extends DisplayObject {
         tile.y = y;
         tile.width = width;
         tile.height = height;
-        tile.u1 = u1;
-        tile.v1 = v1;
-        tile.u2 = u2;
-        tile.v2 = v2;
+        tile.regionId = regionId;
         
         tiles.set(tileId, tile);
         __bufferDirty = true;
@@ -90,35 +119,9 @@ class TileBatch extends DisplayObject {
             needsBufferUpdate = true;
         }
         
-        trace("TileBatch: Added tile " + tileId + " at (" + x + "," + y + ") size=" + width + "x" + height + " UV=(" + u1 + "," + v1 + "," + u2 + "," + v2 + ")");
+        var region = atlasRegions.get(regionId);
+        trace("TileBatch: Added tile " + tileId + " at (" + x + "," + y + ") size=" + width + "x" + height + " using region " + regionId);
         return tileId;
-    }
-    
-    /**
-     * Add a tile using pixel coordinates in the atlas
-     * @param x World X position
-     * @param y World Y position
-     * @param width Tile width in world units
-     * @param height Tile height in world units
-     * @param atlasX Atlas X coordinate in pixels
-     * @param atlasY Atlas Y coordinate in pixels
-     * @param atlasWidth Atlas width in pixels
-     * @param atlasHeight Atlas height in pixels
-     * @return Tile ID for future reference
-     */
-    public function addTileFromAtlas(x:Float, y:Float, width:Float, height:Float, 
-                                   atlasX:Int, atlasY:Int, atlasWidth:Int, atlasHeight:Int):Int {
-        // Convert pixel coordinates to UV coordinates
-        var u1 = atlasX / atlasTexture.width;
-        var v1 = atlasY / atlasTexture.height;
-        var u2 = (atlasX + atlasWidth) / atlasTexture.width;
-        var v2 = (atlasY + atlasHeight) / atlasTexture.height;
-        
-        // Apply V-coordinate flipping for OpenGL
-        var topV = 1.0 - v1;
-        var bottomV = 1.0 - v2;
-        
-        return addTile(x, y, width, height, u1, topV, u2, bottomV);
     }
     
     /**
@@ -134,12 +137,8 @@ class TileBatch extends DisplayObject {
             if (initialized) {
                 needsBufferUpdate = true;
             }
-            
-            trace("TileBatch: Removed tile " + tileId);
             return true;
         }
-        
-        trace("TileBatch: Cannot remove tile " + tileId + " - not found");
         return false;
     }
     
@@ -161,7 +160,6 @@ class TileBatch extends DisplayObject {
                 needsBufferUpdate = true;
             }
             
-            trace("TileBatch: Updated tile " + tileId + " position to (" + x + "," + y + ")");
             return true;
         }
         
@@ -178,8 +176,6 @@ class TileBatch extends DisplayObject {
         if (initialized) {
             needsBufferUpdate = true;
         }
-        
-        trace("TileBatch: Cleared all tiles");
     }
     
     /**
@@ -188,42 +184,49 @@ class TileBatch extends DisplayObject {
     private function generateTileVertices(tile:TileInstance):Array<Float> {
         var vertices = [];
         
+        // Get UV coordinates from the atlas region
+        var region = atlasRegions.get(tile.regionId);
+        if (region == null) {
+            trace("TileBatch: Warning - Region ID " + tile.regionId + " not found, using default UVs");
+            // Use default full texture UVs as fallback
+            region = new AtlasRegion();
+            region.u1 = 0.0;
+            region.v1 = 1.0;
+            region.u2 = 1.0;
+            region.v2 = 0.0;
+        }
+        
         // Create quad vertices: top-left, top-right, bottom-right, bottom-left
         // Format: [x, y, z, u, v] per vertex
+        // Use direct UV coordinates since TGA loader no longer flips
         
         // Top-left
         vertices.push(tile.x);
         vertices.push(tile.y + tile.height);
         vertices.push(0.0);
-        vertices.push(tile.u1);
-        vertices.push(tile.v1);
+        vertices.push(region.u1);
+        vertices.push(region.v1);
         
         // Top-right
         vertices.push(tile.x + tile.width);
         vertices.push(tile.y + tile.height);
         vertices.push(0.0);
-        vertices.push(tile.u2);
-        vertices.push(tile.v1);
+        vertices.push(region.u2);
+        vertices.push(region.v1);
         
         // Bottom-right
         vertices.push(tile.x + tile.width);
         vertices.push(tile.y);
         vertices.push(0.0);
-        vertices.push(tile.u2);
-        vertices.push(tile.v2);
+        vertices.push(region.u2);
+        vertices.push(region.v2);
         
         // Bottom-left
         vertices.push(tile.x);
         vertices.push(tile.y);
         vertices.push(0.0);
-        vertices.push(tile.u1);
-        vertices.push(tile.v2);
-        
-        // Debug: Log UV coordinates for first tile
-        if (tile.x == 0 && tile.y == 0) {
-            trace("TileBatch: First tile UV coords: u1=" + tile.u1 + ", v1=" + tile.v1 + ", u2=" + tile.u2 + ", v2=" + tile.v2);
-            trace("TileBatch: First tile vertices: " + vertices.slice(0, 10).join(","));
-        }
+        vertices.push(region.u1);
+        vertices.push(region.v2);
         
         return vertices;
     }
@@ -316,15 +319,6 @@ class TileBatch extends DisplayObject {
         
         // Set uniforms for tile rendering
         uniforms.set("uMatrix", finalMatrix.data);
-        
-        // Debug: Check programInfo texture configuration
-        trace("TileBatch: programInfo.textures.length = " + programInfo.textures.length);
-        trace("TileBatch: drawable.textures.length = " + textures.length);
-        if (textures.length > 0 && textures[0] != null) {
-            trace("TileBatch: First texture ID = " + textures[0].id);
-        }
-        
-        trace("TileBatch: Rendering with texture ID=" + atlasTexture.id + ", vertices=" + __verticesToRender + ", indices=" + __indicesToRender);
     }
     
     /**
@@ -349,6 +343,29 @@ class TileBatch extends DisplayObject {
     public function getTile(tileId:Int):TileInstance {
         return tiles.get(tileId);
     }
+    
+    /**
+     * Get atlas region (for reading properties)
+     */
+    public function getRegion(regionId:Int):AtlasRegion {
+        return atlasRegions.get(regionId);
+    }
+    
+    /**
+     * Check if a region exists
+     */
+    public function hasRegion(regionId:Int):Bool {
+        return atlasRegions.exists(regionId);
+    }
+    
+    /**
+     * Get the number of defined regions
+     */
+    public function getRegionCount():Int {
+        var count = 0;
+        for (key in atlasRegions.keys()) count++;
+        return count;
+    }
 }
 
 /**
@@ -359,10 +376,23 @@ class TileInstance {
     public var y:Float = 0.0;          // World Y position
     public var width:Float = 1.0;      // Tile width in world units
     public var height:Float = 1.0;     // Tile height in world units
-    public var u1:Float = 0.0;         // Left UV coordinate
-    public var v1:Float = 0.0;         // Top UV coordinate
-    public var u2:Float = 1.0;         // Right UV coordinate
-    public var v2:Float = 1.0;         // Bottom UV coordinate
+    public var regionId:Int = 0;       // Atlas region ID to use for UV coordinates
+    
+    public function new() {}
+}
+
+/**
+ * Data structure representing an atlas region
+ */
+class AtlasRegion {
+    public var x:Int = 0;              // Atlas X coordinate in pixels
+    public var y:Int = 0;              // Atlas Y coordinate in pixels
+    public var width:Int = 1;          // Atlas width in pixels
+    public var height:Int = 1;         // Atlas height in pixels
+    public var u1:Float = 0.0;         // Calculated left UV coordinate
+    public var v1:Float = 0.0;         // Calculated top UV coordinate
+    public var u2:Float = 1.0;         // Calculated right UV coordinate
+    public var v2:Float = 1.0;         // Calculated bottom UV coordinate
     
     public function new() {}
 }

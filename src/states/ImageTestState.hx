@@ -104,10 +104,43 @@ class ImageTestState extends State {
             tileBatch.y = 300; // Below other content
             tileBatch.z = 0.0;
             
-            // Test: Add one tile that samples the ENTIRE texture to see if texture sampling works
-            var testTile = tileBatch.addTile(0, 0, 64, 64, 0.0, 0.0, 1.0, 1.0); // Full texture UV (0,0) to (1,1)
+            // Define regions for the 6 tiles in dev_tiles.tga (128x128 texture)
+            // The actual tile content is in the top portion (as shown in texture preview)
+            var regionIds = [];
             
-            trace("DEBUG: Added test tile with full texture UV mapping");
+            // Define 6 regions in the top area where the actual tiles are (3x2 grid starting at y=0)
+            var positions = [
+                {x: 0, y: 0},      // Top row, left
+                {x: 32, y: 0},     // Top row, center
+                {x: 64, y: 0},     // Top row, right
+                {x: 0, y: 32},     // Second row, left
+                {x: 32, y: 32},    // Second row, center  
+                {x: 64, y: 32}     // Second row, right
+            ];
+            
+            for (i in 0...6) {
+                var pos = positions[i];
+                var regionId = tileBatch.defineRegion(pos.x, pos.y, 32, 32);
+                regionIds.push(regionId);
+                trace("DEBUG: Defined region " + regionId + " for tile " + i + " at atlas (" + pos.x + "," + pos.y + ") size=32x32");
+            }
+            
+            // Display all 6 tiles in a horizontal row
+            var displayTileSize = 32; // Display size in world units
+            var spacing = 8;          // Gap between tiles
+            for (i in 0...regionIds.length) {
+                var tileX = i * (displayTileSize + spacing);
+                var tileY = 0;
+                var tileId = tileBatch.addTile(tileX, tileY, displayTileSize, displayTileSize, regionIds[i]);
+                trace("DEBUG: Added display tile " + tileId + " at (" + tileX + "," + tileY + ") using region " + regionIds[i]);
+            }
+            
+            // Add a full texture tile below for reference
+            var fullTextureRegion = tileBatch.defineRegion(0, 0, 128, 128); // Full 128x128 texture
+            var fullTileX = 0;
+            var fullTileY = -80; // Position below the individual tiles
+            var fullTileId = tileBatch.addTile(fullTileX, fullTileY, 64, 64, fullTextureRegion);
+            trace("DEBUG: Added full texture tile " + fullTileId + " at (" + fullTileX + "," + fullTileY + ") for reference");
             
             // Create entity and add to state
             var tileBatchEntity = new Entity("tilebatch", tileBatch);

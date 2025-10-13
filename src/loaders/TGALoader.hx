@@ -187,26 +187,11 @@ class TGALoader {
         var pixelData = new UInt8Array(outputDataSize);
         
         // Convert pixel data based on format
-        var isFlipping = originTop;
-        if (isFlipping) {
-            trace("TGA: Y-flipping enabled (originTop=true, flipping for OpenGL)");
-        }
+        // No Y-flipping - import texture exactly as stored in TGA file
         
         for (i in 0...(width * height)) {
-            // Calculate source and destination offsets
-            var srcX = i % width;
-            var srcY = Math.floor(i / width);
-            
-            // Apply Y-flipping - OpenGL expects textures with origin at bottom-left
-            // So if TGA has origin at top (originTop=true), we need to flip it
-            var dstY = originTop ? (height - 1 - srcY) : srcY;
-            var dstIndex = dstY * width + srcX;
-            var dstOffset = dstIndex * outputBytesPerPixel;
-            
-            // Debug the first few pixels to verify flipping
-            if (i < 5) {
-                trace("Pixel " + i + ": src(" + srcX + "," + srcY + ") -> dst(" + srcX + "," + dstY + ") index=" + dstIndex);
-            }
+            // Use direct linear mapping without Y-flipping
+            var dstOffset = i * outputBytesPerPixel;
             
             if (is1Bit) {
                 // 1-bit monochrome - unpack bits
