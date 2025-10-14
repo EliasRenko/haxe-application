@@ -36,9 +36,9 @@ class ImageTestState extends State {
         var imageProgramInfo = renderer.createProgramInfo("Image", imageVertShader, imageFragShader);
         
         // Get a texture from preloaded resources
-        var textureData = app.resources.getTexture("textures/dev1.tga");
+        var textureData = app.resources.getTexture("textures/dev_tiles.tga");
         if (textureData == null) {
-            trace("Error: Could not load dev1.tga texture!");
+            trace("Error: Could not load dev_tiles.tga texture!");
             return;
         }
         
@@ -87,13 +87,13 @@ class ImageTestState extends State {
         }
         
         // Add TileBatch example using dev_tiles.tga
-        var tilesTextureData = app.resources.getTexture("textures/dev_tiles.tga");
-        trace("DEBUG: tilesTextureData = " + tilesTextureData);
-        if (tilesTextureData != null) {
-            trace("DEBUG: tilesTextureData size = " + tilesTextureData.width + "x" + tilesTextureData.height + ", BPP=" + tilesTextureData.bytesPerPixel);
+        //var tilesTextureData = app.resources.getTexture("textures/dev_tiles.tga");
+        trace("DEBUG: tilesTextureData = " + textureData);
+        if (textureData != null) {
+            trace("DEBUG: tilesTextureData size = " + textureData.width + "x" + textureData.height + ", BPP=" + textureData.bytesPerPixel);
         }
-        if (tilesTextureData != null && imageProgramInfo != null) {
-            var tilesTexture = renderer.uploadTexture(tilesTextureData);
+        if (textureData != null && imageProgramInfo != null) {
+            var tilesTexture = renderer.uploadTexture(textureData);
             trace("DEBUG: Uploaded tilesTexture ID = " + tilesTexture.id + ", size = " + tilesTexture.width + "x" + tilesTexture.height);
             
             // Create TileBatch using the regular textured shader
@@ -105,16 +105,16 @@ class ImageTestState extends State {
             tileBatch.z = 0.0;
             
             // Define regions for the 6 tiles in dev_tiles.tga (128x128 texture)
-            // The actual tile content is in the top portion (as shown in texture preview)
+            // Use proper 32x32 tile sizes for the 3x2 grid
             var regionIds = [];
             
-            // Define 6 regions in the top area where the actual tiles are (3x2 grid starting at y=0)
+            // Define 6 regions as 32x32 tiles in a 3x2 grid
             var positions = [
                 {x: 0, y: 0},      // Top row, left
                 {x: 32, y: 0},     // Top row, center
                 {x: 64, y: 0},     // Top row, right
                 {x: 0, y: 32},     // Second row, left
-                {x: 32, y: 32},    // Second row, center  
+                {x: 32, y: 32},    // Second row, center
                 {x: 64, y: 32}     // Second row, right
             ];
             
@@ -135,6 +135,8 @@ class ImageTestState extends State {
                 trace("DEBUG: Added display tile " + tileId + " at (" + tileX + "," + tileY + ") using region " + regionIds[i]);
             }
             
+            tileBatch.addTile(32, 32, displayTileSize, displayTileSize, regionIds[0]);
+
             // Add a full texture tile below for reference
             var fullTextureRegion = tileBatch.defineRegion(0, 0, 128, 128); // Full 128x128 texture
             var fullTileX = 0;
@@ -169,7 +171,7 @@ class ImageTestState extends State {
         if (imageEntity != null && imageEntity.displayObject != null) {
             var image = cast(imageEntity.displayObject, Image);
             // Rotate the image slowly clockwise (positive values now rotate clockwise)
-            image.rotationZ += 1.0 * deltaTime; // 1 degree per second clockwise
+            //image.rotationZ += 1.0 * deltaTime; // 1 degree per second clockwise
         }
         
         // Keep the font texture static for better visibility

@@ -82,6 +82,11 @@ class TileBatch extends DisplayObject {
         region.u2 = (atlasX + atlasWidth) / atlasTexture.width;
         region.v2 = (atlasY + atlasHeight) / atlasTexture.height;
         
+        trace("TileBatch: defineRegion DEBUG");
+        trace("  Pixel coords: (" + atlasX + "," + atlasY + ") to (" + (atlasX + atlasWidth) + "," + (atlasY + atlasHeight) + ")");
+        trace("  Texture size: " + atlasTexture.width + "x" + atlasTexture.height);
+        trace("  Calculated UV: (" + region.u1 + "," + region.v1 + ") to (" + region.u2 + "," + region.v2 + ")");
+        
         atlasRegions.set(regionId, region);
         
         trace("TileBatch: Defined region " + regionId + " at (" + atlasX + "," + atlasY + ") size=" + atlasWidth + "x" + atlasHeight + " UV=(" + region.u1 + "," + region.v1 + "," + region.u2 + "," + region.v2 + ")");
@@ -196,37 +201,42 @@ class TileBatch extends DisplayObject {
             region.v2 = 0.0;
         }
         
+        // Debug the UV coordinates being used for rendering
+        trace("TileBatch: generateTileVertices DEBUG for tile regionId=" + tile.regionId);
+        trace("  Region UV stored: (" + region.u1 + "," + region.v1 + ") to (" + region.u2 + "," + region.v2 + ")");
+        trace("  Final vertex UV (no flip): (" + region.u1 + "," + region.v1 + ") to (" + region.u2 + "," + region.v2 + ")");
+        
         // Create quad vertices: top-left, top-right, bottom-right, bottom-left
         // Format: [x, y, z, u, v] per vertex
-        // Use direct UV coordinates since TGA loader no longer flips
+        // Use UV coordinates directly since texture is loaded with correct orientation
         
         // Top-left
         vertices.push(tile.x);
         vertices.push(tile.y + tile.height);
         vertices.push(0.0);
         vertices.push(region.u1);
-        vertices.push(region.v1);
+        vertices.push(region.v1);  // Use V directly
         
         // Top-right
         vertices.push(tile.x + tile.width);
         vertices.push(tile.y + tile.height);
         vertices.push(0.0);
         vertices.push(region.u2);
-        vertices.push(region.v1);
+        vertices.push(region.v1);  // Use V directly
         
         // Bottom-right
         vertices.push(tile.x + tile.width);
         vertices.push(tile.y);
         vertices.push(0.0);
         vertices.push(region.u2);
-        vertices.push(region.v2);
+        vertices.push(region.v2);  // Use V directly
         
         // Bottom-left
         vertices.push(tile.x);
         vertices.push(tile.y);
         vertices.push(0.0);
         vertices.push(region.u1);
-        vertices.push(region.v2);
+        vertices.push(region.v2);  // Use V directly
         
         return vertices;
     }
