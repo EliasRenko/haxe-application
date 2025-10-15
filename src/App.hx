@@ -283,7 +283,7 @@ class App extends Runtime {
         }
     }
 
-    // // Keyboard event handlers
+    // Keyboard event handlers
     override function onKeyDown(keycode:Int, scancode:Int, repeat:Bool, mod:Int, windowId:Int):Void {
         #if use_scancodes
         @:privateAccess __input.keyboard.onKeyDown(scancode, repeat, mod);
@@ -298,6 +298,19 @@ class App extends Runtime {
         #else
         @:privateAccess __input.keyboard.onKeyUp(keycode, repeat, mod);
         #end
+    }
+
+    // Mouse event handlers
+    override function onMouseButtonDown(x:Float, y:Float, button:Int, windowId:Int):Void {
+        @:privateAccess __input.mouse.onButtonPressed(x, y, button);
+    }
+
+    override function onMouseButtonUp(x:Float, y:Float, button:Int, windowId:Int):Void {
+        @:privateAccess __input.mouse.onButtonReleased(x, y, button);
+    }
+
+    override function onMouseMotion(x:Float, y:Float, xrel:Float, yrel:Float, windowId:Int):Void {
+        @:privateAccess __input.mouse.onMouseMotion(x, y, xrel, yrel);
     }
 
     // Getters and setters

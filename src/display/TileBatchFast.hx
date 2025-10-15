@@ -60,7 +60,12 @@ class TileBatchFast extends DisplayObject {
     
     // Performance thresholds
     private static inline var PARTIAL_UPDATE_THRESHOLD:Int = 10; // Use partial updates for <= 10 tiles
-    private static inline var FULL_REBUILD_THRESHOLD:Float = 0.3; // Rebuild if >30% of tiles changed
+    private static inline var FULL_REBUILD_THRESHOLD:Float = 0.8; // Rebuild if >80% of tiles changed (was 0.3)
+    
+    // Safety mechanisms
+    private var __partialUpdatesEnabled:Bool = true; // Can be disabled if artifacts detected
+    private var __consecutivePartialFailures:Int = 0; // Track failures to auto-disable
+    private var __isUpdating:Bool = false; // Flag to prevent rendering during buffer updates
     
     /**
      * Create a new TileBatch
@@ -176,11 +181,13 @@ class TileBatchFast extends DisplayObject {
             __verticesToRender = Std.int(__vertexCache.length / FLOATS_PER_VERTEX);
             __indicesToRender = __indexCache.length;
             
-            // Mark for dynamic upload
-            __dirtyTiles.push(tileId);
+            // CRITICAL: When adding tiles, we need to upload BOTH vertex and index data
+            // because the index buffer size changed, not just vertex content
+            // Force a full upload rather than partial update
+            __bufferDirty = true;
             needsBufferUpdate = true;
             
-            trace("TileBatchFast: Added tile " + tileId + " dynamically at position " + orderIndex);
+            trace("TileBatchFast: Added tile " + tileId + " dynamically at position " + orderIndex + " - forcing full buffer update due to index changes");
         } else {
             // Full rebuild needed
             __bufferDirty = true;
@@ -405,8 +412,11 @@ class TileBatchFast extends DisplayObject {
             __tileOrderMap.set(tileId, orderIndex);
             __tileVertexMap.set(tileId, vertexIndex);
             
+            trace("TileBatch: Mapping tile " + tileId + " -> vertex index " + vertexIndex + " (float offset " + (vertexIndex * FLOATS_PER_VERTEX) + ")");
+            
             // Generate vertices for this tile
             var tileVertices = generateTileVertices(tile);
+            trace("TileBatch: Generated " + tileVertices.length + " floats for tile " + tileId + ": " + tileVertices.slice(0, Std.int(Math.min(10, tileVertices.length))));
             for (vertex in tileVertices) {
                 __vertexCache.push(vertex);
             }
@@ -444,6 +454,10 @@ class TileBatchFast extends DisplayObject {
         // Full rebuild if buffer is marked dirty
         if (__bufferDirty) {
             trace("TileBatchFast: Full rebuild triggered");
+            
+            // CRITICAL: Set updating flag to prevent rendering during full rebuild
+            __isUpdating = true;
+            
             generateMesh();
             
             renderer.uploadVertexData(vao, vbo, this.vertices.data);
@@ -454,6 +468,9 @@ class TileBatchFast extends DisplayObject {
             needsBufferUpdate = false;
             __dirtyTiles = [];
             __removedTiles = [];
+            
+            // Clear updating flag after rebuild is complete
+            __isUpdating = false;
             
             trace("TileBatchFast: Full rebuild complete - " + __verticesToRender + " vertices, " + __indicesToRender + " indices");
             return;
@@ -473,24 +490,100 @@ class TileBatchFast extends DisplayObject {
             
             trace("TileBatchFast: " + __dirtyTiles.length + " dirty tiles (" + Math.round(dirtyPercentage * 100) + "% of " + totalTiles + " total)");
             
-            // Use partial updates if under threshold
-            if (__dirtyTiles.length <= PARTIAL_UPDATE_THRESHOLD && dirtyPercentage < FULL_REBUILD_THRESHOLD) {
-                updateTilesPartial(renderer);
+            // Use partial updates if under threshold and enabled
+            if (__partialUpdatesEnabled && 
+                __dirtyTiles.length <= PARTIAL_UPDATE_THRESHOLD && 
+                dirtyPercentage < FULL_REBUILD_THRESHOLD) {
+                
+                try {
+                    updateTilesPartial(renderer);
+                    __consecutivePartialFailures = 0; // Reset failure counter on success
+                } catch (e:Dynamic) {
+                    trace("TileBatchFast: Partial update failed: " + e);
+                    __consecutivePartialFailures++;
+                    
+                    // Disable partial updates if too many failures
+                    if (__consecutivePartialFailures >= 3) {
+                        trace("TileBatchFast: Disabling partial updates due to repeated failures");
+                        __partialUpdatesEnabled = false;
+                    }
+                    
+                    // Fall back to full rebuild
+                    __bufferDirty = true;
+                    return updateBuffers(renderer);
+                }
             } else {
-                trace("TileBatchFast: Too many changes, doing full rebuild");
+                trace("TileBatchFast: Too many changes or partial updates disabled, doing full rebuild");
                 __bufferDirty = true;
                 return updateBuffers(renderer); // Recursive call for full rebuild
             }
         }
         
-        needsBufferUpdate = false;
+        // needsBufferUpdate is set to false earlier in partial update path or in full rebuild
     }
     
+    /**
+     * Validate buffer integrity before partial updates
+     */
+    private function validateBufferIntegrity():Bool {
+        // Check if vertex cache size matches expected size
+        var expectedVertexCount = Lambda.count(tiles) * FLOATS_PER_TILE;
+        if (__vertexCache.length != expectedVertexCount) {
+            trace("TileBatchFast: Buffer integrity check failed - cache size mismatch");
+            trace("  Expected: " + expectedVertexCount + " floats, Got: " + __vertexCache.length + " floats");
+            return false;
+        }
+        
+        // Check if vertex mappings are valid
+        for (tileId in tiles.keys()) {
+            if (!__tileVertexMap.exists(tileId)) {
+                trace("TileBatchFast: Buffer integrity check failed - missing vertex mapping for tile " + tileId);
+                return false;
+            }
+            
+            var vertexOffset = __tileVertexMap.get(tileId);
+            var floatOffset = vertexOffset * FLOATS_PER_VERTEX;
+            if (floatOffset + FLOATS_PER_TILE > __vertexCache.length) {
+                trace("TileBatchFast: Buffer integrity check failed - vertex mapping out of bounds for tile " + tileId);
+                trace("  Offset: " + floatOffset + ", Required: " + FLOATS_PER_TILE + ", Cache size: " + __vertexCache.length);
+                return false;
+            }
+        }
+        
+        trace("TileBatchFast: Buffer integrity check passed");
+        return true;
+    }
+
     /**
      * Update only dirty tiles using partial buffer uploads
      */
     private function updateTilesPartial(renderer:Renderer):Void {
         trace("TileBatchFast: Performing partial update for " + __dirtyTiles.length + " tiles");
+        trace("TileBatchFast: Current buffer state - cache size: " + __vertexCache.length + ", total tiles: " + Lambda.count(tiles));
+        
+        // Validate buffer integrity before proceeding
+        if (!validateBufferIntegrity()) {
+            trace("TileBatchFast: Buffer integrity check failed, forcing full rebuild");
+            __bufferDirty = true;
+            return updateBuffers(renderer);
+        }
+        
+        // CRITICAL: Clear needsBufferUpdate BEFORE partial uploads to prevent
+        // the rendering system from calling updateBuffers() and overwriting our changes
+        needsBufferUpdate = false;
+        
+        // Debug: Print current vertex mappings
+        trace("TileBatchFast: Current vertex mappings:");
+        for (tileId in tiles.keys()) {
+            if (__tileVertexMap.exists(tileId)) {
+                var vertexOffset = __tileVertexMap.get(tileId);
+                var floatOffset = vertexOffset * FLOATS_PER_VERTEX;
+                trace("  Tile " + tileId + " -> vertex offset " + vertexOffset + " (float offset " + floatOffset + ")");
+            }
+        }
+        
+        // Collect all updates first to ensure atomic operation
+        var updates:Array<{offset:Int, data:Array<Float>, tileId:Int}> = [];
         
         for (tileId in __dirtyTiles) {
             if (!tiles.exists(tileId) || !__tileVertexMap.exists(tileId)) {
@@ -504,28 +597,71 @@ class TileBatchFast extends DisplayObject {
             // Generate new vertex data for this tile
             var newVertices = generateTileVertices(tile);
             
-            // Update the cached vertex data
+            // Validate bounds before proceeding
             var cacheOffset = vertexStartIndex * FLOATS_PER_VERTEX;
-            for (i in 0...newVertices.length) {
-                if (cacheOffset + i < __vertexCache.length) {
-                    __vertexCache[cacheOffset + i] = newVertices[i];
+            if (cacheOffset + newVertices.length > __vertexCache.length) {
+                trace("TileBatchFast: Error - Partial update would exceed buffer bounds, forcing full rebuild");
+                trace("  Tile " + tileId + ": cache offset " + cacheOffset + " + data length " + newVertices.length + " > cache size " + __vertexCache.length);
+                __bufferDirty = true;
+                return updateBuffers(renderer); // Force full rebuild
+            }
+            
+            // Debug: Print the vertex data being generated
+            trace("TileBatchFast: Generated vertices for tile " + tileId + ":");
+            trace("  Position: (" + tile.x + ", " + tile.y + ") Size: " + tile.width + "x" + tile.height + " Region: " + tile.regionId);
+            trace("  Vertex data (" + newVertices.length + " floats): " + newVertices.slice(0, Std.int(Math.min(10, newVertices.length))));
+            
+            // Store update for batch processing
+            updates.push({
+                offset: cacheOffset,
+                data: newVertices,
+                tileId: tileId
+            });
+            
+            trace("TileBatchFast: Prepared update for tile " + tileId + " at vertex offset " + vertexStartIndex);
+        }
+        
+        // Apply all updates atomically
+        trace("TileBatchFast: Applying " + updates.length + " updates to GPU buffer");
+        
+        // CRITICAL: Set updating flag to prevent rendering during buffer updates
+        __isUpdating = true;
+        
+        for (update in updates) {
+            trace("TileBatchFast: Updating tile " + update.tileId + " at offset " + update.offset + " with " + update.data.length + " floats");
+            
+            // Update the cached vertex data
+            for (i in 0...update.data.length) {
+                var oldValue = __vertexCache[update.offset + i];
+                __vertexCache[update.offset + i] = update.data[i];
+                // Only trace significant changes
+                if (Math.abs(oldValue - update.data[i]) > 0.001) {
+                    trace("  [" + (update.offset + i) + "] " + oldValue + " -> " + update.data[i]);
                 }
             }
             
             // Upload partial vertex data to GPU
-            var offsetInFloats = vertexStartIndex * FLOATS_PER_VERTEX;
-            renderer.uploadVertexDataPartial(vbo, offsetInFloats, newVertices);
-            
-            trace("TileBatchFast: Updated tile " + tileId + " at vertex offset " + vertexStartIndex);
+            trace("TileBatchFast: Uploading to GPU - VBO " + vbo + ", offset " + update.offset + ", " + update.data.length + " floats");
+            renderer.uploadVertexDataPartial(vbo, update.offset, update.data);
         }
         
-        // Update DisplayObject data
+        // Update DisplayObject data only after all GPU uploads are complete
+        // CRITICAL: Must update this.vertices to keep DisplayObject in sync with GPU buffer
+        // The renderer checks vertices.length to determine if rendering should happen
         this.vertices = new Vertices(__vertexCache);
+        this.indices = new Indices(__indexCache);
+        
+        // CRITICAL: Update render counts to ensure renderer has correct information
+        __verticesToRender = Std.int(__vertexCache.length / FLOATS_PER_VERTEX);
+        __indicesToRender = __indexCache.length;
+        
+        // Clear updating flag - rendering can now proceed safely
+        __isUpdating = false;
         
         // Clear dirty list
         __dirtyTiles = [];
         
-        trace("TileBatchFast: Partial update complete");
+        trace("TileBatchFast: Partial update complete - applied " + updates.length + " updates, " + __verticesToRender + " vertices, " + __indicesToRender + " indices");
     }
     
     /**
@@ -536,9 +672,22 @@ class TileBatchFast extends DisplayObject {
             return;
         }
         
+        // CRITICAL: Do not render during buffer updates to prevent flickering
+        if (__isUpdating) {
+            return;
+        }
+        
         // Check if we actually have vertices to render
         if (__verticesToRender == 0 || __indicesToRender == 0) {
             return;
+        }
+        
+        // Debug: Log render state periodically
+        if (frameCount % 60 == 0) { // Every 60 frames (approx 1 second at 60fps)
+            trace("TileBatchFast: Render debug - VAO: " + vao + ", VBO: " + vbo + ", EBO: " + ebo);
+            trace("  Vertices to render: " + __verticesToRender + ", Indices: " + __indicesToRender);
+            trace("  Tiles: " + getTileCount() + ", Cache size: " + __vertexCache.length);
+            trace("  Buffer dirty: " + __bufferDirty + ", Needs update: " + needsBufferUpdate);
         }
         
         // Update transformation matrix based on current properties
@@ -551,6 +700,9 @@ class TileBatchFast extends DisplayObject {
         // Set uniforms for tile rendering
         uniforms.set("uMatrix", finalMatrix.data);
     }
+    
+    // Add frame counter for debug timing
+    private static var frameCount:Int = 0;
     
     /**
      * Get the number of tiles in the batch
@@ -617,6 +769,22 @@ class TileBatchFast extends DisplayObject {
         return tiles.exists(tileId);
     }
     
+    /**
+     * Enable or disable partial updates (useful for debugging)
+     */
+    public function setPartialUpdatesEnabled(enabled:Bool):Void {
+        __partialUpdatesEnabled = enabled;
+        __consecutivePartialFailures = 0;
+        trace("TileBatchFast: Partial updates " + (enabled ? "enabled" : "disabled"));
+    }
+    
+    /**
+     * Get whether partial updates are currently enabled
+     */
+    public function getPartialUpdatesEnabled():Bool {
+        return __partialUpdatesEnabled;
+    }
+
     /**
      * Get tile instance (for reading properties)
      */

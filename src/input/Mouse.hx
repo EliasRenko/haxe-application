@@ -4,6 +4,12 @@ class Mouse {
     
     public var buttons:Array<ButtonState> = [];
     public var buttonMap:Map<Int, ButtonState> = new Map();
+    public var x(get, null):Float = 0;
+    public var y(get, null):Float = 0;
+
+    // Privates
+    private var __x:Float = 0;
+    private var __y:Float = 0;
 
     public function new() {
         for (i in 0...8) {
@@ -39,6 +45,30 @@ class Mouse {
     public function postUpdate():Void {
         //__pressCount = 0;
         //__releaseCount = 0;
+    }
+
+    private function onButtonPressed(x:Float, y:Float, button:Int):Void {
+        updateButton(button, ButtonState.PRESSED);
+        trace("Mouse button pressed: " + button);
+    }
+
+    private function onButtonReleased(x:Float, y:Float, button:Int):Void {
+        updateButton(button, ButtonState.RELEASED);
+        trace("Mouse button released: " + button);
+    }
+
+    private function onMouseMotion(x:Float, y:Float, xrel:Float, yrel:Float):Void {
+        __x = x;
+        __y = y;
+    }
+
+    // Getters and setters
+    private function get_x():Float {
+        return __x;
+    }
+
+    private function get_y():Float {
+        return __y;
     }
 }
 

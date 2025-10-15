@@ -167,6 +167,10 @@ class ImageTestState extends State {
             // Create TileBatchFast using the regular textured shader
             var tileBatchFast = new TileBatchFast(imageProgramInfo, tilesTexture);
             
+            // Re-enable partial updates with improved implementation
+            tileBatchFast.setPartialUpdatesEnabled(true);
+            trace("TileBatchFast: Partial updates enabled with improved implementation");
+            
             // Position TileBatchFast to the right of the regular TileBatch
             tileBatchFast.x = 300;  // Right side of screen
             tileBatchFast.y = 300; // Below other content
@@ -212,7 +216,7 @@ class ImageTestState extends State {
             
             // Create entity and add to state
             var tileBatchFastEntity = new Entity("tilebatchfast", tileBatchFast);
-            addEntity(tileBatchFastEntity);
+            //addEntity(tileBatchFastEntity);
             
             trace("Added TileBatchFast: " + tileBatchFast.getTileCount() + " tiles from dev_tiles.tga (" + tilesTexture.width + "x" + tilesTexture.height + ")");
             trace("TileBatchFast will demonstrate dynamic updates during runtime");
@@ -244,60 +248,60 @@ class ImageTestState extends State {
             //image.rotationZ += 1.0 * deltaTime; // 1 degree per second clockwise
         }
         
-        // Test TileBatchFast dynamic updates
-        var tileBatchFastEntity = getEntity("tilebatchfast");
-        if (tileBatchFastEntity != null && animationTime >= nextUpdateTime) {
-            var tileBatchFast = cast(tileBatchFastEntity.displayObject, TileBatchFast);
+        // // Test TileBatchFast dynamic updates
+        // var tileBatchFastEntity = getEntity("tilebatchfast");
+        // if (tileBatchFastEntity != null && animationTime >= nextUpdateTime) {
+        //     var tileBatchFast = cast(tileBatchFastEntity.displayObject, TileBatchFast);
             
-            updateCounter++;
-            nextUpdateTime = animationTime + 1.5; // Next update in 1.5 seconds
+        //     updateCounter++;
+        //     nextUpdateTime = animationTime + 1.5; // Next update in 1.5 seconds
             
-            // Demonstrate different types of dynamic updates
-            switch (updateCounter % 4) {
-                case 0:
-                    // Add a new tile (tests dynamic addition)
-                    var newX = 100 + (updateCounter * 10);
-                    var newY = 40;
-                    var regionId = (updateCounter % 3) + 1; // Cycle through regions 1-3
-                    var newTileId = tileBatchFast.addTile(newX, newY, 32, 32, regionId);
-                    trace("TileBatchFast Demo: Added new tile " + newTileId + " at (" + newX + "," + newY + ")");
+        //     // Demonstrate different types of dynamic updates
+        //     switch (updateCounter % 4) {
+        //         case 0:
+        //             // Add a new tile (tests dynamic addition)
+        //             var newX = 100 + (updateCounter * 10);
+        //             var newY = 40;
+        //             var regionId = (updateCounter % 3) + 1; // Cycle through regions 1-3
+        //             var newTileId = tileBatchFast.addTile(newX, newY, 32, 32, regionId);
+        //             trace("TileBatchFast Demo: Added new tile " + newTileId + " at (" + newX + "," + newY + ")");
                     
-                case 1:
-                    // Update existing tile positions (tests partial buffer updates)
-                    var stats = tileBatchFast.getPerformanceStats();
-                    if (stats.totalTiles > 3) {
-                        // Move some tiles around
-                        tileBatchFast.updateTile(2, 50 + Math.sin(animationTime) * 20, 10); // Animate tile 2
-                        tileBatchFast.updateTile(3, null, 20 + Math.cos(animationTime) * 15); // Animate tile 3 Y only
-                        trace("TileBatchFast Demo: Updated tile positions (partial buffer update)");
-                    }
+        //         case 1:
+        //             // Update existing tile positions (tests partial buffer updates)
+        //             var stats = tileBatchFast.getPerformanceStats();
+        //             if (stats.totalTiles > 3) {
+        //                 // Move some tiles around
+        //                 tileBatchFast.updateTile(2, 50 + Math.sin(animationTime) * 20, 10); // Animate tile 2
+        //                 tileBatchFast.updateTile(3, null, 20 + Math.cos(animationTime) * 15); // Animate tile 3 Y only
+        //                 trace("TileBatchFast Demo: Updated tile positions (partial buffer update)");
+        //             }
                     
-                case 2:
-                    // Change tile regions (tests texture coordinate updates)
-                    var newRegion = ((updateCounter % 6) + 1); // Cycle through regions 1-6
-                    tileBatchFast.updateTile(1, null, null, null, null, newRegion); // Change tile 1's texture
-                    trace("TileBatchFast Demo: Changed tile 1 to region " + newRegion + " (texture update)");
+        //         case 2:
+        //             // Change tile regions (tests texture coordinate updates)
+        //             var newRegion = ((updateCounter % 6) + 1); // Cycle through regions 1-6
+        //             tileBatchFast.updateTile(1, null, null, null, null, newRegion); // Change tile 1's texture
+        //             trace("TileBatchFast Demo: Changed tile 1 to region " + newRegion + " (texture update)");
                     
-                case 3:
-                    // Batch update multiple tiles (tests batch operations)
-                    var batchUpdates = [
-                        {tileId: 1, x: 20.0, y: 5.0},
-                        {tileId: 2, x: 60.0, y: 15.0},
-                        {tileId: 3, x: 100.0, y: 25.0}
-                    ];
-                    tileBatchFast.updateTilesBatch(batchUpdates);
-                    trace("TileBatchFast Demo: Batch updated 3 tiles (efficient bulk update)");
-            }
+        //         case 3:
+        //             // Batch update multiple tiles (tests batch operations)
+        //             var batchUpdates = [
+        //                 {tileId: 1, x: 20.0, y: 5.0},
+        //                 {tileId: 2, x: 60.0, y: 15.0},
+        //                 {tileId: 3, x: 100.0, y: 25.0}
+        //             ];
+        //             tileBatchFast.updateTilesBatch(batchUpdates);
+        //             trace("TileBatchFast Demo: Batch updated 3 tiles (efficient bulk update)");
+        //     }
             
-            // Log performance stats
-            var stats = tileBatchFast.getPerformanceStats();
-            trace("TileBatchFast Stats: " + stats.totalTiles + " tiles, " + stats.dirtyTiles + " dirty, " + stats.vertexCount + " vertices");
-        }
-        
-        // Keep the font texture static for better visibility
-        // var fontEntity = getEntity("font");
-        // if (fontEntity != null) {
-        //     // Font stays static to show bitmap characters clearly
+        //     // Log performance stats
+        //     var stats = tileBatchFast.getPerformanceStats();
+        //     trace("TileBatchFast Stats: " + stats.totalTiles + " tiles, " + stats.dirtyTiles + " dirty, " + stats.vertexCount + " vertices");
         // }
+        
+        // // Keep the font texture static for better visibility
+        // // var fontEntity = getEntity("font");
+        // // if (fontEntity != null) {
+        // //     // Font stays static to show bitmap characters clearly
+        // // }
     }
 }
