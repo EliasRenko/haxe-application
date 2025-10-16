@@ -1,5 +1,6 @@
 package;
 
+import comps.DisplayObjectComp;
 import Entity;
 import Camera;
 import App;
@@ -57,6 +58,13 @@ class State {
                 entity.update(deltaTime);
             }
         }
+        
+        // Late update all active entities
+        for (entity in entities) {
+            if (entity != null && entity.active) {
+                entity.lateUpdate(deltaTime);
+            }
+        }
     }
     
     /**
@@ -71,13 +79,9 @@ class State {
         camera.renderMatrix(renderer.windowWidth, renderer.windowHeight);
         var viewProjectionMatrix = camera.getMatrix();
         
-        // Render all active entities in this state with the camera matrix
+        // Render all active and visible entities in this state with the camera matrix
         for (entity in entities) {
             if (entity != null && entity.active && entity.visible) {
-                if (entity.displayObject == null) {
-                    trace("ERROR: Entity '" + entity.id + "' has null displayObject!");
-                    continue;
-                }
                 entity.render(renderer, viewProjectionMatrix);
             }
         }
@@ -95,9 +99,10 @@ class State {
         entities.push(entity);
         entity.state = this;
         
-        // Initialize DisplayObject when entity is added to state
-        if (entity.displayObject != null && !entity.displayObject.initialized) {
-            entity.displayObject.init(__app.renderer);
+        // Initialize DisplayObject if entity has a DisplayObjectComponent
+        var displayComp = entity.getComponent(DisplayObjectComp);
+        if (displayComp != null && displayComp.displayObject != null && !displayComp.displayObject.initialized) {
+            displayComp.displayObject.init(__app.renderer);
             trace("Initialized DisplayObject for entity '" + entity.id + "'");
         }
         
@@ -157,6 +162,19 @@ class State {
     }
     
     /**
+     * Get all entities that have a specific component
+     */
+    public function getEntitiesWithComponent<T:Component>(componentClass:Class<T>):Array<Entity> {
+        var result:Array<Entity> = [];
+        for (entity in entities) {
+            if (entity.hasComponent(componentClass)) {
+                result.push(entity);
+            }
+        }
+        return result;
+    }
+    
+    /**
      * Clear all entities from this state
      */
     public function clearEntities(renderer:Renderer):Void {
@@ -164,10 +182,8 @@ class State {
         for (entity in entities) {
             if (entity != null) {
                 entity.state = null;
-                // Optionally call cleanup on entities
-                if (entity.displayObject != null) {
-                    entity.displayObject.remove(renderer);
-                }
+                // Cleanup entity (this will cleanup all components including DisplayObject)
+                entity.cleanup(renderer);
             }
         }
         entities = [];

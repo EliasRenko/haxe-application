@@ -82,14 +82,9 @@ class TileBatch extends DisplayObject {
         region.u2 = (atlasX + atlasWidth) / atlasTexture.width;
         region.v2 = (atlasY + atlasHeight) / atlasTexture.height;
         
-        trace("TileBatch: defineRegion DEBUG");
-        trace("  Pixel coords: (" + atlasX + "," + atlasY + ") to (" + (atlasX + atlasWidth) + "," + (atlasY + atlasHeight) + ")");
-        trace("  Texture size: " + atlasTexture.width + "x" + atlasTexture.height);
-        trace("  Calculated UV: (" + region.u1 + "," + region.v1 + ") to (" + region.u2 + "," + region.v2 + ")");
         
         atlasRegions.set(regionId, region);
         
-        trace("TileBatch: Defined region " + regionId + " at (" + atlasX + "," + atlasY + ") size=" + atlasWidth + "x" + atlasHeight + " UV=(" + region.u1 + "," + region.v1 + "," + region.u2 + "," + region.v2 + ")");
         return regionId;
     }
     
@@ -125,7 +120,7 @@ class TileBatch extends DisplayObject {
         }
         
         var region = atlasRegions.get(regionId);
-        trace("TileBatch: Added tile " + tileId + " at (" + x + "," + y + ") size=" + width + "x" + height + " using region " + regionId);
+        //trace("TileBatch: Added tile " + tileId + " at (" + x + "," + y + ") size=" + width + "x" + height + " using region " + regionId);
         return tileId;
     }
     
@@ -202,9 +197,9 @@ class TileBatch extends DisplayObject {
         }
         
         // Debug the UV coordinates being used for rendering
-        trace("TileBatch: generateTileVertices DEBUG for tile regionId=" + tile.regionId);
-        trace("  Region UV stored: (" + region.u1 + "," + region.v1 + ") to (" + region.u2 + "," + region.v2 + ")");
-        trace("  Final vertex UV (no flip): (" + region.u1 + "," + region.v1 + ") to (" + region.u2 + "," + region.v2 + ")");
+        // trace("TileBatch: generateTileVertices DEBUG for tile regionId=" + tile.regionId);
+        // trace("  Region UV stored: (" + region.u1 + "," + region.v1 + ") to (" + region.u2 + "," + region.v2 + ")");
+        // trace("  Final vertex UV (no flip): (" + region.u1 + "," + region.v1 + ") to (" + region.u2 + "," + region.v2 + ")");
         
         // Create quad vertices: top-left, top-right, bottom-right, bottom-left
         // Format: [x, y, z, u, v] per vertex
@@ -283,7 +278,7 @@ class TileBatch extends DisplayObject {
         var tileCount = 0;
         for (key in tiles.keys()) tileCount++;
         
-        trace("TileBatch: Generated mesh - " + __verticesToRender + " vertices, " + __indicesToRender + " indices for " + tileCount + " tiles");
+        //trace("TileBatch: Generated mesh - " + __verticesToRender + " vertices, " + __indicesToRender + " indices for " + tileCount + " tiles");
     }
     
     /**
