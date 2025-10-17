@@ -201,37 +201,43 @@ class TileBatch extends DisplayObject {
         // trace("  Region UV stored: (" + region.u1 + "," + region.v1 + ") to (" + region.u2 + "," + region.v2 + ")");
         // trace("  Final vertex UV (no flip): (" + region.u1 + "," + region.v1 + ") to (" + region.u2 + "," + region.v2 + ")");
         
+        // IMPORTANT: Flip V coordinates to compensate for Y-axis flip in Camera
+        // The Camera now has (0,0) at top-left with Y increasing downward
+        // So we need to flip the texture V coordinates to render correctly
+        // DO NOT CHANGE - this ensures tiles render with correct orientation
+        var v1 = region.v2;  // Swap V coordinates
+        var v2 = region.v1;  // Swap V coordinates
+        
         // Create quad vertices: top-left, top-right, bottom-right, bottom-left
         // Format: [x, y, z, u, v] per vertex
-        // Use UV coordinates directly since texture is loaded with correct orientation
         
         // Top-left
         vertices.push(tile.x);
         vertices.push(tile.y + tile.height);
         vertices.push(0.0);
         vertices.push(region.u1);
-        vertices.push(region.v1);  // Use V directly
+        vertices.push(v1);  // Flipped V
         
         // Top-right
         vertices.push(tile.x + tile.width);
         vertices.push(tile.y + tile.height);
         vertices.push(0.0);
         vertices.push(region.u2);
-        vertices.push(region.v1);  // Use V directly
+        vertices.push(v1);  // Flipped V
         
         // Bottom-right
         vertices.push(tile.x + tile.width);
         vertices.push(tile.y);
         vertices.push(0.0);
         vertices.push(region.u2);
-        vertices.push(region.v2);  // Use V directly
+        vertices.push(v2);  // Flipped V
         
         // Bottom-left
         vertices.push(tile.x);
         vertices.push(tile.y);
         vertices.push(0.0);
         vertices.push(region.u1);
-        vertices.push(region.v2);  // Use V directly
+        vertices.push(v2);  // Flipped V
         
         return vertices;
     }
