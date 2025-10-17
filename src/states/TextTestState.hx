@@ -4,16 +4,17 @@ import State;
 import App;
 import Entity;
 import display.Text;
+import comps.DisplayObjectComp;
+import loaders.FontLoader;
+import loaders.FontData;
 
 /**
- * Test state to demonstrate bitmap font text rendering using TilemapFast
+ * Test state to demonstrate bitmap font text rendering
  */
 class TextTestState extends State {
     
     private var helloText:Text;
     private var dynamicText:Text;
-    private var helloEntity:Entity;
-    private var dynamicEntity:Entity;
     private var frameCount:Int = 0;
     
     public function new(app:App) {
@@ -34,41 +35,65 @@ class TextTestState extends State {
         // Get the renderer
         var renderer = app.getRenderer();
         
-        // Create or get the text shader program (using dedicated text shader for bitmap fonts)
-        var textVertShader = app.resources.getText("shaders/text.vert");
-        var textFragShader = app.resources.getText("shaders/text.frag");
-        var textProgramInfo = renderer.createProgramInfo("Text", textVertShader, textFragShader);
+        // Create mono shader program for 1bpp font texture
+        var monoVertShader = app.resources.getText("shaders/mono.vert");
+        var monoFragShader = app.resources.getText("shaders/mono.frag");
+        var monoProgramInfo = renderer.createProgramInfo("Mono", monoVertShader, monoFragShader);
         
-        if (textProgramInfo == null) {
-            trace("Error: Failed to create text shader program");
+        if (monoProgramInfo == null) {
+            trace("Error: Failed to create mono shader program");
             return;
         }
         
+        // Load font JSON
+        var fontJson = app.resources.getText("fonts/gohu.json");
+        if (fontJson == null) {
+            trace("Error: Could not load gohu.json!");
+            return;
+        }
+        
+        // Parse font data
+        var fontData = FontLoader.load(fontJson);
+        
+        // Load font texture
+        var fontTextureData = app.resources.getTexture("textures/gohu.tga");
+        if (fontTextureData == null) {
+            trace("Error: Could not load gohu.tga texture!");
+            return;
+        }
+        
+        // Upload texture to GPU
+        var fontTexture = renderer.uploadTexture(fontTextureData);
+        trace("Uploaded font texture: " + fontTexture.width + "x" + fontTexture.height);
+        
         trace("TextTestState: Camera ortho: " + camera.ortho);
-        trace("TextTestState: Text positions - Hello: (50, 100), Dynamic: (50, 150)");
         
         // Create static hello world text
-        helloText = new Text(textProgramInfo, app.resources, renderer, "nokiafc22", "Hello World!", 1.0);
-        helloText.x = 10;    // Position closer to origin
-        helloText.y = 10;    // Position closer to origin
-        helloText.color = [1.0, 0.0, 0.0, 1.0];  // Bright red for visibility
+        helloText = new Text(monoProgramInfo, fontTexture, fontData);
+        helloText.x = 10;
+        helloText.y = 10;
+        helloText.setText("Hello World!");
         
         // Create dynamic text that will change
-        dynamicText = new Text(textProgramInfo, app.resources, renderer, "nokiafc22", "Frame: 0", 1.0);
-        dynamicText.x = 10;  // Position closer to origin
-        dynamicText.y = 30;  // Below hello text
-        dynamicText.color = [0.0, 1.0, 0.0, 1.0];  // Bright green for visibility
+        dynamicText = new Text(monoProgramInfo, fontTexture, fontData);
+        dynamicText.x = 10;
+        dynamicText.y = 50;
+        dynamicText.setText("Frame: 0");
         
         // Create entities and add to the scene
-        helloEntity = new Entity("hello_text", helloText);
-        dynamicEntity = new Entity("dynamic_text", dynamicText);
-        
+        var helloEntity = new Entity("hello_text");
+        var helloDisplayComp = new DisplayObjectComp(helloText);
+        helloEntity.addComponent(helloDisplayComp);
         addEntity(helloEntity);
+        
+        var dynamicEntity = new Entity("dynamic_text");
+        var dynamicDisplayComp = new DisplayObjectComp(dynamicText);
+        dynamicEntity.addComponent(dynamicDisplayComp);
         addEntity(dynamicEntity);
         
         trace("TextTestState: Created text displays");
-        trace("  Hello text: '" + helloText.text + "' at (" + helloText.x + ", " + helloText.y + ")");
-        trace("  Dynamic text: '" + dynamicText.text + "' at (" + dynamicText.x + ", " + dynamicText.y + ")");
+        trace("  Hello text: '" + helloText.getText() + "' at (" + helloText.x + ", " + helloText.y + ")");
+        trace("  Dynamic text: '" + dynamicText.getText() + "' at (" + dynamicText.x + ", " + dynamicText.y + ")");
     }
     
     override public function update(dt:Float):Void {

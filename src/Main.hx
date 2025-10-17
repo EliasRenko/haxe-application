@@ -1,7 +1,8 @@
 package;
 
 //import states.ImageTestState;
-import states.CollisionTest;
+//import states.CollisionTest;
+import states.TextTestState;
 import App;
 
 class Main {
@@ -13,7 +14,7 @@ class Main {
             return;
         }
 
-        app.addState(new CollisionTest(app));
+        app.addState(new TextTestState(app));
         app.run();
     }
 }

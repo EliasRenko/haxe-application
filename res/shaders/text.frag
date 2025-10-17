@@ -10,9 +10,8 @@ void main() {
     // Sample the red channel from the texture (bitmap font)
     float texValue = texture(uTexture, TexCoord).r;
     
-    // Show the raw texture value scaled up so we can see small values
-    // If all values are 0, we'll see black
-    // If there are small values, we'll see dark gray
-    // If values are 1.0, we'll see white
-    FragColor = vec4(texValue * 4.0, texValue * 4.0, texValue * 4.0, 1.0);
+    // DEBUG: Output raw texture value to see what we're getting
+    // If we see variation, the texture has data
+    // If we see solid color, the texture is uniform or UV mapping is wrong
+    FragColor = vec4(texValue, texValue, texValue, 1.0);
 }
