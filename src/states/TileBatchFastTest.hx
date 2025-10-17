@@ -134,9 +134,45 @@ class TileBatchFastTest extends State {
     override public function update(deltaTime:Float):Void {
         super.update(deltaTime);
         
+        // Left click - Add new tile at mouse position
+        if (app.input.mouse.released(1)) {
+            var mouseX = app.input.mouse.x;
+            var mouseY = app.input.mouse.y;
+            var tileSize = 32;
+            var regionId = 1; // Use first region
+            
+            // Add tile to batch
+            var tileId = tileBatch.addTile(mouseX, mouseY, tileSize, tileSize, regionId);
+            
+            // Create entity for the new tile
+            var tileEntity = new Entity("tile_dynamic_" + tileId);
+            
+            // Add TileCompFast component
+            var tileComp = new TileCompFast(tileBatch, tileId, mouseX, mouseY, tileSize, tileSize);
+            tileEntity.addComponent(tileComp);
+            
+            // Add collision hitbox
+            tileEntity.hitbox = {
+                x: mouseX + tileBatch.x,
+                y: mouseY + tileBatch.y,
+                width: tileSize,
+                height: tileSize
+            };
+            
+            // Add to state and tracking array
+            addEntity(tileEntity);
+            tileEntities.push(tileEntity);
+            
+            trace("TileBatchFastTest: Added dynamic tile at (" + mouseX + "," + mouseY + ") with ID " + tileId);
+        }
+
         // Check for mouse clicks
-        if (app.input.mouse.isButtonPressed(1)) {
-            checkTileCollisions();
+        if (app.input.mouse.released(2)) {
+            checkTileCollisions(2);
+        }
+
+        if (app.input.mouse.released(3)) {
+            checkTileCollisions(3);
         }
         
         // Optional: Display performance stats periodically
@@ -152,7 +188,7 @@ class TileBatchFastTest extends State {
     /**
      * Check for mouse collision with tiles
      */
-    private function checkTileCollisions():Void {
+    private function checkTileCollisions(mouse:Int):Void {
         var mouseX = app.input.mouse.x;
         var mouseY = app.input.mouse.y;
         
@@ -160,7 +196,9 @@ class TileBatchFastTest extends State {
         
         var hitCount = 0;
         
-        for (i in 0...tileEntities.length) {
+        // Iterate backwards to avoid index shifting issues when removing tiles
+        var i = tileEntities.length - 1;
+        while (i >= 0) {
             var tileEntity = tileEntities[i];
             var tileComp = tileEntity.getComponent(TileCompFast);
             
@@ -179,15 +217,25 @@ class TileBatchFastTest extends State {
                     // trace("  Tile ID in batch: " + tileComp.tileId);
                     
                     // Demonstrate dynamic tile update - change the tile's region to create visual feedback
-                    changeColorOnClick(tileComp, i);
-                    
+
+                    if (mouse == 2) {
+                        changeColorOnClick(tileComp, i);
+                    }
+
+                    if (mouse == 3) {
+                        // Remove tile from batch using the tile ID from the component
+                        trace("TileBatchFastTest: Removing tile " + i + " (batch ID: " + tileComp.tileId + ")");
+                        tileBatch.removeTile(tileComp.tileId);
+                        
+                        // Also remove the entity from the state
+                        tileEntities.splice(i, 1);
+                    }
+
                     hitCount++;
                 }
             }
-        }
-        
-        if (hitCount == 0) {
-            trace("TileBatchFastTest: No tiles hit");
+            
+            i--;
         }
     }
     

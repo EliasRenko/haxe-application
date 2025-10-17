@@ -1,60 +1,80 @@
 package input;
 
+import haxe.ds.Vector;
+
 class Mouse {
     
-    public var buttons:Array<ButtonState> = [];
-    public var buttonMap:Map<Int, ButtonState> = new Map();
+    // Publics
     public var x(get, null):Float = 0;
     public var y(get, null):Float = 0;
 
     // Privates
     private var __x:Float = 0;
     private var __y:Float = 0;
+    private var __checkCount:Int = 0;
+	private var __pressCount:Int = 0;
+	private var __releaseCount:Int = 0;
+	private var __checkControls:Vector<Bool>;
+	private var __pressControls:Array<Int>;
+	private var __releaseControls:Array<Int>;
 
     public function new() {
-        for (i in 0...8) {
-            buttons[i] = ButtonState.RELEASED;
-            buttonMap.set(i, buttons[i]);
-        }
+        __checkControls = new Vector(8);
+        __pressControls = new Array();
+        __releaseControls = new Array();
     }
 
     public function init():Void {
-        for (i in 0...8) {
-            buttons[i] = ButtonState.RELEASED;
-            buttonMap.set(i, buttons[i]);
-        }
+
     }
 
-    public function updateButton(buttonCode:Int, state:ButtonState):Void {
-        buttons[buttonCode] = state;
-        buttonMap.set(buttonCode, state);
-    }
+    public function check(control:Int):Bool{
+		return control < 0 ? __checkCount > 0 : __checkControls[control];
+	}
+	
+	public function pressed(control:Int):Bool {
+		return control < 0 ? __pressCount > 0 : __pressControls.indexOf(control) >= 0;
+	}
+	
+	public function released(control:Int):Bool {
+		return control < 0 ? __releaseCount > 0 : __releaseControls.indexOf(control) >= 0;
+	}
 
-    public function isButtonPressed(buttonCode:Int):Bool {
-        return buttonMap.exists(buttonCode) && buttonMap.get(buttonCode) == ButtonState.PRESSED;
-    }
-
-    public function isButtonReleased(buttonCode:Int):Bool {
-        return buttonMap.exists(buttonCode) && buttonMap.get(buttonCode) == ButtonState.RELEASED;
-    }
+    private function __indexOf(vector:Array<Int>, index:Int):Int {
+		for (i in 0...vector.length) {
+			if (vector[i] == index) {
+				return i;
+			}
+		}
+		
+		return -1;
+	}
 
     public function update():Void {
         
     }
 
     public function postUpdate():Void {
-        //__pressCount = 0;
-        //__releaseCount = 0;
+
+		while (__pressCount > 0) {
+			__pressControls[-- __pressCount] = -1;
+		}
+		
+		while (__releaseCount > 0) {
+			__releaseControls[-- __releaseCount] = -1;
+		}
     }
 
-    private function onButtonPressed(x:Float, y:Float, button:Int):Void {
-        updateButton(button, ButtonState.PRESSED);
-        trace("Mouse button pressed: " + button);
+    private function onButtonDown(x:Float, y:Float, button:Int):Void {
+        __checkControls[button] = true;
+		__checkCount ++;
+		__pressControls[__pressCount ++] = button;
     }
 
-    private function onButtonReleased(x:Float, y:Float, button:Int):Void {
-        updateButton(button, ButtonState.RELEASED);
-        trace("Mouse button released: " + button);
+    private function onButtonUp(x:Float, y:Float, button:Int):Void {
+        __checkControls[button] = false;
+		__checkCount --;
+		__releaseControls[__releaseCount ++] = button;
     }
 
     private function onMouseMotion(x:Float, y:Float, xrel:Float, yrel:Float):Void {

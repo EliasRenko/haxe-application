@@ -300,11 +300,11 @@ class App extends Runtime {
 
     // Mouse event handlers
     override function onMouseButtonDown(x:Float, y:Float, button:Int, windowId:Int):Void {
-        @:privateAccess __input.mouse.onButtonPressed(x, y, button);
+        @:privateAccess __input.mouse.onButtonDown(x, y, button);
     }
 
     override function onMouseButtonUp(x:Float, y:Float, button:Int, windowId:Int):Void {
-        @:privateAccess __input.mouse.onButtonReleased(x, y, button);
+        @:privateAccess __input.mouse.onButtonUp(x, y, button);
     }
 
     override function onMouseMotion(x:Float, y:Float, xrel:Float, yrel:Float, windowId:Int):Void {
