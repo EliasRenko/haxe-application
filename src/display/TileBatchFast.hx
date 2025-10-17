@@ -260,20 +260,27 @@ class TileBatchFast extends DisplayObject {
         }
         
         if (changed) {
-            // For dynamic updates: track this tile as dirty
-            if (initialized && !__bufferDirty && __tileOrderMap.exists(tileId)) {
-                if (__dirtyTiles.indexOf(tileId) == -1) {
-                    __dirtyTiles.push(tileId);
-                }
+            // TEMPORARY: Force full rebuild instead of partial updates for debugging
+            __bufferDirty = true;
+            if (initialized) {
                 needsBufferUpdate = true;
-                trace("TileBatchFast: Marked tile " + tileId + " as dirty for update");
-            } else {
-                // Full rebuild needed
-                __bufferDirty = true;
-                if (initialized) {
-                    needsBufferUpdate = true;
-                }
             }
+            trace("TileBatchFast: Tile " + tileId + " changed, forcing full rebuild");
+            
+            // // For dynamic updates: track this tile as dirty
+            // if (initialized && !__bufferDirty && __tileOrderMap.exists(tileId)) {
+            //     if (__dirtyTiles.indexOf(tileId) == -1) {
+            //         __dirtyTiles.push(tileId);
+            //     }
+            //     needsBufferUpdate = true;
+            //     trace("TileBatchFast: Marked tile " + tileId + " as dirty for update");
+            // } else {
+            //     // Full rebuild needed
+            //     __bufferDirty = true;
+            //     if (initialized) {
+            //         needsBufferUpdate = true;
+            //     }
+            // }
         }
         
         return changed;
@@ -333,42 +340,48 @@ class TileBatchFast extends DisplayObject {
             region.v2 = 0.0;
         }
         
+        // IMPORTANT: Flip V coordinates to compensate for Camera Y-axis flip
+        // Camera has (0,0) at top-left, but texture coordinates have (0,0) at bottom-left
+        // So we swap v1 and v2 to flip the texture vertically
+        var v1 = region.v2;  // Swap V coordinates
+        var v2 = region.v1;  // Swap V coordinates
+        
         // Debug the UV coordinates being used for rendering
         trace("TileBatch: generateTileVertices DEBUG for tile regionId=" + tile.regionId);
         trace("  Region UV stored: (" + region.u1 + "," + region.v1 + ") to (" + region.u2 + "," + region.v2 + ")");
-        trace("  Final vertex UV (no flip): (" + region.u1 + "," + region.v1 + ") to (" + region.u2 + "," + region.v2 + ")");
+        trace("  Final vertex UV (V-flipped): (" + region.u1 + "," + v1 + ") to (" + region.u2 + "," + v2 + ")");
         
         // Create quad vertices: top-left, top-right, bottom-right, bottom-left
         // Format: [x, y, z, u, v] per vertex
-        // Use UV coordinates directly since texture is loaded with correct orientation
+        // Use flipped V coordinates to compensate for Camera coordinate system
         
         // Top-left
         vertices.push(tile.x);
         vertices.push(tile.y + tile.height);
         vertices.push(0.0);
         vertices.push(region.u1);
-        vertices.push(region.v1);  // Use V directly
+        vertices.push(v1);  // Use flipped V
         
         // Top-right
         vertices.push(tile.x + tile.width);
         vertices.push(tile.y + tile.height);
         vertices.push(0.0);
         vertices.push(region.u2);
-        vertices.push(region.v1);  // Use V directly
+        vertices.push(v1);  // Use flipped V
         
         // Bottom-right
         vertices.push(tile.x + tile.width);
         vertices.push(tile.y);
         vertices.push(0.0);
         vertices.push(region.u2);
-        vertices.push(region.v2);  // Use V directly
+        vertices.push(v2);  // Use flipped V
         
         // Bottom-left
         vertices.push(tile.x);
         vertices.push(tile.y);
         vertices.push(0.0);
         vertices.push(region.u1);
-        vertices.push(region.v2);  // Use V directly
+        vertices.push(v2);  // Use flipped V
         
         return vertices;
     }
@@ -558,12 +571,12 @@ class TileBatchFast extends DisplayObject {
      * Update only dirty tiles using partial buffer uploads
      */
     private function updateTilesPartial(renderer:Renderer):Void {
-        trace("TileBatchFast: Performing partial update for " + __dirtyTiles.length + " tiles");
-        trace("TileBatchFast: Current buffer state - cache size: " + __vertexCache.length + ", total tiles: " + Lambda.count(tiles));
+        // trace("TileBatchFast: Performing partial update for " + __dirtyTiles.length + " tiles");
+        // trace("TileBatchFast: Current buffer state - cache size: " + __vertexCache.length + ", total tiles: " + Lambda.count(tiles));
         
         // Validate buffer integrity before proceeding
         if (!validateBufferIntegrity()) {
-            trace("TileBatchFast: Buffer integrity check failed, forcing full rebuild");
+            //trace("TileBatchFast: Buffer integrity check failed, forcing full rebuild");
             __bufferDirty = true;
             return updateBuffers(renderer);
         }
@@ -573,7 +586,7 @@ class TileBatchFast extends DisplayObject {
         needsBufferUpdate = false;
         
         // Debug: Print current vertex mappings
-        trace("TileBatchFast: Current vertex mappings:");
+        //trace("TileBatchFast: Current vertex mappings:");
         for (tileId in tiles.keys()) {
             if (__tileVertexMap.exists(tileId)) {
                 var vertexOffset = __tileVertexMap.get(tileId);
@@ -607,9 +620,9 @@ class TileBatchFast extends DisplayObject {
             }
             
             // Debug: Print the vertex data being generated
-            trace("TileBatchFast: Generated vertices for tile " + tileId + ":");
-            trace("  Position: (" + tile.x + ", " + tile.y + ") Size: " + tile.width + "x" + tile.height + " Region: " + tile.regionId);
-            trace("  Vertex data (" + newVertices.length + " floats): " + newVertices.slice(0, Std.int(Math.min(10, newVertices.length))));
+            // trace("TileBatchFast: Generated vertices for tile " + tileId + ":");
+            // trace("  Position: (" + tile.x + ", " + tile.y + ") Size: " + tile.width + "x" + tile.height + " Region: " + tile.regionId);
+            // trace("  Vertex data (" + newVertices.length + " floats): " + newVertices.slice(0, Std.int(Math.min(10, newVertices.length))));
             
             // Store update for batch processing
             updates.push({
@@ -683,12 +696,12 @@ class TileBatchFast extends DisplayObject {
         }
         
         // Debug: Log render state periodically
-        if (frameCount % 60 == 0) { // Every 60 frames (approx 1 second at 60fps)
-            trace("TileBatchFast: Render debug - VAO: " + vao + ", VBO: " + vbo + ", EBO: " + ebo);
-            trace("  Vertices to render: " + __verticesToRender + ", Indices: " + __indicesToRender);
-            trace("  Tiles: " + getTileCount() + ", Cache size: " + __vertexCache.length);
-            trace("  Buffer dirty: " + __bufferDirty + ", Needs update: " + needsBufferUpdate);
-        }
+        // if (frameCount % 60 == 0) { // Every 60 frames (approx 1 second at 60fps)
+        //     trace("TileBatchFast: Render debug - VAO: " + vao + ", VBO: " + vbo + ", EBO: " + ebo);
+        //     trace("  Vertices to render: " + __verticesToRender + ", Indices: " + __indicesToRender);
+        //     trace("  Tiles: " + getTileCount() + ", Cache size: " + __vertexCache.length);
+        //     trace("  Buffer dirty: " + __bufferDirty + ", Needs update: " + needsBufferUpdate);
+        // }
         
         // Update transformation matrix based on current properties
         updateTransform();
@@ -726,7 +739,6 @@ class TileBatchFast extends DisplayObject {
             }
         }
         
-        trace("TileBatchFast: Batch updated " + changeCount + " of " + updates.length + " tiles");
     }
     
     /**

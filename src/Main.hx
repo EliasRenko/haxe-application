@@ -2,7 +2,8 @@ package;
 
 //import states.ImageTestState;
 //import states.CollisionTest;
-import states.TextTestState;
+//import states.TextTestState;
+import states.TileBatchFastTest;
 import App;
 
 class Main {
@@ -14,7 +15,7 @@ class Main {
             return;
         }
 
-        app.addState(new TextTestState(app));
+        app.addState(new TileBatchFastTest(app));
         app.run();
     }
 }

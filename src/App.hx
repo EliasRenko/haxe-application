@@ -129,8 +129,6 @@ class App extends Runtime {
         __log.engineInfo("Application initialized successfully!");
     }
 
-    // ===== STATE MANAGEMENT METHODS =====
-
     /**
      * Add a state to the states array
      */
