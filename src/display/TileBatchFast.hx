@@ -262,6 +262,8 @@ class TileBatchFast extends DisplayObject {
         if (changed) {
             // TEMPORARY: Force full rebuild instead of partial updates for debugging
             __bufferDirty = true;
+            
+            
             if (initialized) {
                 needsBufferUpdate = true;
             }
@@ -686,9 +688,9 @@ class TileBatchFast extends DisplayObject {
         }
         
         // CRITICAL: Do not render during buffer updates to prevent flickering
-        if (__isUpdating) {
-            return;
-        }
+        // if (__isUpdating) {
+        //     return;
+        // }
         
         // Check if we actually have vertices to render
         if (__verticesToRender == 0 || __indicesToRender == 0) {

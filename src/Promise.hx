@@ -2,16 +2,29 @@ package;
 
 import haxe.Timer;
 
+enum PromiseState {
+    ON_QUEUE;
+    PENDING;
+    COMPLETE;
+    REJECTED;
+}
+
+// A function that receives two callbacks: 
+// - resolve: called with a value of type T to fulfill the promise
+// - reject: called with a String error message to reject the promise
+// The function should execute an asynchronous operation and call one of the callbacks.
+typedef PromiseFunc<T> = (resolve:(T)->Void, reject:(String)->Void) -> Void;
+
 class Promise<T> {
 
-    // Public properties
+    // Publics
     public var isComplete(get, null):Bool;
     public var state(get, null):PromiseState;
     public var result(get, null):T;
     public var error(get, null):String;
     public var time(get, null):Float;
 
-    // Private properties
+    // Privates
     private var __completeListeners:EventDispacher<T>;
     private var __errorListeners:EventDispacher<String>;
     
@@ -19,9 +32,9 @@ class Promise<T> {
     private var __result:T;
     private var __error:String;
     private var __time:Float = 0;
-    private var __funcToRun:((T)->Void, (String)->Void)->Void;
+    private var __funcToRun:PromiseFunc<T>;
 
-    public function new(func:((T)->Void, (String)->Void)->Void, shouldRun:Bool = true) {
+    public function new(func:PromiseFunc<T>, shouldRun:Bool = true) {
         __funcToRun = func;
 
         if (shouldRun) {
@@ -179,11 +192,4 @@ class Promise<T> {
     private function get_time():Float {
         return __time;
     }
-}
-
-enum PromiseState {
-    ON_QUEUE;
-    PENDING;
-    COMPLETE;
-    REJECTED;
 }
