@@ -1,4 +1,4 @@
-package drc.utils;
+package utils;
 
 enum GuillotineFreeRectChoiceHeuristic {
 	BestAreaFit;
@@ -22,13 +22,13 @@ class BinPacker {
 
     public var binWidth(default, null):Int;
     public var binHeight(default, null):Int;
-    public var usedRectangles(default, null):Array<Rect> = new Array<Rect>();
-	public var freeRectangles(default, null):Array<Rect> = new Array<Rect>();
+    public var usedRectangles(default, null):Array<BinRect> = new Array<BinRect>();
+	public var freeRectangles(default, null):Array<BinRect> = new Array<BinRect>();
 
 	// ** Privates.
 	private var __rotation:Bool;
 
-    public function new(width:Int = 0, height:Int = 0, rotation:Bool = true) {
+    public function new(width:Int = 0, height:Int = 0, rotation:Bool = false) {
 
         binWidth = width;
 
@@ -36,12 +36,12 @@ class BinPacker {
 		
 		__rotation = rotation;
 
-        var n = new Rect(0, 0, width, height);
+        var n = new BinRect(0, 0, width, height);
         
 		freeRectangles.push(n);
     }
 
-    public function insert(width:Int, height:Int, merge:Bool, rectChoice:GuillotineFreeRectChoiceHeuristic, splitMethod:GuillotineSplitHeuristic):Rect {
+    public function insert(width:Int, height:Int, merge:Bool, rectChoice:GuillotineFreeRectChoiceHeuristic, splitMethod:GuillotineSplitHeuristic):BinRect {
 
         var data = findPositionForNewNode(width, height, rectChoice);
 
@@ -112,7 +112,7 @@ class BinPacker {
 		}	
     }
 
-    private function splitFreeRectByHeuristic(freeRect:Rect, placedRect:Rect, method:GuillotineSplitHeuristic):Void {
+    private function splitFreeRectByHeuristic(freeRect:BinRect, placedRect:BinRect, method:GuillotineSplitHeuristic):Void {
 
         var w = freeRect.width - placedRect.width;
         
@@ -139,11 +139,11 @@ class BinPacker {
 		
 		splitFreeRectAlongAxis(freeRect, placedRect, splitHorizontal);
     }
-    
-    private function splitFreeRectAlongAxis(freeRect:Rect, placedRect:Rect, splitHorizontal:Bool):Void {
-		var bottom = new Rect(freeRect.x, freeRect.y + placedRect.height, 0, freeRect.height - placedRect.height);
-		var right = new Rect(freeRect.x + placedRect.width, freeRect.y, freeRect.width - placedRect.width, 0);
-		
+
+    private function splitFreeRectAlongAxis(freeRect:BinRect, placedRect:BinRect, splitHorizontal:Bool):Void {
+		var bottom = new BinRect(freeRect.x, freeRect.y + placedRect.height, 0, freeRect.height - placedRect.height);
+		var right = new BinRect(freeRect.x + placedRect.width, freeRect.y, freeRect.width - placedRect.width, 0);
+
 		if (splitHorizontal) {
 			bottom.width = freeRect.width;
 			right.height = placedRect.height;
@@ -160,9 +160,9 @@ class BinPacker {
 		}
 	}
 
-    private function findPositionForNewNode(width:Int, height:Int, rectChoice:GuillotineFreeRectChoiceHeuristic): { rect:Rect, nodeIndex:Int } {
+    private function findPositionForNewNode(width:Int, height:Int, rectChoice:GuillotineFreeRectChoiceHeuristic): { rect:BinRect, nodeIndex:Int } {
 
-        var bestNode = new Rect();
+        var bestNode = new BinRect();
 
         var nodeIndex:Int = 0;
         
@@ -299,7 +299,7 @@ class BinPacker {
 	}
 }
 
-class Rect {
+class BinRect {
 
 	public var x:Float;
 	public var y:Float;
@@ -314,12 +314,12 @@ class Rect {
 		this.height = height;
 		this.flipped = flipped;
 	}
-	
-	public inline function clone():Rect {
-		return new Rect(x, y, width, height);
+
+	public inline function clone():BinRect {
+		return new BinRect(x, y, width, height);
 	}
 	
-	public inline function isContainedIn(other:Rect):Bool {
+	public inline function isContainedIn(other:BinRect):Bool {
 		return x >= other.x && y >= other.y	&& x + width <= other.x + other.width && y + height <= other.y + other.height;
 	}
 }
