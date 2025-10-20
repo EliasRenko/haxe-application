@@ -69,6 +69,10 @@ class App extends Runtime {
 
         // TODO: Move to a more appropriate place
         __renderer = new Renderer(this, 640, 480);
+        
+        // Initialize post-processing framebuffer
+        __renderer.initializePostProcessing();
+        __renderer.usePostProcessing = true; // Enable post-processing by default
 
         resources.loadText("preload.txt")
             .then(function(source:String) {
@@ -272,12 +276,30 @@ class App extends Runtime {
     }
 
     override function render():Void {
-       
-        __renderer.clearScreen();
-        __renderer.initializeRenderState();
-        
-        if (currentState != null && currentState.active) {
-            currentState.render(__renderer);
+        if (__renderer.usePostProcessing) {
+            // STEP 1: Render scene to framebuffer
+            __renderer.bindFramebuffer();
+            __renderer.clearScreen();
+            GL.glClear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
+            __renderer.initializeRenderState();
+            
+            if (currentState != null && currentState.active) {
+                currentState.render(__renderer);
+            }
+            
+            // STEP 2: Render framebuffer to screen with post-processing
+            __renderer.unbindFramebuffer();
+            //__renderer.clearScreen(); // Clear the screen framebuffer
+            GL.glClearColor(0.0, 1.0, 0.1, 1.0); // Very dark background for 3D focus
+            __renderer.renderToScreen();
+        } else {
+            // Direct rendering (no post-processing)
+            __renderer.clearScreen();
+            __renderer.initializeRenderState();
+            
+            if (currentState != null && currentState.active) {
+                currentState.render(__renderer);
+            }
         }
     }
 
