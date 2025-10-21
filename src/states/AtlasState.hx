@@ -85,11 +85,11 @@ class AtlasState extends State {
         var atlasData = createAtlasTexture(1024, 1024, packedTextures);
         
         // Save the atlas as TGA
-        TGAExporter.saveToTGA(atlasData, 'atlas.tga');
+        TGAExporter.saveToTGA(atlasData, 'res/textures/atlas.tga');
         
         // Save the atlas metadata (region definitions)
-        saveAtlasMetadata(packedTextures, 'atlas.json');
-        
+        saveAtlasMetadata(packedTextures, 'res/textures/atlas.json');
+
         trace('Atlas saved to atlas.tga and atlas.json');
     }
     
