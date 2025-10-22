@@ -3,7 +3,6 @@ package display;
 import ProgramInfo;
 import Texture;
 import loaders.FontData;
-import loaders.FontLoader;
 
 /**
  * Text display object that renders text using a bitmap font

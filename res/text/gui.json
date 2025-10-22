@@ -1,0 +1,39 @@
+{
+  "regions": [
+    {
+      "name": "button_normal",
+      "x": 0,
+      "y": 0,
+      "width": 100,
+      "height": 32
+    },
+    {
+      "name": "button_hover",
+      "x": 100,
+      "y": 0,
+      "width": 100,
+      "height": 32
+    },
+    {
+      "name": "button_pressed",
+      "x": 200,
+      "y": 0,
+      "width": 100,
+      "height": 32
+    },
+    {
+      "name": "panel_bg",
+      "x": 0,
+      "y": 32,
+      "width": 200,
+      "height": 150
+    },
+    {
+      "name": "label_bg",
+      "x": 0,
+      "y": 182,
+      "width": 100,
+      "height": 16
+    }
+  ]
+}

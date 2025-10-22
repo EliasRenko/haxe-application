@@ -11,7 +11,7 @@ import App;
  */
 class State {
     
-    // State properties
+    // Publics
     public var active:Bool = true;
     public var app(get, null):App;
     public var camera:Camera;
@@ -19,7 +19,7 @@ class State {
     public var name:String;
     public var id:Int;
     
-    // Private reference to app for accessing renderer
+    // Privates
     private var __app:App;
     
     // Private state counter for auto-generating IDs
