@@ -45,10 +45,16 @@ class Keyboard {
 
     private function onKeyDown(key:UInt, repeat:Bool, mod:Int):Void {
         trace("key down: " + Keycode.toString(key));
+        __checkControls[key] = true;
+        __checkCount++;
+        __pressControls[__pressCount++] = key;
     }
 
     private function onKeyUp(key:UInt, repeat:Bool, mod:Int):Void {
         trace("key up: " + Keycode.toString(key));
+        __checkControls[key] = false;
+		__checkCount--;
+		__releaseControls[__releaseCount++] = key;
     }
 }
 

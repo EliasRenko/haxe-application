@@ -19,10 +19,8 @@ class State {
     public var name:String;
     public var id:Int;
     
-    // Private reference to app for accessing renderer
+    // Privates
     private var __app:App;
-    
-    // Private state counter for auto-generating IDs
     private static var __nextId:Int = 0;
     
     public function new(name:String, app:App) {
@@ -189,19 +187,10 @@ class State {
         entities = [];
     }
     
-    /**
-     * Called when state becomes active
-     * Override in subclasses for state-specific initialization
-     */
     public function init():Void {
-        trace("State '" + name + "' initialized");
         active = true;
     }
     
-    /**
-     * Called when state becomes inactive
-     * Override in subclasses for state-specific cleanup
-     */
     public function release():Void {
         trace("State '" + name + "' released");
         active = false;
