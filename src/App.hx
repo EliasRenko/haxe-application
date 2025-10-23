@@ -67,6 +67,9 @@ class App extends Runtime {
     override function preload() {
         super.preload();
 
+        // Initialize timing
+        __lastTime = SDL.getTicks() / 1000.0;
+
         // TODO: Move to a more appropriate place
         __renderer = new Renderer(this, 640, 480);
         
@@ -256,8 +259,15 @@ class App extends Runtime {
 
     override function update():Void {
         
-        // Use a fixed deltaTime for stable animation (60 FPS target)
-        var deltaTime:Float = 1.0 / 60.0; // 0.0167 seconds per frame
+        // Calculate actual deltaTime based on elapsed time
+        __currentTime = SDL.getTicks() / 1000.0; // Convert milliseconds to seconds
+        var deltaTime:Float = __currentTime - __lastTime;
+        __lastTime = __currentTime;
+        
+        // Clamp deltaTime to prevent huge jumps (e.g., when debugging or window dragging)
+        if (deltaTime > 0.1) {
+            deltaTime = 1.0 / 60.0; // Cap at ~60 FPS
+        }
         
         // Update input system
         if (__input != null) {

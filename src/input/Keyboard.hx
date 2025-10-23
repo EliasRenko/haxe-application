@@ -39,22 +39,31 @@ class Keyboard {
     }
 
     public function postUpdate():Void {
-        //__pressCount = 0;
-        //__releaseCount = 0;
+        // Clear pressed/released arrays for next frame
+        __pressControls = [];
+        __pressCount = 0;
+        __releaseControls = [];
+        __releaseCount = 0;
     }
 
     private function onKeyDown(key:UInt, repeat:Bool, mod:Int):Void {
         trace("key down: " + Keycode.toString(key));
-        __checkControls[key] = true;
-        __checkCount++;
-        __pressControls[__pressCount++] = key;
+        
+        // Only register as pressed if not already down (not a repeat)
+        if (!__checkControls[key]) {
+            __checkControls[key] = true;
+            __checkCount++;
+            __pressControls.push(key);
+            __pressCount++;
+        }
     }
 
     private function onKeyUp(key:UInt, repeat:Bool, mod:Int):Void {
         trace("key up: " + Keycode.toString(key));
         __checkControls[key] = false;
 		__checkCount--;
-		__releaseControls[__releaseCount++] = key;
+		__releaseControls.push(key);
+		__releaseCount++;
     }
 }
 

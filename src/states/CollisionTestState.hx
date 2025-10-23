@@ -18,6 +18,16 @@ import comps.DisplayObjectComp;
 /**
  * Test state demonstrating collision detection and response
  * Uses differ for collision detection with TileBatch rendering
+ * 
+ * Features:
+ * - Tile-based level with walls
+ * - Player movement with gravity and jumping
+ * - Collision detection and resolution
+ * - Wall sliding
+ * 
+ * Controls:
+ * - A/D or Arrow Keys: Move left/right
+ * - Space/W: Jump (only when on ground)
  */
 class CollisionTestState extends State {
     
@@ -100,14 +110,14 @@ class CollisionTestState extends State {
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1],
+            [1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1],
             [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
             [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
             [1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1],
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
         ];
@@ -148,11 +158,28 @@ class CollisionTestState extends State {
     }
     
     override public function update(deltaTime:Float):Void {
-        super.update(deltaTime);
+        // Update player FIRST (before other entities)
+        if (player != null && player.active) {
+            player.update(deltaTime);
+        }
         
-        // Check for player-tile collisions
+        // Check collisions AFTER player movement
         if (player != null && player.collisionShape != null) {
             checkCollisions();
+        }
+        
+        // Update other entities (skip player since we already updated it)
+        for (entity in entities) {
+            if (entity != null && entity != player && entity.active) {
+                entity.update(deltaTime);
+            }
+        }
+        
+        // Late update all entities
+        for (entity in entities) {
+            if (entity != null && entity.active) {
+                entity.lateUpdate(deltaTime);
+            }
         }
     }
     
@@ -171,9 +198,16 @@ class CollisionTestState extends State {
                 // Update player collision shape position
                 player.updateCollisionShape();
                 
+                // Check if collision is from below (standing on ground)
+                // If the separation is mostly vertical (pointing up), player is grounded
+                var ny = collision.unitVectorY;
+                if (ny < -0.7) { // Pointing upward (ground collision)
+                    player.isGrounded = true;
+                    player.velocityY = 0; // Stop falling
+                }
+                
                 // Stop player velocity in collision direction
                 var nx = collision.unitVectorX;
-                var ny = collision.unitVectorY;
                 var dot = player.velocityX * nx + player.velocityY * ny;
                 
                 if (dot < 0) {
@@ -201,9 +235,16 @@ class PlayerEntity extends Entity {
     private var tileId:Int = -1;
     private var keyboard:input.Keyboard;
     
-    private static inline var PLAYER_SPEED:Float = 10.0;
+    // Jump/gravity mechanics
+    public var isGrounded:Bool = false;
+    private var wasGrounded:Bool = false;
+    
+    private static inline var PLAYER_SPEED:Float = 150.0; // Pixels per second
     private static inline var PLAYER_RADIUS:Float = 16.0;
     private static inline var PLAYER_SIZE:Int = 32;
+    private static inline var GRAVITY:Float = 800.0; // Pixels per second squared
+    private static inline var JUMP_VELOCITY:Float = -350.0; // Negative = up (pixels per second)
+    private static inline var MAX_FALL_SPEED:Float = 400.0; // Maximum downward velocity
     
     public function new(state:State, programInfo:ProgramInfo, renderer:Renderer) {
         super("player");
@@ -244,16 +285,21 @@ class PlayerEntity extends Entity {
     override public function update(deltaTime:Float):Void {
         super.update(deltaTime);
         
-        // Get input
-        velocityX = 0;
-        velocityY = 0;
+        // Store previous grounded state
+        wasGrounded = isGrounded;
+        isGrounded = false;
         
-        if (keyboard.check(Keycode.W)) {
-            velocityY = -PLAYER_SPEED;
+        // Apply gravity
+        velocityY += GRAVITY * deltaTime;
+        
+        // Clamp fall speed
+        if (velocityY > MAX_FALL_SPEED) {
+            velocityY = MAX_FALL_SPEED;
         }
-        if (keyboard.check(Keycode.S)) {
-            velocityY = PLAYER_SPEED;
-        }
+        
+        // Get horizontal input
+        velocityX = 0;
+        
         if (keyboard.check(Keycode.A)) {
             velocityX = -PLAYER_SPEED;
         }
@@ -261,11 +307,11 @@ class PlayerEntity extends Entity {
             velocityX = PLAYER_SPEED;
         }
         
-        // Normalize diagonal movement
-        if (velocityX != 0 && velocityY != 0) {
-            var length = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
-            velocityX = (velocityX / length) * PLAYER_SPEED;
-            velocityY = (velocityY / length) * PLAYER_SPEED;
+        // Jump input (Space or W) - only when grounded
+        var wantToJump = keyboard.pressed(Keycode.SPACE) || keyboard.pressed(Keycode.W);
+        if (wantToJump && wasGrounded) {
+            velocityY = JUMP_VELOCITY;
+            trace("Player jumped! wasGrounded=" + wasGrounded + " isGrounded=" + isGrounded);
         }
         
         // Update position
