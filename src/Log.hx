@@ -22,7 +22,7 @@ private class __Log {
     private var __app:App;
     
     public static inline var CATEGORY_RUNTIME:Int = 1;
-    public static inline var CATEGORY_RENDER:Int = 2;
+    public static inline var CATEGORY_RENDERER:Int = 2;
     public static inline var CATEGORY_APP:Int = 3;
     public static inline var CATEGORY_RESOURCES:Int = 4;
     public static inline var CATEGORY_ASSERT:Int = 5;
@@ -42,12 +42,13 @@ private class __Log {
         __app.resetLogPriorities();
     }
     
+    // TODO: Change priority param
     public function enableCategory(category:Int, priority:Int):Void {
-        __app.setLogPriority(category, priority);
+        __app.setLogPriority(category, SDL_LOG_PRIORITY_TRACE);
     }
     
     public function disableCategory(category:Int):Void {
-        __app.setLogPriority(category, LogPriority.INVALID);
+        __app.setLogPriority(category, SDL_LOG_PRIORITY_INVALID);
     }
     
     public function trace(category:Int, message:String):Void {
@@ -81,8 +82,8 @@ private class __Log {
     private function getCategoryName(category:Int):String {
         switch (category) {
             case CATEGORY_RUNTIME: return "RUNTIME";
-            case CATEGORY_RENDER: return "RENDER";
-            case CATEGORY_APPLICATION: return "APP";
+            case CATEGORY_RENDERER: return "RENDER";
+            case CATEGORY_APP: return "APP";
             case CATEGORY_RESOURCES: return "RESOURCES";
             case CATEGORY_ASSERT: return "ASSERT";
             case CATEGORY_AUDIO: return "AUDIO";
@@ -91,26 +92,6 @@ private class __Log {
             default: return "UNKNOWN";
         }
     }
-    
-    // public function getDebugInfo():String {
-    //     var info = "=== LOG SYSTEM DEBUG INFO ===\n";
-    //     info += "Global log level: " + SDL.getLogPriority(0) + "\n";
-    //     info += "Category priorities:\n";
-        
-    //     // Check all defined categories
-    //     var categories = [
-    //         CATEGORY_RUNTIME, CATEGORY_RENDER, CATEGORY_APPLICATION, 
-    //         CATEGORY_RESOURCES, CATEGORY_ASSERT, CATEGORY_AUDIO, 
-    //         CATEGORY_INPUT, CATEGORY_TEST
-    //     ];
-        
-    //     for (category in categories) {
-    //         var priority = SDL.getLogPriority(category);
-    //         info += "  " + getCategoryName(category) + " (priority: " + priority + ")\n";
-    //     }
-        
-    //     return info;
-    // }
 }
 
 typedef Log = __Log;
