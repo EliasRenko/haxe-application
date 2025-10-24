@@ -7,7 +7,6 @@ import Renderer;
 import ProgramInfo;
 import Texture;
 import display.TileBatch;
-import math.Matrix;
 import differ.Collision;
 import differ.shapes.Circle;
 import differ.shapes.Polygon;
