@@ -44,11 +44,11 @@ private class __Log {
     
     // TODO: Change priority param
     public function enableCategory(category:Int, priority:Int):Void {
-        __app.setLogPriority(category, SDL_LOG_PRIORITY_TRACE);
+        __app.setLogPriority(category, 0);
     }
     
     public function disableCategory(category:Int):Void {
-        __app.setLogPriority(category, SDL_LOG_PRIORITY_INVALID);
+        __app.setLogPriority(category, -1);
     }
     
     public function trace(category:Int, message:String):Void {
