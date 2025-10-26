@@ -6,6 +6,8 @@ import ProgramInfo;
 import Renderer;
 import Texture;
 import math.Matrix;
+import data.Vertices;
+import data.Indices;
 
 /**
  * TileBatchFast - High-performance tile batching system with dynamic buffer updates
