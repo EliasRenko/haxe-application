@@ -1,5 +1,7 @@
 package display;
 
+import cpp.Float32;
+import cpp.UInt32;
 import GL;
 import DisplayObject;
 import ProgramInfo;
@@ -44,8 +46,8 @@ class TileBatchFast extends DisplayObject {
     private var __nextTileId:Int = 1; // Auto-incrementing tile ID
     private var __nextRegionId:Int = 1; // Auto-incrementing region ID
     private var __bufferDirty:Bool = true;
-    private var __vertexCache:Array<Float> = [];
-    private var __indexCache:Array<UInt> = [];
+    private var __vertexCache:Array<Float32> = [];
+    private var __indexCache:Array<UInt32> = [];
     
     // Dynamic update tracking
     private var __dirtyTiles:Array<Int> = [];    // List of tiles that need updating
