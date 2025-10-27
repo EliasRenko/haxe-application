@@ -35,7 +35,7 @@ class TileBatchFastTest extends State {
         camera.ortho = true;
         
         // Get the renderer
-        var renderer = app.getRenderer();
+        var renderer = app.renderer;
         
         // Create ProgramInfo for textured rendering
         var vertShader = app.resources.getText("shaders/textured.vert");

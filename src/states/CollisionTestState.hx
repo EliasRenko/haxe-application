@@ -59,7 +59,7 @@ class CollisionTestState extends State {
         camera.ortho = true;
         
         // Get renderer
-        var renderer = app.getRenderer();
+        var renderer = app.renderer;
         
         // Get or create shader program
         var vertShader = app.resources.getText("shaders/textured.vert");
@@ -151,7 +151,7 @@ class CollisionTestState extends State {
         }
         
         // Update TileBatch buffers
-        tileBatch.updateBuffers(app.getRenderer());
+        tileBatch.updateBuffers(app.renderer);
         
         trace('CollisionTestState: Created ${collisionTiles.length} collision tiles');
     }
@@ -323,7 +323,7 @@ class PlayerEntity extends Entity {
         // Update tile position in batch
         if (tileBatch != null && tileId != -1) {
             tileBatch.updateTilePosition(tileId, x - PLAYER_SIZE / 2, y - PLAYER_SIZE / 2);
-            tileBatch.updateBuffers(state.app.getRenderer());
+            tileBatch.updateBuffers(state.app.renderer);
         }
     }
 }

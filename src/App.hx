@@ -10,10 +10,12 @@ class App extends Runtime {
     public var input(get, null):Input;
     public var resources(get, null):Resources;
     public var log(get, null):Log;
+    public var renderer(get, null):Renderer;
 
     // Privates
     private var __input:Input;
     private var __resources:Resources;
+    private var __renderer:Renderer;
 
     // Timing variables for deltaTime calculation
     private var __lastTime:Float = 0.0;
@@ -57,13 +59,19 @@ class App extends Runtime {
         states = [];
         currentState = null;
 
-        // Release resources first
+        // Release renderer
+        if (__renderer != null) {
+            __renderer.release();
+            __renderer = null;
+        }
+
+        // Release resources
         if (__resources != null) {
             __resources.release();
             __resources = null;
         }
 
-        // Release input system
+        // Release input
         if (__input != null) {
             __input.release();
             __input = null;
@@ -347,5 +355,9 @@ class App extends Runtime {
 
     public function get_log():Log {
         return __log;
+    }
+
+    public function get_renderer():Renderer {
+        return __renderer;
     }
 }
