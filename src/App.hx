@@ -21,14 +21,26 @@ class App extends Runtime {
 
     public function new() {
         super();
+    }
+
+    override function init():Bool {
+        super.init();
 
         __log = new Log(this);
         __resources = new Resources(this);
         __input = new Input(this);
-    }
+        __renderer = new Renderer(this, 640, 480);
 
-    override function init():Bool {
-        return super.init();
+        preload();
+
+        // Initialize timing
+        __lastTime = SDL.getTicks() / 1000.0;
+        
+        // Initialize post-processing framebuffer
+        __renderer.initializePostProcessing();
+        __renderer.usePostProcessing = true; // Enable post-processing by default
+
+        return true;
     }
 
     override function release():Void {
@@ -60,23 +72,7 @@ class App extends Runtime {
         super.release();
     }
 
-    override public function run():Void {
-        super.run();
-    }
-
-    override function preload() {
-        super.preload();
-
-        // Initialize timing
-        __lastTime = SDL.getTicks() / 1000.0;
-
-        // TODO: Move to a more appropriate place
-        __renderer = new Renderer(this, 640, 480);
-        
-        // Initialize post-processing framebuffer
-        __renderer.initializePostProcessing();
-        __renderer.usePostProcessing = true; // Enable post-processing by default
-
+    public function preload() {
         resources.loadText("preload.txt") .then(function(source:String) {
             var files:Array<Promise<Dynamic>> = new Array<Promise<Dynamic>>();
             var lines:Array<String> = source.split("\n");
@@ -100,7 +96,6 @@ class App extends Runtime {
                             files.push(__resources.loadText(path));
                         }
                         default: {
-                            //files.push(__resources.loadText(path));
                             throw 'Unsupported resource type: ' + ext + ' for file: ' + path;
                         }
                     }
