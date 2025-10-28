@@ -287,11 +287,12 @@ class App extends Runtime {
     }
 
     override function render():Void {
+        __renderer.render();
         if (__renderer.usePostProcessing) {
             // STEP 1: Render scene to framebuffer
             __renderer.bindFramebuffer();
             __renderer.clearScreen();
-            GL.glClear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
+            //GL.glClear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
             __renderer.initializeRenderState();
             
             if (currentState != null && currentState.active) {
@@ -300,8 +301,8 @@ class App extends Runtime {
             
             // STEP 2: Render framebuffer to screen with post-processing
             __renderer.unbindFramebuffer();
-            //__renderer.clearScreen(); // Clear the screen framebuffer
-            GL.glClearColor(0.0, 1.0, 0.1, 1.0); // Very dark background for 3D focus
+            __renderer.clearScreen(); // Clear the screen framebuffer
+            //GL.glClearColor(0.0, 1.0, 0.1, 1.0); // Very dark background for 3D focus
             __renderer.renderToScreen();
         } else {
             // Direct rendering (no post-processing)
