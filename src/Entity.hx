@@ -142,6 +142,13 @@ class Entity {
      * Clean up entity resources
      */
     public function cleanup(renderer:Renderer):Void {
+
+        // TODO: Workaround to release DisplayObject from DisplayObjectComp
+        var displayComp = getComponent(DisplayObjectComp);
+        if (displayComp != null && displayComp.displayObject != null) {
+            displayComp.displayObject.release(renderer);
+        }
+
         // Clean up all components
         for (component in components) {
             component.cleanup();

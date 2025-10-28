@@ -481,7 +481,7 @@ class TileBatchFast extends DisplayObject {
             
             renderer.uploadVertexData(vao, vbo, this.vertices.data);
             renderer.uploadIndexData(ebo, this.indices.data);
-            renderer.setupVertexAttributes(programInfo);
+            //renderer.setupVertexAttributes(programInfo);
             
             __bufferDirty = false;
             needsBufferUpdate = false;
