@@ -298,18 +298,12 @@ class TileBatch extends DisplayObject {
         if (!initialized || atlasTexture == null) return;
         
         if (__bufferDirty) {
-            //trace("TileBatch: Updating buffers");
             generateMesh();
             
             renderer.uploadData(this);
-            //renderer.uploadVertexData(vao, vbo, this.vertices.data);
-            //renderer.uploadIndexData(ebo, this.indices.data);
-            //renderer.setupVertexAttributes(programInfo);
             
             __bufferDirty = false;
             needsBufferUpdate = false;
-            
-            //trace("TileBatch: Buffer update complete");
         }
     }
     
