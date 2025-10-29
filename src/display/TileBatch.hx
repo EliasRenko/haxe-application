@@ -301,8 +301,9 @@ class TileBatch extends DisplayObject {
             //trace("TileBatch: Updating buffers");
             generateMesh();
             
-            renderer.uploadVertexData(vao, vbo, this.vertices.data);
-            renderer.uploadIndexData(ebo, this.indices.data);
+            renderer.uploadData(this);
+            //renderer.uploadVertexData(vao, vbo, this.vertices.data);
+            //renderer.uploadIndexData(ebo, this.indices.data);
             //renderer.setupVertexAttributes(programInfo);
             
             __bufferDirty = false;
