@@ -86,7 +86,7 @@ class TilemapBatch extends TileBatch {
         }
 
         __entireMapDirty = true;
-        if (initialized) {
+        if (active) {
             needsBufferUpdate = true;
         }
     }
@@ -108,7 +108,7 @@ class TilemapBatch extends TileBatch {
             __dirtyTiles.push({x: x, y: y});
             __entireMapDirty = true; // For now, mark entire map dirty
 
-            if (initialized) {
+            if (active) {
                 needsBufferUpdate = true;
             }
         }
@@ -168,7 +168,7 @@ class TilemapBatch extends TileBatch {
      * Override updateBuffers to regenerate the tile batch when needed
      */
     override public function updateBuffers(renderer:Renderer):Void {
-        if (!initialized || atlasTexture == null) return;
+        if (!active || atlasTexture == null) return;
 
         // If map is dirty, regenerate the entire batch
         if (__entireMapDirty) {
@@ -206,7 +206,7 @@ class TilemapBatch extends TileBatch {
             }
         }
         __entireMapDirty = true;
-        if (initialized) {
+        if (active) {
             needsBufferUpdate = true;
         }
         // Call parent clear to clear the tile batch
@@ -275,7 +275,7 @@ class TilemapBatch extends TileBatch {
         }
 
         __entireMapDirty = true;
-        if (initialized) {
+        if (active) {
             needsBufferUpdate = true;
         }
 

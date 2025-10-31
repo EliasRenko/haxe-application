@@ -160,7 +160,7 @@ class TileBatchFast extends DisplayObject {
         tiles.set(tileId, tile);
         
         // For dynamic updates: track this as a new tile
-        if (initialized && !__bufferDirty) {
+        if (active && !__bufferDirty) {
             // Add to existing buffer structure
             var orderIndex = __orderedTiles.length;
             __orderedTiles.push(tileId);
@@ -195,7 +195,7 @@ class TileBatchFast extends DisplayObject {
         } else {
             // Full rebuild needed
             __bufferDirty = true;
-            if (initialized) {
+            if (active) {
                 needsBufferUpdate = true;
             }
         }
@@ -215,14 +215,14 @@ class TileBatchFast extends DisplayObject {
             tiles.remove(tileId);
             
             // For dynamic updates: track removal
-            if (initialized && !__bufferDirty && __tileOrderMap.exists(tileId)) {
+            if (active && !__bufferDirty && __tileOrderMap.exists(tileId)) {
                 __removedTiles.push(tileId);
                 needsBufferUpdate = true;
                 trace("TileBatchFast: Marked tile " + tileId + " for removal");
             } else {
                 // Full rebuild needed
                 __bufferDirty = true;
-                if (initialized) {
+                if (active) {
                     needsBufferUpdate = true;
                 }
             }
@@ -268,7 +268,7 @@ class TileBatchFast extends DisplayObject {
             __bufferDirty = true;
             
             
-            if (initialized) {
+            if (active) {
                 needsBufferUpdate = true;
             }
             trace("TileBatchFast: Tile " + tileId + " changed, forcing full rebuild");
@@ -306,7 +306,7 @@ class TileBatchFast extends DisplayObject {
             tile.y = y;
             __bufferDirty = true;
             
-            if (initialized) {
+            if (active) {
                 needsBufferUpdate = true;
             }
             
@@ -323,7 +323,7 @@ class TileBatchFast extends DisplayObject {
         tiles.clear();
         __bufferDirty = true;
         
-        if (initialized) {
+        if (active) {
             needsBufferUpdate = true;
         }
     }
@@ -468,7 +468,7 @@ class TileBatchFast extends DisplayObject {
      * Update buffers using dynamic partial updates when possible
      */
     override public function updateBuffers(renderer:Renderer):Void {
-        if (!initialized || atlasTexture == null) return;
+        if (!active || atlasTexture == null) return;
         
         // Full rebuild if buffer is marked dirty
         if (__bufferDirty) {
@@ -688,7 +688,7 @@ class TileBatchFast extends DisplayObject {
      * Render the tile batch
      */
     override public function render(cameraMatrix:Matrix):Void {
-        if (!visible || !initialized || atlasTexture == null) {
+        if (!visible || !active || atlasTexture == null) {
             return;
         }
         
@@ -769,7 +769,7 @@ class TileBatchFast extends DisplayObject {
         __dirtyTiles = [];
         __removedTiles = [];
         
-        if (initialized) {
+        if (active) {
             needsBufferUpdate = true;
         }
         

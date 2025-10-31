@@ -108,7 +108,7 @@ class Cube extends DisplayObject {
     
     // Custom render method for cube
     public override function render(cameraMatrix:Matrix):Void {
-        if (!visible || !initialized) {
+        if (!visible || !active) {
             return;
         }
         

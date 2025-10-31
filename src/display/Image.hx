@@ -98,13 +98,13 @@ class Image extends DisplayObject {
 		vertices.set(19, y);             // Bottom-left V (flipped)
 		
 		// Mark for buffer update on next render
-		if (initialized) {
+		if (active) {
 			needsBufferUpdate = true;
 		}
 	}
 
 	override function render(cameraMatrix:Matrix):Void {
-		if (!visible || !initialized) return;
+		if (!visible || !active) return;
 		
 		// Update transformation matrix based on current properties
 		updateTransform();
@@ -136,7 +136,7 @@ class Image extends DisplayObject {
 		__shouldTransform = true;
 		
 		// Mark for buffer update on next render
-		if (initialized) {
+		if (active) {
 			needsBufferUpdate = true;
 		}
 
@@ -154,7 +154,7 @@ class Image extends DisplayObject {
 		__shouldTransform = true;
 		
 		// Mark for buffer update on next render
-		if (initialized) {
+		if (active) {
 			needsBufferUpdate = true;
 		}
 

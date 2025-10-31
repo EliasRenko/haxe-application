@@ -100,7 +100,7 @@ class State {
         // TODO: Initialize DisplayObject from the component altogether.
         // This is a workaround to because you cant access the renderer from Entity directly.
         var displayComp = entity.getComponent(DisplayObjectComp);
-        if (displayComp != null && displayComp.displayObject != null && !displayComp.displayObject.initialized) {
+        if (displayComp != null && displayComp.displayObject != null && !displayComp.displayObject.active) {
             displayComp.displayObject.init(__app.renderer);
             trace("Initialized DisplayObject for entity '" + entity.id + "'");
         }

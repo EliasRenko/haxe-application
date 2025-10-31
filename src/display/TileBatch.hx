@@ -119,7 +119,7 @@ class TileBatch extends DisplayObject {
         tiles.set(tileId, tile);
         __bufferDirty = true;
         
-        if (initialized) {
+        if (active) {
             needsBufferUpdate = true;
         }
         
@@ -138,7 +138,7 @@ class TileBatch extends DisplayObject {
             tiles.remove(tileId);
             __bufferDirty = true;
             
-            if (initialized) {
+            if (active) {
                 needsBufferUpdate = true;
             }
             return true;
@@ -160,7 +160,7 @@ class TileBatch extends DisplayObject {
             tile.y = y;
             __bufferDirty = true;
             
-            if (initialized) {
+            if (active) {
                 needsBufferUpdate = true;
             }
             
@@ -177,7 +177,7 @@ class TileBatch extends DisplayObject {
         tiles.clear();
         __bufferDirty = true;
         
-        if (initialized) {
+        if (active) {
             needsBufferUpdate = true;
         }
     }
@@ -295,7 +295,7 @@ class TileBatch extends DisplayObject {
      * Update buffers when needed
      */
     override public function updateBuffers(renderer:Renderer):Void {
-        if (!initialized || atlasTexture == null) return;
+        if (!active || atlasTexture == null) return;
         
         if (__bufferDirty) {
             generateMesh();
@@ -311,7 +311,7 @@ class TileBatch extends DisplayObject {
      * Render the tile batch
      */
     override public function render(cameraMatrix:Matrix):Void {
-        if (!visible || !initialized || atlasTexture == null) {
+        if (!visible || !active || atlasTexture == null) {
             return;
         }
         
