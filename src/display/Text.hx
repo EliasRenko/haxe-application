@@ -1,61 +1,34 @@
 package display;
 
-import ProgramInfo;
-import Texture;
-import loaders.FontData;
-import loaders.FontLoader;
+import display.BitmapFont;
 
 /**
- * Text display object that renders text using a bitmap font
- * Uses TileBatch internally to efficiently render characters
+ * Text - A text string instance that uses a shared BitmapFont for rendering
+ * 
+ * Lightweight text object that manages tiles for a specific string.
+ * Multiple Text instances can share the same BitmapFont for efficient batching.
  */
-class Text extends TileBatch {
+class Text {
     
-    private var fontData:FontData;
+    public var font:BitmapFont;
     private var textString:String = "";
     private var charTiles:Array<Int> = [];  // Track tile IDs for each character
-    private var charCodeToRegion:Map<Int, Int> = new Map();  // Map character code to region ID
+    
+    // Position and transform
+    public var x:Float = 0;
+    public var y:Float = 0;
     
     /**
-     * Create a new Text display object
-     * @param programInfo Shader program (use mono shader for 1bpp fonts)
-     * @param texture Font texture atlas
-     * @param fontData Font data loaded by FontLoader
+     * Create a new Text instance
+     * @param font The BitmapFont to use for rendering
+     * @param text Initial text string (optional)
      */
-    public function new(programInfo:ProgramInfo, texture:Texture, fontData:FontData) {
-        super(programInfo, texture);
-        this.fontData = fontData;
+    public function new(font:BitmapFont, text:String = "") {
+        this.font = font;
         
-        trace("Text: Created with font '" + fontData.name + "' size=" + fontData.size);
-        
-        // Define regions for all font characters
-        defineCharacterRegions();
-    }
-    
-    /**
-     * Define atlas regions for all characters in the font
-     */
-    private function defineCharacterRegions():Void {
-        var regionCount = 0;
-        
-        for (charCode in fontData.chars.keys()) {
-            var fontChar = fontData.chars.get(charCode);
-            
-            // Define region for this character
-            var regionId = defineRegion(
-                fontChar.x,
-                fontChar.y,
-                fontChar.width,
-                fontChar.height
-            );
-            
-            // Map character code to region ID for fast lookup
-            charCodeToRegion.set(charCode, regionId);
-            
-            regionCount++;
+        if (text.length > 0) {
+            setText(text);
         }
-        
-        trace("Text: Defined " + regionCount + " character regions");
     }
     
     /**
@@ -67,37 +40,37 @@ class Text extends TileBatch {
         
         textString = text;
         
-        // Clear existing character tiles
+        // Clear existing character tiles from the font batch
         for (tileId in charTiles) {
-            removeTile(tileId);
+            font.removeTile(tileId);
         }
         charTiles = [];
         
         // Create tiles for each character
-        var cursorX:Float = 0;
-        var cursorY:Float = 0;
+        var cursorX:Float = x;
+        var cursorY:Float = y;
         
         for (i in 0...text.length) {
             var charCode = text.charCodeAt(i);
             
             // Handle newlines
             if (charCode == 10) { // '\n'
-                cursorX = 0;
-                cursorY += fontData.lineHeight;
+                cursorX = x;
+                cursorY += font.fontData.lineHeight;
                 continue;
             }
             
             // Get character data
-            var fontChar = fontData.chars.get(charCode);
+            var fontChar = font.getCharData(charCode);
             if (fontChar == null) {
                 trace("Text: Warning - Character '" + text.charAt(i) + "' (code=" + charCode + ") not found in font");
-                cursorX += fontData.lineHeight / 2; // Skip unknown char
+                cursorX += font.fontData.lineHeight / 2; // Skip unknown char
                 continue;
             }
             
-            // Get the region ID for this character using the character code
-            var regionId = charCodeToRegion.get(charCode);
-            if (regionId == null) {
+            // Get the region ID for this character
+            var regionId = font.getRegionForChar(charCode);
+            if (regionId == -1) {
                 trace("Text: Warning - Region not found for character '" + text.charAt(i) + "' (code=" + charCode + ")");
                 cursorX += fontChar.xadvance;
                 continue;
@@ -107,8 +80,8 @@ class Text extends TileBatch {
             var tileX = cursorX + fontChar.xoffset;
             var tileY = cursorY + fontChar.yoffset;
             
-            // Add tile for this character
-            var tileId = addTile(
+            // Add tile to the font batch
+            var tileId = font.addTile(
                 tileX,
                 tileY,
                 fontChar.width,
@@ -133,43 +106,38 @@ class Text extends TileBatch {
     }
     
     /**
+     * Update the position of all character tiles
+     * Call this after changing x or y
+     */
+    public function updatePosition():Void {
+        // Regenerate text at new position
+        var currentText = textString;
+        textString = ""; // Force regeneration
+        setText(currentText);
+    }
+    
+    /**
+     * Remove this text from the font batch
+     */
+    public function remove():Void {
+        for (tileId in charTiles) {
+            font.removeTile(tileId);
+        }
+        charTiles = [];
+        textString = "";
+    }
+    
+    /**
      * Get the width of the current text in pixels
      */
     public function getTextWidth():Float {
-        var width:Float = 0;
-        var currentLineWidth:Float = 0;
-        
-        for (i in 0...textString.length) {
-            var charCode = textString.charCodeAt(i);
-            
-            if (charCode == 10) { // '\n'
-                if (currentLineWidth > width) width = currentLineWidth;
-                currentLineWidth = 0;
-                continue;
-            }
-            
-            var fontChar = fontData.chars.get(charCode);
-            if (fontChar != null) {
-                currentLineWidth += fontChar.xadvance;
-            }
-        }
-        
-        if (currentLineWidth > width) width = currentLineWidth;
-        return width;
+        return font.measureTextWidth(textString);
     }
     
     /**
      * Get the height of the current text in pixels
      */
     public function getTextHeight():Float {
-        var lines = 1;
-        for (i in 0...textString.length) {
-            if (textString.charCodeAt(i) == 10) lines++;
-        }
-        return lines * fontData.lineHeight;
-    }
-    
-    override public function render(cameraMatrix:math.Matrix):Void {
-        super.render(cameraMatrix);
+        return font.measureTextHeight(textString);
     }
 }

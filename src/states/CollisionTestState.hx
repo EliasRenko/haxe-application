@@ -7,12 +7,16 @@ import Renderer;
 import ProgramInfo;
 import Texture;
 import display.TileBatch;
+import display.BitmapFont;
+import display.Text;
+import loaders.FontLoader;
 import differ.Collision;
 import differ.shapes.Circle;
 import differ.shapes.Polygon;
 import differ.shapes.Shape;
 import differ.data.ShapeCollision;
 import comps.DisplayObjectComp;
+
 
 /**
  * Test state demonstrating collision detection and response
@@ -34,6 +38,11 @@ class CollisionTestState extends State {
     private var tileBatch:TileBatch;
     private var texture:Texture;
     private var programInfo:ProgramInfo;
+    
+    // Text display
+    private var bitmapFont:BitmapFont;
+    private var velocityXText:Text;
+    private var velocityYText:Text;
     
     // Player entity
     private var player:PlayerEntity;
@@ -97,7 +106,66 @@ class CollisionTestState extends State {
         player.y = 300;
         addEntity(player);
         
+        // Setup text display for velocity
+        setupTextDisplay(renderer);
+        
         trace("CollisionTestState: Setup complete");
+    }
+    
+    /**
+     * Setup text display for velocity information
+     */
+    private function setupTextDisplay(renderer:Renderer):Void {
+        // Load font
+        var fontData = FontLoader.load(app.resources.getText("fonts/gohu.json"));
+        if (fontData == null) {
+            trace("CollisionTestState: Failed to load font");
+            return;
+        }
+        
+        // Load font texture
+        var fontTextureData = app.resources.getTexture("textures/gohu.tga");
+        if (fontTextureData == null) {
+            trace("CollisionTestState: Failed to load font texture");
+            return;
+        }
+        
+        var fontTexture = renderer.uploadTexture(fontTextureData);
+        
+        // Create shader program for text (mono shader for 1bpp fonts)
+        var monoVertShader = app.resources.getText("shaders/mono.vert");
+        var monoFragShader = app.resources.getText("shaders/mono.frag");
+        var monoProgramInfo = renderer.createProgramInfo("mono", monoVertShader, monoFragShader);
+        
+        // Create BitmapFont (shared)
+        bitmapFont = new BitmapFont(monoProgramInfo, fontTexture, fontData);
+        
+        // Initialize the font's buffers
+        bitmapFont.init(renderer);
+        
+        // Add font to scene for rendering
+        var fontEntity = new Entity("bitmap_font");
+        var fontDisplay = new DisplayObjectComp(bitmapFont);
+        fontEntity.addComponent(fontDisplay);
+        addEntity(fontEntity);
+        
+        // Create text instances
+        velocityXText = new Text(bitmapFont, "Velocity X: 0.0");
+        velocityXText.x = 10;
+        velocityXText.y = 10;
+        
+        velocityYText = new Text(bitmapFont, "Velocity Y: 0.0");
+        velocityYText.x = 10;
+        velocityYText.y = 30;
+        
+        // Force buffer update after adding text tiles
+        bitmapFont.needsBufferUpdate = true;
+        bitmapFont.updateBuffers(renderer);
+        
+        trace("CollisionTestState: BitmapFont has " + bitmapFont.getTileCount() + " tiles");
+        trace("CollisionTestState: BitmapFont vertices: " + bitmapFont.vertices.length + ", indices: " + bitmapFont.indices.length);
+        
+        trace("CollisionTestState: Text display setup complete");
     }
     
     /**
@@ -156,10 +224,21 @@ class CollisionTestState extends State {
         trace('CollisionTestState: Created ${collisionTiles.length} collision tiles');
     }
     
+    var someFloatValue:Float = 0.0;
+
     override public function update(deltaTime:Float):Void {
+
         // Update player FIRST (before other entities)
         if (player != null && player.active) {
             player.update(deltaTime);
+            
+            // Update velocity text displays
+            if (velocityXText != null) {
+                velocityXText.setText("Velocity X: " + Math.round(player.velocityX * 10) / 10);
+            }
+            if (velocityYText != null) {
+                velocityYText.setText("Velocity Y: " + Math.round(player.velocityY * 10) / 10);
+            }
         }
         
         // Check collisions AFTER player movement

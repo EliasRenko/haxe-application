@@ -10,6 +10,7 @@ import Texture;
 import math.Matrix;
 import data.Vertices;
 import data.Indices;
+import display.Tile;
 
 /**
  * TileBatch - Primitive tile batching system
@@ -24,7 +25,7 @@ import data.Indices;
 class TileBatch extends DisplayObject {
     
     // Tile data structure
-    public var tiles:Map<Int, TileInstance> = new Map(); // tileId -> TileInstance
+    public var tiles:Map<Int, Tile> = new Map(); // tileId -> TileInstance
     public var atlasTexture:Texture = null;
     public var atlasRegions:Map<Int, AtlasRegion> = new Map(); // regionId -> AtlasRegion
     
@@ -109,7 +110,7 @@ class TileBatch extends DisplayObject {
         
         var tileId = __nextTileId++;
         
-        var tile = new TileInstance();
+        var tile = new Tile(this);
         tile.x = x;
         tile.y = y;
         tile.width = width;
@@ -185,7 +186,7 @@ class TileBatch extends DisplayObject {
     /**
      * Generate vertex data for a single tile
      */
-    private function generateTileVertices(tile:TileInstance):Array<Float> {
+    private function generateTileVertices(tile:Tile):Array<Float> {
         var vertices = [];
         
         // Get UV coordinates from the atlas region
@@ -350,7 +351,7 @@ class TileBatch extends DisplayObject {
     /**
      * Get tile instance (for reading properties)
      */
-    public function getTile(tileId:Int):TileInstance {
+    public function getTile(tileId:Int):Tile {
         return tiles.get(tileId);
     }
     
@@ -376,19 +377,6 @@ class TileBatch extends DisplayObject {
         for (key in atlasRegions.keys()) count++;
         return count;
     }
-}
-
-/**
- * Data structure representing a single tile instance
- */
-class TileInstance {
-    public var x:Float = 0.0;          // World X position
-    public var y:Float = 0.0;          // World Y position
-    public var width:Float = 1.0;      // Tile width in world units
-    public var height:Float = 1.0;     // Tile height in world units
-    public var regionId:Int = 0;       // Atlas region ID to use for UV coordinates
-    
-    public function new() {}
 }
 
 /**
