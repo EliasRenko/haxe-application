@@ -25,7 +25,7 @@ class Strip extends Container<Control> {
 
             tile.visible = visible;
 
-            ____canvas.tilemap.addTile(tile);
+            ____canvas.tilemap.addTileInstance(tile);
         });
 
         __initGraphics(); // In case of a bug, this line should be removed.
@@ -39,7 +39,7 @@ class Strip extends Container<Control> {
 
         __threeSlice.iterate(function (tile) {
 
-            ____canvas.tilemap.removeTile(tile);
+            ____canvas.tilemap.removeTileInstance(tile);
         });
 
         super.release();
@@ -62,11 +62,11 @@ class Strip extends Container<Control> {
 
     private function __initGraphics():Void {
 
-        __threeSlice.get(0).id = ____canvas.sets.get('strip_0');
+        __threeSlice.get(0).regionId = ____canvas.sets.get('strip_0');
 
-        __threeSlice.get(1).id = ____canvas.sets.get('strip_1');
+        __threeSlice.get(1).regionId = ____canvas.sets.get('strip_1');
 
-        __threeSlice.get(2).id = ____canvas.sets.get('strip_2');
+        __threeSlice.get(2).regionId = ____canvas.sets.get('strip_2');
     }
 
     override function __setGraphicX():Void {

@@ -102,8 +102,11 @@ class TGALoader {
 			input.read(idLength);
 		}
 
+		// Trace with first few bytes to help identify which file this is
 		trace("TGA Header - Type: " + imageType + ", PixelDepth: " + pixelDepth + ", Width: " + width + ", Height: " + height);
-		trace("TGA Origin - Top: " + originTop + ", Left: " + originLeft);
+		var originStr = originTop ? "TOP" : "BOTTOM";
+		var leftStr = originLeft ? "RIGHT" : "LEFT";
+		trace("TGA Origin - " + originStr + "-" + leftStr + " (originTop=" + originTop + ", originLeft=" + originLeft + ")");
 
 		// Support multiple TGA formats
 		var isColorMapped = (imageType == TGA_UNCOMPRESSED_COLOR_MAPPED || imageType == TGA_RLE_COLOR_MAPPED);
@@ -188,11 +191,23 @@ class TGALoader {
 		var pixelData = new UInt8Array(outputDataSize);
 
 		// Convert pixel data based on format
-		// No Y-flipping - import texture exactly as stored in TGA file
+		// Flip Y-axis if origin is at bottom (standard TGA bottom-origin needs flipping for OpenGL)
+		var shouldFlipY = !originTop; // Flip if origin is at bottom
 
 		for (i in 0...(width * height)) {
-			// Use direct linear mapping without Y-flipping
-			var dstOffset = i * outputBytesPerPixel;
+			// Calculate destination offset with optional Y-flip
+			var dstOffset:Int;
+			if (shouldFlipY) {
+				// Flip Y-axis: convert linear index to x,y, flip y, convert back
+				var x = i % width;
+				var y = Std.int(i / width);
+				var flippedY = (height - 1) - y;
+				var flippedIndex = flippedY * width + x;
+				dstOffset = flippedIndex * outputBytesPerPixel;
+			} else {
+				// No flip - direct linear mapping
+				dstOffset = i * outputBytesPerPixel;
+			}
 
 			if (is1Bit) {
 				// 1-bit monochrome - unpack bits

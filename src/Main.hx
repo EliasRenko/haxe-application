@@ -7,6 +7,7 @@ import states.TileBatchFastTest;
 import states.AtlasState;
 import App;
 import states.CollisionTestState;
+import states.UITestState;
 
 class Main {
     public static function main() {
@@ -17,7 +18,7 @@ class Main {
             return;
         }
 
-        app.addState(new CollisionTestState(app));
+        app.addState(new UITestState(app));
         app.run();
     }
 }

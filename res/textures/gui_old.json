@@ -1,0 +1,141 @@
+{
+	"name": "ui",
+	
+	"regions":[
+	
+	{ "id": 0, "name": "menuStrip_0", "dim":[2, 2, 30, 30] },
+	
+	{ "id": 1, "name": "menuStrip_1", "dim":[32, 2, 30, 30] },
+	
+	{ "id": 2, "name": "menuStrip_2", "dim":[62, 2, 30, 30] },
+	
+	{ "id": 3, "name": "cursor_0", "dim":[0, 112, 58, 58] },
+	
+	{ "id": 4, "name": "cursor_1", "dim":[60, 112, 58, 58] },
+	
+	{ "id": 5, "name": "cursor_2", "dim":[120, 112, 58, 58] },
+	
+	{ "id": 6, "name": "cursor_3", "dim":[180, 112, 58, 58] },
+	
+	{ "id": 7, "name": "cursor_4", "dim":[240, 112, 58, 58] },
+	
+	{ "id": 8, "name": "cursor_4", "dim":[0, 172, 32, 32] },
+	
+	{ "id": 9, "name": "checkbox_0", "dim":[34, 158, 16, 16] },
+	
+	{ "id": 10, "name": "checkbox_1", "dim":[34, 158, 16, 16] },
+	
+	{ "id": 11, "name": "selection_0", "dim":[622, 0, 24, 24] },
+	
+	{ "id": 12, "name": "caret_0", "dim":[646, 0, 2, 24] },
+	
+	{ "id": 13, "name": "groupBox_0", "dim":[646, 2, 2, 2] }, 
+	
+	{ "id": 14, "name": "magnifier_0", "dim":[34, 172, 32, 32] },
+	
+	{ "id": 15, "name": "brush_0", "dim":[68, 172, 32, 32] }, 
+	
+	{ "id": 16, "name": "clip_0", "dim":[102, 172, 32, 32] },
+	
+	{ "id": 17, "name": "button_off_0", "dim":[2, 126, 7, 30] },
+	
+	{ "id": 18, "name": "button_off_1", "dim":[9, 126, 16, 30] },
+	
+	{ "id": 19, "name": "button_off_2", "dim":[25, 126, 7, 30] },
+	
+	{ "id": 20, "name": "button_on_0", "dim":[28, 0, 6, 30] },
+	
+	{ "id": 21, "name": "button_on_1", "dim":[34, 0, 16, 30] },
+	
+	{ "id": 22, "name": "button_on_2", "dim":[50, 0, 6, 30] },
+	
+	{"id": 23, "name": "textfield_0", "dim":[56, 0, 6, 30] },
+	
+	{ "id": 24, "name": "textfield_1", "dim":[62, 0, 16, 30] },
+	
+	{ "id": 25, "name": "textfield_2", "dim":[78, 0, 6, 30] },
+	
+	{"id": 26, "name": "panel_0", "dim":[2, 34, 30, 30] },
+	
+	{ "id": 27, "name": "panel_1", "dim":[32, 34, 30, 30] },
+	
+	{ "id": 28, "name": "panel_2", "dim":[62, 34, 30, 30] },
+	
+	{"id": 29, "name": "panel_3", "dim":[2, 64, 30, 30] },
+	
+	{ "id": 30, "name": "panel_4", "dim":[32, 64, 30, 30] },
+	
+	{ "id": 31, "name": "panel_5", "dim":[62, 64, 30, 30] },
+	
+	{"id": 32, "name": "panel_6", "dim":[2, 94, 30, 30] },
+	
+	{ "id": 33, "name": "panel_7", "dim":[32, 94, 30, 30] },
+	
+	{ "id": 34, "name": "panel_8", "dim":[62, 94, 30, 30] },
+	
+	{ "id": 35, "name": "tools", "dim":[0, 296, 136, 68] },
+	
+	{ "id": 36, "name": "selectionTool_0", "dim":[0, 172, 32, 32] },
+	
+	{ "id": 37, "name": "manipulationTool_0", "dim":[136, 172, 32, 32] },
+	
+	{ "id": 38, "name": "tileTool_0", "dim":[170, 172, 32, 32] },
+	
+	{ "id": 39, "name": "strip_0", "dim":[382, 30, 30, 30] },
+	
+	{ "id": 40, "name": "strip_1", "dim":[412, 30, 30, 30] },
+	
+	{ "id": 41, "name": "strip_2", "dim":[442, 30, 30, 30] },
+	
+	{ "id": 42, "name": "scroll_0", "dim":[472, 0, 28, 30] },
+	
+	{ "id": 43, "name": "scroll_1", "dim":[500, 0, 28, 30] },
+
+	{ "id": 44, "name": "close_window", "dim":[72, 42, 16, 14] },
+
+	{"id": 45, "name": "panel_0_alt", "dim":[112, 30, 30, 30] },
+	
+	{ "id": 46, "name": "panel_1_alt", "dim":[142, 30, 30, 30] },
+	
+	{ "id": 47, "name": "panel_2_alt", "dim":[172, 30, 30, 30] },
+	
+	{"id": 48, "name": "panel_3_alt", "dim":[202, 30, 30, 30] },
+	
+	{ "id": 49, "name": "panel_4_alt", "dim":[232, 30, 30, 30] },
+	
+	{ "id": 50, "name": "panel_5_alt", "dim":[262, 30, 30, 30] },
+	
+	{"id": 51, "name": "panel_6_alt", "dim":[292, 30, 30, 30] },
+	
+	{ "id": 52, "name": "panel_7_alt", "dim":[322, 30, 30, 30] },
+	
+	{ "id": 53, "name": "panel_8_alt", "dim":[352, 30, 30, 30] },
+
+	{ "id": 54, "name": "close", "dim":[48, 190, 11, 13] },
+
+	{ "id": 55, "name": "maximaze", "dim":[220, 172, 16, 14] },
+
+	{ "id": 56, "name": "fold", "dim":[236, 172, 16, 14] },
+
+	{ "id": 57, "name": "slider", "dim":[34, 126, 12, 24] },
+
+	{ "id": 58, "name": "slider_alt", "dim":[34, 126, 12, 24] },
+
+	{ "id": 59, "name": "slider_base_0", "dim":[80, 126, 7, 12] },
+
+	{ "id": 60, "name": "slider_base_1", "dim":[55, 126, 16, 12] },
+
+	{ "id": 61, "name": "slider_base_2", "dim":[71, 126, 7, 12] },
+
+	{ "id": 62, "name": "slider_full_0", "dim":[87, 126, 7, 12] },
+
+	{ "id": 63, "name": "indicator", "dim":[112, 126, 22, 16] },
+
+	{ "id": 64, "name": "slider_0", "dim":[34, 190, 12, 4] },
+
+	{ "id": 65, "name": "slider_1", "dim":[34, 194, 12, 8] },
+
+	{ "id": 66, "name": "slider_2", "dim":[34, 202, 12, 4] }
+	
+	]
+}

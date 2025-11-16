@@ -1,7 +1,7 @@
 package gui;
 
 import gui.Control;
-import events.ControlEventType;
+import gui.ControlEventType;
 import haxe.ds.List;
 
 class Container<T:Control> extends Control {

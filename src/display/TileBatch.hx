@@ -87,7 +87,11 @@ class TileBatch extends DisplayObject {
         region.u2 = (atlasX + atlasWidth) / atlasTexture.width;
         region.v2 = (atlasY + atlasHeight) / atlasTexture.height;
         
-        
+        if (regionId <= 3) { // Only trace first 3 regions (button parts)
+            trace("TileBatch: defineRegion ID=" + regionId + " at (" + atlasX + "," + atlasY + "," + atlasWidth + "," + atlasHeight + ")");
+            trace("  Texture size: " + atlasTexture.width + "x" + atlasTexture.height);
+            trace("  UVs: (" + region.u1 + "," + region.v1 + ") to (" + region.u2 + "," + region.v2 + ")");
+        }
         atlasRegions.set(regionId, region);
         
         return regionId;
@@ -128,6 +132,19 @@ class TileBatch extends DisplayObject {
         //trace("TileBatch: Added tile " + tileId + " at (" + x + "," + y + ") size=" + width + "x" + height + " using region " + regionId);
         return tileId;
     }
+
+    // TODO: Placeholder for adding existing Tile instances
+    public function addTileInstance(tile:Tile):Void {
+        if (tile == null) return;
+
+        var tileId = __nextTileId++;
+        tiles.set(tileId, tile);
+        __bufferDirty = true;
+
+        if (active) {
+            needsBufferUpdate = true;
+        }
+    }
     
     /**
      * Remove a tile from the batch
@@ -146,6 +163,21 @@ class TileBatch extends DisplayObject {
         }
         return false;
     }
+    
+	public function removeTileInstance(tile:Tile):Bool {
+		for (tileId in tiles.keys()) {
+			if (tiles.get(tileId) == tile) {
+				tiles.remove(tileId);
+				__bufferDirty = true;
+
+				if (active) {
+					needsBufferUpdate = true;
+				}
+				return true;
+			}
+		}
+		return false;
+	}
     
     /**
      * Update a tile's position
@@ -204,7 +236,7 @@ class TileBatch extends DisplayObject {
         // Debug the UV coordinates being used for rendering
         // trace("TileBatch: generateTileVertices DEBUG for tile regionId=" + tile.regionId);
         // trace("  Region UV stored: (" + region.u1 + "," + region.v1 + ") to (" + region.u2 + "," + region.v2 + ")");
-        // trace("  Final vertex UV (no flip): (" + region.u1 + "," + region.v1 + ") to (" + region.u2 + "," + region.v2 + ")");
+        // trace("  Final vertex UV (flipped): v1=" + region.v2 + ", v2=" + region.v1);
         
         // IMPORTANT: Flip V coordinates to compensate for Y-axis flip in Camera
         // The Camera now has (0,0) at top-left with Y increasing downward
@@ -217,29 +249,29 @@ class TileBatch extends DisplayObject {
         // Format: [x, y, z, u, v] per vertex
         
         // Top-left
-        vertices.push(tile.x);
-        vertices.push(tile.y + tile.height);
+        vertices.push(tile.x + tile.offsetX);
+        vertices.push(tile.y + tile.offsetY + tile.height);
         vertices.push(0.0);
         vertices.push(region.u1);
         vertices.push(v1);  // Flipped V
         
         // Top-right
-        vertices.push(tile.x + tile.width);
-        vertices.push(tile.y + tile.height);
+        vertices.push(tile.x + tile.offsetX + tile.width);
+        vertices.push(tile.y + tile.offsetY + tile.height);
         vertices.push(0.0);
         vertices.push(region.u2);
         vertices.push(v1);  // Flipped V
         
         // Bottom-right
-        vertices.push(tile.x + tile.width);
-        vertices.push(tile.y);
+        vertices.push(tile.x + tile.offsetX + tile.width);
+        vertices.push(tile.y + tile.offsetY);
         vertices.push(0.0);
         vertices.push(region.u2);
         vertices.push(v2);  // Flipped V
         
         // Bottom-left
-        vertices.push(tile.x);
-        vertices.push(tile.y);
+        vertices.push(tile.x + tile.offsetX);
+        vertices.push(tile.y + tile.offsetY);
         vertices.push(0.0);
         vertices.push(region.u1);
         vertices.push(v2);  // Flipped V
@@ -259,6 +291,10 @@ class TileBatch extends DisplayObject {
         // Generate mesh for each tile
         for (tileId in tiles.keys()) {
             var tile = tiles.get(tileId);
+
+            if (!tile.visible) {
+                continue; // Skip invisible tiles
+            }
             
             // Generate vertices for this tile
             var tileVertices = generateTileVertices(tile);

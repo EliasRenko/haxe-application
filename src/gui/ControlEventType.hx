@@ -1,4 +1,4 @@
-package events;
+package gui;
 
 enum abstract ControlEventType(UInt) from UInt to UInt {
 

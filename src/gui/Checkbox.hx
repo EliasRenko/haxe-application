@@ -18,9 +18,9 @@ class Checkbox extends Control {
         super(x, y);
 
         __graphic = new Tile(null, 2);
-
+        __graphic.width = 28;
+        __graphic.height = 28;
         __value = value;
-
         __type = 'checkbox';
     }
 
@@ -32,7 +32,7 @@ class Checkbox extends Control {
 
         __graphic.visible = visible;
 
-        ____canvas.tilemap.addTile(__graphic);
+        ____canvas.tilemap.addTileInstance(__graphic);
 
         __width = __graphic.width;
 
@@ -43,7 +43,7 @@ class Checkbox extends Control {
 
     override function release():Void {
 
-        ____canvas.tilemap.removeTile(__graphic);
+        ____canvas.tilemap.removeTileInstance(__graphic);
 
         super.release();
     }
@@ -62,7 +62,7 @@ class Checkbox extends Control {
 
     private function __initGraphics():Void {
 
-        __graphic.id = ____canvas.sets.get('checkbox_0');
+        __graphic.regionId = ____canvas.sets.get('checkbox_0');
     }
 
     override function __setGraphicX():Void {
@@ -86,11 +86,11 @@ class Checkbox extends Control {
 
         if (value) {
 
-            __graphic.id = ____canvas.sets.get('checkbox_1');
+            __graphic.regionId = ____canvas.sets.get('checkbox_1');
         }
         else {
 
-            __graphic.id = ____canvas.sets.get('checkbox_0');
+            __graphic.regionId = ____canvas.sets.get('checkbox_0');
         }
 
         return __value = value;

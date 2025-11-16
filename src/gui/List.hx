@@ -1,7 +1,7 @@
 package gui;
 
 import gui.ListItem;
-import events.ControlEventType;
+import gui.ControlEventType;
 
 class List<T:Control> extends Container<ListItem<T>> {
 

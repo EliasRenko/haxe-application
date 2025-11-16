@@ -2,8 +2,8 @@ package gui;
 
 import display.Text;
 import display.Tile;
-import types.KeyboardEvent;
-import utils.Common;
+//import types.KeyboardEvent;
+//import utils.Common;
 import gui.Control;
 
 class TextField extends Control {
@@ -28,7 +28,7 @@ class TextField extends Control {
 
         __bitmapText = new Text(null, text, 0, 0);
 
-        __graphic = new Tile(null, null);
+        __graphic = new Tile(null);
 
         __width = width;
 

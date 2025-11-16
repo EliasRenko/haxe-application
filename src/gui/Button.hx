@@ -20,9 +20,7 @@ class Button extends Control {
         super(x, y);
 
         __bitmapText = new Text(null, text, 0, 0);
-
-        __height = 24;
-
+        __height = 28;
         __width = width;
 
         type = 'button';
@@ -32,13 +30,14 @@ class Button extends Control {
 
         __threeSlice.iterate(function (tile) {
             tile.visible = visible;
-            ____canvas.tilemap.addTile(tile);
+            ____canvas.tilemap.addTileInstance(tile);
         });
 
         __initGraphics();
         __threeSlice.setWidth(__width);
 
-        __bitmapText.parent = ____canvas.font;
+        __bitmapText.font = ____canvas.font;
+        __bitmapText.text = text;
 
         super.init();
     }
@@ -47,7 +46,8 @@ class Button extends Control {
 
         __threeSlice.iterate(function (tile) {
 
-            ____canvas.tilemap.removeTile(tile);
+            // TODO: Perhaps adding a dispose method to Tile would be better?
+            ____canvas.tilemap.removeTileInstance(tile);
         });
 
         __bitmapText.dispose();
@@ -76,9 +76,15 @@ class Button extends Control {
     }
 
     private function __initGraphics():Void {
-        __threeSlice.get(0).id = ____canvas.sets.get('button_0');
-        __threeSlice.get(1).id = ____canvas.sets.get('button_1');
-        __threeSlice.get(2).id = ____canvas.sets.get('button_2');
+        var region0 = ____canvas.sets.get('button_0');
+        var region1 = ____canvas.sets.get('button_1');
+        var region2 = ____canvas.sets.get('button_2');
+        
+        // trace("Button: Setting up graphics with regions: " + region0 + ", " + region1 + ", " + region2);
+        
+        __threeSlice.get(0).regionId = region0 != null ? region0 : 0;
+        __threeSlice.get(1).regionId = region1 != null ? region1 : 0;
+        __threeSlice.get(2).regionId = region2 != null ? region2 : 0;
     }
 
     override function __setGraphicX():Void {

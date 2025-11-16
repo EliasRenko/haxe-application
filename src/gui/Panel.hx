@@ -25,7 +25,7 @@ class Panel extends Container<Control> {
 
             tile.visible = visible;
 
-            ____canvas.tilemap.addTile(tile);
+            ____canvas.tilemap.addTileInstance(tile);
         });
 
         __nineSlice.setWidth(__width);
@@ -39,7 +39,7 @@ class Panel extends Container<Control> {
 
         __nineSlice.iterate(function (tile) {
 
-            ____canvas.tilemap.removeTile(tile);
+            ____canvas.tilemap.removeTileInstance(tile);
         });
 
         super.release();
@@ -62,15 +62,15 @@ class Panel extends Container<Control> {
 
     private function __initGraphics():Void {
 
-        __nineSlice.get(0).id = ____canvas.sets.get('panel_0');
-        __nineSlice.get(1).id = ____canvas.sets.get('panel_1');
-        __nineSlice.get(2).id = ____canvas.sets.get('panel_2');
-        __nineSlice.get(3).id = ____canvas.sets.get('panel_3');
-        __nineSlice.get(4).id = ____canvas.sets.get('panel_4');
-        __nineSlice.get(5).id = ____canvas.sets.get('panel_5');
-        __nineSlice.get(6).id = ____canvas.sets.get('panel_6');
-        __nineSlice.get(7).id = ____canvas.sets.get('panel_7');
-        __nineSlice.get(8).id = ____canvas.sets.get('panel_8');
+        __nineSlice.get(0).regionId = ____canvas.sets.get('panel_1');
+        __nineSlice.get(1).regionId = ____canvas.sets.get('panel_2');
+        __nineSlice.get(2).regionId = ____canvas.sets.get('panel_3');
+        __nineSlice.get(3).regionId = ____canvas.sets.get('panel_4');
+        __nineSlice.get(4).regionId = ____canvas.sets.get('panel_5');
+        __nineSlice.get(5).regionId = ____canvas.sets.get('panel_6');
+        __nineSlice.get(6).regionId = ____canvas.sets.get('panel_7');
+        __nineSlice.get(7).regionId = ____canvas.sets.get('panel_8');
+        __nineSlice.get(8).regionId = ____canvas.sets.get('panel_9');
     }
 
     override function __setGraphicX():Void {

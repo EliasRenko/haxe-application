@@ -1,7 +1,7 @@
 package gui;
 
 import display.Tile;
-import events.ControlEventType;
+import gui.ControlEventType;
 
 class Stamp extends Control {
 
@@ -17,7 +17,7 @@ class Stamp extends Control {
         
         super(x, y);
 
-        __graphic = new Tile(id);
+        __graphic = new Tile(null, id);
 
         __type = 'stamp';
     }
@@ -28,7 +28,7 @@ class Stamp extends Control {
 
         //__graphic.parent = ____canvas.tilemap;
 
-        ____canvas.tilemap.addTile(__graphic);
+        ____canvas.tilemap.addTileInstance(__graphic);
 
         __graphic.visible = visible;
 
@@ -39,7 +39,7 @@ class Stamp extends Control {
 
     override function release():Void {
 
-        ____canvas.tilemap.removeTile(__graphic);
+        ____canvas.tilemap.removeTileInstance(__graphic);
 
         super.release();
     }
@@ -68,12 +68,12 @@ class Stamp extends Control {
 
     private function get_id():Int {
 
-        return __graphic.id;
+        return __graphic.regionId;
     }
     
     private function set_id(value:Int):Int {
         
-        __graphic.id = value;
+        __graphic.regionId = value;
 
         __width = __graphic.width;
 

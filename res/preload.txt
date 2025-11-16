@@ -2,14 +2,20 @@
 # List assets to preload at startup
 # Supported formats: .tga (textures), .vert/.frag (shaders)
 
+# UI
+textures/gui.json
+
 # Fonts
 fonts/gohu.json
+fonts/nokia.json
 
 # Textures
 textures/dev1.tga
 textures/dev_tiles.tga
 textures/nokiafc22.tga
 textures/gohu.tga
+textures/nokia.tga
+textures/gui.tga
 
 # Shaders
 shaders/basic.vert

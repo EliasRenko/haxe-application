@@ -2,7 +2,7 @@ package gui;
 
 import gui.List;
 import gui.Strip;
-import events.ControlEventType;
+import gui.ControlEventType;
 
 class Toolstripmenu extends Container<Control> {
 

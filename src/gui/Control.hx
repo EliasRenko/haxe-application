@@ -1,9 +1,9 @@
 package gui;
 
-import core.EventDispacher;
-import utils.Rectangle;
-import events.ControlEvent;
-import events.ControlEventType;
+import EventDispacher;
+import utils.Rect;
+import gui.ControlEvent;
+import gui.ControlEventType;
 
 class Control extends EventDispacher<Control> {
 
@@ -37,7 +37,7 @@ class Control extends EventDispacher<Control> {
 
     private var __height:Float;
 
-    private var __hitbox:Rectangle;
+    private var __hitbox:Rect;
 
     private var __hover:Bool = false;
 

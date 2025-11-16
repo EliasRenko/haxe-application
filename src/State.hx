@@ -69,7 +69,7 @@ class State {
      * Called every frame to render state entities
      * Override in subclasses for custom rendering order/effects
      */
-    public function render(renderer:Dynamic):Void {
+    public function render(renderer:Renderer):Void {
         if (!active) return;
         
         // Calculate camera matrix for this state's world

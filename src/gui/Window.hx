@@ -1,7 +1,7 @@
 package gui;
 
 import gui.Stamp;
-import events.ControlEventType;
+import gui.ControlEventType;
 
 class Window extends Container<Control> {
 
@@ -86,9 +86,9 @@ private class WindowStrip extends Strip {
 
     override function __initGraphics() {
 
-        __threeSlice.get(0).id = ____canvas.sets.get('windowStrip_0');
-        __threeSlice.get(1).id = ____canvas.sets.get('windowStrip_1');
-        __threeSlice.get(2).id = ____canvas.sets.get('windowStrip_2');
+        __threeSlice.get(0).regionId = ____canvas.sets.get('windowStrip_0');
+        __threeSlice.get(1).regionId = ____canvas.sets.get('windowStrip_1');
+        __threeSlice.get(2).regionId = ____canvas.sets.get('windowStrip_2');
 
         stamp_close.id = ____canvas.sets.get('stamp_close');
         stamp_fold.id = ____canvas.sets.get('stamp_fold');
@@ -106,14 +106,14 @@ private class WindowPanel extends Panel {
     }
 
     override function __initGraphics() {
-        __nineSlice.get(0).id = ____canvas.sets.get('windowPanel_0');
-        __nineSlice.get(1).id = ____canvas.sets.get('windowPanel_1');
-        __nineSlice.get(2).id = ____canvas.sets.get('windowPanel_2');
-        __nineSlice.get(3).id = ____canvas.sets.get('windowPanel_3');
-        __nineSlice.get(4).id = ____canvas.sets.get('windowPanel_4');
-        __nineSlice.get(5).id = ____canvas.sets.get('windowPanel_5');
-        __nineSlice.get(6).id = ____canvas.sets.get('windowPanel_6');
-        __nineSlice.get(7).id = ____canvas.sets.get('windowPanel_7');
-        __nineSlice.get(8).id = ____canvas.sets.get('windowPanel_8');
+        __nineSlice.get(0).regionId = ____canvas.sets.get('windowPanel_0');
+        __nineSlice.get(1).regionId = ____canvas.sets.get('windowPanel_1');
+        __nineSlice.get(2).regionId = ____canvas.sets.get('windowPanel_2');
+        __nineSlice.get(3).regionId = ____canvas.sets.get('windowPanel_3');
+        __nineSlice.get(4).regionId = ____canvas.sets.get('windowPanel_4');
+        __nineSlice.get(5).regionId = ____canvas.sets.get('windowPanel_5');
+        __nineSlice.get(6).regionId = ____canvas.sets.get('windowPanel_6');
+        __nineSlice.get(7).regionId = ____canvas.sets.get('windowPanel_7');
+        __nineSlice.get(8).regionId = ____canvas.sets.get('windowPanel_8');
     }
 }

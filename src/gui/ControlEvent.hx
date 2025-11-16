@@ -1,4 +1,4 @@
-package events;
+package gui;
 
 import gui.Control;
 

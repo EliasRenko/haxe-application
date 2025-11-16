@@ -23,7 +23,7 @@ class Label extends Control {
         
         super.init();
 
-        __bitmapText.parent = ____canvas.font;
+        __bitmapText.font = ____canvas.font;
 
         __width = __bitmapText.width;
 
