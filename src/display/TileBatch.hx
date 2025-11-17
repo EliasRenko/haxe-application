@@ -36,9 +36,14 @@ class TileBatch extends DisplayObject {
     public var atlasTexture:Texture = null;
     
     // Buffer management
-    private var __bufferDirty:Bool = true;
+    private var __bufferDirty:Bool = true;  // Full rebuild needed
+    private var __dirtyTiles:Array<Int> = []; // Partial update - tile IDs that changed
     private var __vertexCache:Array<Float32> = [];
     private var __indexCache:Array<UInt32> = [];
+    
+    // Vertex mapping for partial updates (tileId -> vertex offset in buffer)
+    private var __tileVertexOffsets:Array<Int> = []; // tileId -> starting vertex index
+    private var __maxTiles:Int = 1000; // Preallocate capacity
     
     /**
      * Create a new TileBatch
@@ -139,7 +144,8 @@ class TileBatch extends DisplayObject {
             tiles[tileId] = tile;
         }
         
-        __bufferDirty = true;
+        // Mark this specific tile as dirty
+        __dirtyTiles.push(tileId);
         
         if (active) {
             needsBufferUpdate = true;
@@ -165,7 +171,7 @@ class TileBatch extends DisplayObject {
             tiles[tileId] = tile;
         }
         
-        __bufferDirty = true;
+        __dirtyTiles.push(tileId);
 
         if (active) {
             needsBufferUpdate = true;
@@ -184,7 +190,7 @@ class TileBatch extends DisplayObject {
         
         tiles[tileId] = null; // Clear the slot
         __freeTileIds.push(tileId); // Add to free list for reuse
-        __bufferDirty = true;
+        __bufferDirty = true; // Removal requires full rebuild (compaction needed)
         
         if (active) {
             needsBufferUpdate = true;
@@ -197,7 +203,7 @@ class TileBatch extends DisplayObject {
 			if (tiles[i] == tile) {
 				tiles[i] = null;
 				__freeTileIds.push(i);
-				__bufferDirty = true;
+				__bufferDirty = true; // Removal requires full rebuild
 
 				if (active) {
 					needsBufferUpdate = true;
@@ -223,7 +229,7 @@ class TileBatch extends DisplayObject {
         var tile = tiles[tileId];
         tile.x = x;
         tile.y = y;
-        __bufferDirty = true;
+        __dirtyTiles.push(tileId);
         
         if (active) {
             needsBufferUpdate = true;
@@ -312,9 +318,13 @@ class TileBatch extends DisplayObject {
     /**
      * Generate mesh data for all tiles
      */
+    /**
+     * Full rebuild - regenerates entire mesh from scratch
+     */
     private function generateMesh():Void {
         __vertexCache = [];
         __indexCache = [];
+        __tileVertexOffsets = [];
         
         var vertexIndex:UInt = 0;
         var tileCount = 0;
@@ -323,10 +333,14 @@ class TileBatch extends DisplayObject {
         for (i in 0...tiles.length) {
             var tile = tiles[i];
             if (tile == null || !tile.visible) {
+                __tileVertexOffsets[i] = -1; // Mark as not in buffer
                 continue; // Skip null slots and invisible tiles
             }
             
             tileCount++;
+            
+            // Track where this tile's vertices start in the buffer
+            __tileVertexOffsets[i] = __vertexCache.length;
             
             // Write vertices directly to cache (no temp allocations!)
             generateTileVertices(tile);
@@ -355,17 +369,78 @@ class TileBatch extends DisplayObject {
     }
     
     /**
+     * Partial update - only regenerate vertices for dirty tiles
+     * Much faster than full rebuild when only a few tiles change
+     */
+    private function updatePartialBuffers():Void {
+        if (__dirtyTiles.length == 0) return;
+        
+        // For each dirty tile, regenerate its vertices in-place
+        for (tileId in __dirtyTiles) {
+            if (tileId < 0 || tileId >= tiles.length) continue;
+            
+            var tile = tiles[tileId];
+            if (tile == null || !tile.visible) continue;
+            
+            var vertexOffset = __tileVertexOffsets[tileId];
+            if (vertexOffset < 0) continue; // Tile not in buffer
+            
+            // Temporarily replace cache to write at specific offset
+            var originalCache = __vertexCache;
+            var tempCache:Array<Float32> = [];
+            __vertexCache = tempCache;
+            
+            // Generate vertices for this tile
+            generateTileVertices(tile);
+            
+            // Copy generated vertices back into original buffer at offset
+            for (i in 0...tempCache.length) {
+                originalCache[vertexOffset + i] = tempCache[i];
+            }
+            
+            // Restore cache
+            __vertexCache = originalCache;
+        }
+        
+        // Update DisplayObject vertex data with modified cache
+        this.vertices = new Vertices(__vertexCache);
+        
+        // Clear dirty list
+        __dirtyTiles = [];
+    }
+    
+    /**
      * Update buffers when needed
      */
     override public function updateBuffers(renderer:Renderer):Void {
         if (!active || atlasTexture == null) return;
         
+        // Strategy: Full rebuild vs partial update
+        // If buffer is dirty (structure changed) or many tiles dirty, do full rebuild
+        // If only a few tiles dirty, do partial update
+        
         if (__bufferDirty) {
+            // Full rebuild needed (tiles added/removed, structure changed)
             generateMesh();
-            
             renderer.uploadData(this);
-            
             __bufferDirty = false;
+            __dirtyTiles = []; // Clear dirty list (full rebuild covers everything)
+            needsBufferUpdate = false;
+        } else if (__dirtyTiles.length > 0) {
+            // Partial update (only some tiles changed position/visibility)
+            var threshold = Std.int(tiles.length * 0.1); // 10% threshold
+            
+            if (__dirtyTiles.length > threshold) {
+                // Too many dirty tiles - full rebuild is faster
+                generateMesh();
+                renderer.uploadData(this);
+                __dirtyTiles = [];
+            } else {
+                // Few dirty tiles - partial update is faster
+                updatePartialBuffers();
+                renderer.uploadData(this); // Upload modified vertex data
+            }
+            
             needsBufferUpdate = false;
         }
     }
