@@ -24,14 +24,18 @@ import display.Tile;
  */
 class TileBatch extends DisplayObject {
     
-    // Tile data structure
-    public var tiles:Map<Int, Tile> = new Map(); // tileId -> TileInstance
+    // Dense array storage - tiles at index = tileId
+    public var tiles:Array<Tile> = [];
+    
+    // Free list for reusing tile IDs when tiles are removed
+    private var __freeTileIds:Array<Int> = [];
+    
+    // Atlas regions - dense array storage
+    public var atlasRegions:Array<AtlasRegion> = [];
+    
     public var atlasTexture:Texture = null;
-    public var atlasRegions:Map<Int, AtlasRegion> = new Map(); // regionId -> AtlasRegion
     
     // Buffer management
-    private var __nextTileId:Int = 1; // Auto-incrementing tile ID
-    private var __nextRegionId:Int = 1; // Auto-incrementing region ID
     private var __bufferDirty:Bool = true;
     private var __vertexCache:Array<Float32> = [];
     private var __indexCache:Array<UInt32> = [];
@@ -69,11 +73,9 @@ class TileBatch extends DisplayObject {
      * @param atlasY Atlas Y coordinate in pixels
      * @param atlasWidth Atlas width in pixels
      * @param atlasHeight Atlas height in pixels
-     * @return Region ID for use in addTile
+     * @return Region ID (array index) for use in addTile
      */
     public function defineRegion(atlasX:Int, atlasY:Int, atlasWidth:Int, atlasHeight:Int):Int {
-        var regionId = __nextRegionId++;
-        
         var region = new AtlasRegion();
         region.x = atlasX;
         region.y = atlasY;
@@ -87,12 +89,15 @@ class TileBatch extends DisplayObject {
         region.u2 = (atlasX + atlasWidth) / atlasTexture.width;
         region.v2 = (atlasY + atlasHeight) / atlasTexture.height;
         
+        // Add to array, index becomes the region ID
+        var regionId = atlasRegions.length;
+        atlasRegions.push(region);
+        
         if (regionId <= 3) { // Only trace first 3 regions (button parts)
             trace("TileBatch: defineRegion ID=" + regionId + " at (" + atlasX + "," + atlasY + "," + atlasWidth + "," + atlasHeight + ")");
             trace("  Texture size: " + atlasTexture.width + "x" + atlasTexture.height);
             trace("  UVs: (" + region.u1 + "," + region.v1 + ") to (" + region.u2 + "," + region.v2 + ")");
         }
-        atlasRegions.set(regionId, region);
         
         return regionId;
     }
@@ -104,15 +109,21 @@ class TileBatch extends DisplayObject {
      * @param width Tile width in world units
      * @param height Tile height in world units
      * @param regionId Atlas region ID (from defineRegion)
-     * @return Tile ID for future reference
+     * @return Tile ID for future reference (array index)
      */
     public function addTile(x:Float, y:Float, width:Float, height:Float, regionId:Int):Int {
-        if (!atlasRegions.exists(regionId)) {
+        if (regionId < 0 || regionId >= atlasRegions.length) {
             trace("TileBatch: Error - Region ID " + regionId + " does not exist!");
             return -1;
         }
         
-        var tileId = __nextTileId++;
+        // Reuse freed ID or create new one
+        var tileId:Int;
+        if (__freeTileIds.length > 0) {
+            tileId = __freeTileIds.pop();
+        } else {
+            tileId = tiles.length;
+        }
         
         var tile = new Tile(this);
         tile.x = x;
@@ -121,15 +132,19 @@ class TileBatch extends DisplayObject {
         tile.height = height;
         tile.regionId = regionId;
         
-        tiles.set(tileId, tile);
+        // Set tile at index (grow array if needed)
+        if (tileId >= tiles.length) {
+            tiles.push(tile);
+        } else {
+            tiles[tileId] = tile;
+        }
+        
         __bufferDirty = true;
         
         if (active) {
             needsBufferUpdate = true;
         }
         
-        var region = atlasRegions.get(regionId);
-        //trace("TileBatch: Added tile " + tileId + " at (" + x + "," + y + ") size=" + width + "x" + height + " using region " + regionId);
         return tileId;
     }
 
@@ -137,8 +152,19 @@ class TileBatch extends DisplayObject {
     public function addTileInstance(tile:Tile):Void {
         if (tile == null) return;
 
-        var tileId = __nextTileId++;
-        tiles.set(tileId, tile);
+        var tileId:Int;
+        if (__freeTileIds.length > 0) {
+            tileId = __freeTileIds.pop();
+        } else {
+            tileId = tiles.length;
+        }
+        
+        if (tileId >= tiles.length) {
+            tiles.push(tile);
+        } else {
+            tiles[tileId] = tile;
+        }
+        
         __bufferDirty = true;
 
         if (active) {
@@ -152,22 +178,25 @@ class TileBatch extends DisplayObject {
      * @return True if tile was found and removed
      */
     public function removeTile(tileId:Int):Bool {
-        if (tiles.exists(tileId)) {
-            tiles.remove(tileId);
-            __bufferDirty = true;
-            
-            if (active) {
-                needsBufferUpdate = true;
-            }
-            return true;
+        if (tileId < 0 || tileId >= tiles.length || tiles[tileId] == null) {
+            return false;
         }
-        return false;
+        
+        tiles[tileId] = null; // Clear the slot
+        __freeTileIds.push(tileId); // Add to free list for reuse
+        __bufferDirty = true;
+        
+        if (active) {
+            needsBufferUpdate = true;
+        }
+        return true;
     }
     
 	public function removeTileInstance(tile:Tile):Bool {
-		for (tileId in tiles.keys()) {
-			if (tiles.get(tileId) == tile) {
-				tiles.remove(tileId);
+		for (i in 0...tiles.length) {
+			if (tiles[i] == tile) {
+				tiles[i] = null;
+				__freeTileIds.push(i);
 				__bufferDirty = true;
 
 				if (active) {
@@ -187,27 +216,40 @@ class TileBatch extends DisplayObject {
      * @return True if tile was found and updated
      */
     public function updateTilePosition(tileId:Int, x:Float, y:Float):Bool {
-        if (tiles.exists(tileId)) {
-            var tile = tiles.get(tileId);
-            tile.x = x;
-            tile.y = y;
-            __bufferDirty = true;
-            
-            if (active) {
-                needsBufferUpdate = true;
-            }
-            
-            return true;
+        if (tileId < 0 || tileId >= tiles.length || tiles[tileId] == null) {
+            return false;
         }
         
-        return false;
+        var tile = tiles[tileId];
+        tile.x = x;
+        tile.y = y;
+        __bufferDirty = true;
+        
+        if (active) {
+            needsBufferUpdate = true;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Get a tile by ID
+     * @param tileId Tile ID
+     * @return Tile instance or null if not found
+     */
+    public function getTile(tileId:Int):Tile {
+        if (tileId < 0 || tileId >= tiles.length) {
+            return null;
+        }
+        return tiles[tileId];
     }
     
     /**
      * Clear all tiles from the batch
      */
     public function clear():Void {
-        tiles.clear();
+        tiles = [];
+        __freeTileIds = [];
         __bufferDirty = true;
         
         if (active) {
@@ -221,8 +263,8 @@ class TileBatch extends DisplayObject {
     private function generateTileVertices(tile:Tile):Array<Float> {
         var vertices = [];
         
-        // Get UV coordinates from the atlas region
-        var region = atlasRegions.get(tile.regionId);
+        // Get UV coordinates from the atlas region (using array index)
+        var region = atlasRegions[tile.regionId];
         if (region == null) {
             trace("TileBatch: Warning - Region ID " + tile.regionId + " not found, using default UVs");
             // Use default full texture UVs as fallback
@@ -287,14 +329,16 @@ class TileBatch extends DisplayObject {
         __indexCache = [];
         
         var vertexIndex:UInt = 0;
+        var tileCount = 0;
         
-        // Generate mesh for each tile
-        for (tileId in tiles.keys()) {
-            var tile = tiles.get(tileId);
-
-            if (!tile.visible) {
-                continue; // Skip invisible tiles
+        // Generate mesh for each tile (iterate over array, skip nulls)
+        for (i in 0...tiles.length) {
+            var tile = tiles[i];
+            if (tile == null || !tile.visible) {
+                continue; // Skip null slots and invisible tiles
             }
+            
+            tileCount++;
             
             // Generate vertices for this tile
             var tileVertices = generateTileVertices(tile);
@@ -321,9 +365,6 @@ class TileBatch extends DisplayObject {
         // Update render counts
         __verticesToRender = Std.int(__vertexCache.length / 5);  // 5 floats per vertex
         __indicesToRender = __indexCache.length;
-        
-        var tileCount = 0;
-        for (key in tiles.keys()) tileCount++;
         
         //trace("TileBatch: Generated mesh - " + __verticesToRender + " vertices, " + __indicesToRender + " indices for " + tileCount + " tiles");
     }
@@ -369,11 +410,13 @@ class TileBatch extends DisplayObject {
     }
     
     /**
-     * Get the number of tiles in the batch
+     * Get the number of tiles in the batch (counts non-null tiles)
      */
     public function getTileCount():Int {
         var count = 0;
-        for (key in tiles.keys()) count++;
+        for (i in 0...tiles.length) {
+            if (tiles[i] != null) count++;
+        }
         return count;
     }
     
@@ -381,37 +424,31 @@ class TileBatch extends DisplayObject {
      * Check if a tile exists
      */
     public function hasTile(tileId:Int):Bool {
-        return tiles.exists(tileId);
-    }
-    
-    /**
-     * Get tile instance (for reading properties)
-     */
-    public function getTile(tileId:Int):Tile {
-        return tiles.get(tileId);
+        return tileId >= 0 && tileId < tiles.length && tiles[tileId] != null;
     }
     
     /**
      * Get atlas region (for reading properties)
      */
     public function getRegion(regionId:Int):AtlasRegion {
-        return atlasRegions.get(regionId);
+        if (regionId < 0 || regionId >= atlasRegions.length) {
+            return null;
+        }
+        return atlasRegions[regionId];
     }
     
     /**
      * Check if a region exists
      */
     public function hasRegion(regionId:Int):Bool {
-        return atlasRegions.exists(regionId);
+        return regionId >= 0 && regionId < atlasRegions.length;
     }
     
     /**
      * Get the number of defined regions
      */
     public function getRegionCount():Int {
-        var count = 0;
-        for (key in atlasRegions.keys()) count++;
-        return count;
+        return atlasRegions.length;
     }
 }
 
