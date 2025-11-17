@@ -258,67 +258,55 @@ class TileBatch extends DisplayObject {
     }
     
     /**
-     * Generate vertex data for a single tile
+     * Generate vertex data directly into cache (no allocations!)
+     * Writes 20 floats (4 vertices * 5 components) directly to __vertexCache
      */
-    private function generateTileVertices(tile:Tile):Array<Float> {
-        var vertices = [];
-        
+    private inline function generateTileVertices(tile:Tile):Void {
         // Get UV coordinates from the atlas region (using array index)
         var region = atlasRegions[tile.regionId];
         if (region == null) {
-            trace("TileBatch: Warning - Region ID " + tile.regionId + " not found, using default UVs");
-            // Use default full texture UVs as fallback
-            region = new AtlasRegion();
-            region.u1 = 0.0;
-            region.v1 = 1.0;
-            region.u2 = 1.0;
-            region.v2 = 0.0;
+            trace("TileBatch: Warning - Region ID " + tile.regionId + " not found, skipping tile");
+            return; // Skip this tile instead of using broken UVs
         }
-        
-        // Debug the UV coordinates being used for rendering
-        // trace("TileBatch: generateTileVertices DEBUG for tile regionId=" + tile.regionId);
-        // trace("  Region UV stored: (" + region.u1 + "," + region.v1 + ") to (" + region.u2 + "," + region.v2 + ")");
-        // trace("  Final vertex UV (flipped): v1=" + region.v2 + ", v2=" + region.v1);
         
         // IMPORTANT: Flip V coordinates to compensate for Y-axis flip in Camera
         // The Camera now has (0,0) at top-left with Y increasing downward
         // So we need to flip the texture V coordinates to render correctly
-        // DO NOT CHANGE - this ensures tiles render with correct orientation
         var v1 = region.v2;  // Swap V coordinates
         var v2 = region.v1;  // Swap V coordinates
         
-        // Create quad vertices: top-left, top-right, bottom-right, bottom-left
-        // Format: [x, y, z, u, v] per vertex
+        var x = tile.x + tile.offsetX;
+        var y = tile.y + tile.offsetY;
+        var w = tile.width;
+        var h = tile.height;
         
-        // Top-left
-        vertices.push(tile.x + tile.offsetX);
-        vertices.push(tile.y + tile.offsetY + tile.height);
-        vertices.push(0.0);
-        vertices.push(region.u1);
-        vertices.push(v1);  // Flipped V
+        // Top-left vertex (x, y+h, z, u1, v1)
+        __vertexCache.push(x);
+        __vertexCache.push(y + h);
+        __vertexCache.push(0.0);
+        __vertexCache.push(region.u1);
+        __vertexCache.push(v1);
         
-        // Top-right
-        vertices.push(tile.x + tile.offsetX + tile.width);
-        vertices.push(tile.y + tile.offsetY + tile.height);
-        vertices.push(0.0);
-        vertices.push(region.u2);
-        vertices.push(v1);  // Flipped V
+        // Top-right vertex (x+w, y+h, z, u2, v1)
+        __vertexCache.push(x + w);
+        __vertexCache.push(y + h);
+        __vertexCache.push(0.0);
+        __vertexCache.push(region.u2);
+        __vertexCache.push(v1);
         
-        // Bottom-right
-        vertices.push(tile.x + tile.offsetX + tile.width);
-        vertices.push(tile.y + tile.offsetY);
-        vertices.push(0.0);
-        vertices.push(region.u2);
-        vertices.push(v2);  // Flipped V
+        // Bottom-right vertex (x+w, y, z, u2, v2)
+        __vertexCache.push(x + w);
+        __vertexCache.push(y);
+        __vertexCache.push(0.0);
+        __vertexCache.push(region.u2);
+        __vertexCache.push(v2);
         
-        // Bottom-left
-        vertices.push(tile.x + tile.offsetX);
-        vertices.push(tile.y + tile.offsetY);
-        vertices.push(0.0);
-        vertices.push(region.u1);
-        vertices.push(v2);  // Flipped V
-        
-        return vertices;
+        // Bottom-left vertex (x, y, z, u1, v2)
+        __vertexCache.push(x);
+        __vertexCache.push(y);
+        __vertexCache.push(0.0);
+        __vertexCache.push(region.u1);
+        __vertexCache.push(v2);
     }
     
     /**
@@ -340,11 +328,8 @@ class TileBatch extends DisplayObject {
             
             tileCount++;
             
-            // Generate vertices for this tile
-            var tileVertices = generateTileVertices(tile);
-            for (vertex in tileVertices) {
-                __vertexCache.push(vertex);
-            }
+            // Write vertices directly to cache (no temp allocations!)
+            generateTileVertices(tile);
             
             // Create indices for two triangles (quad)
             __indexCache.push(vertexIndex + 0);  // Top-left
