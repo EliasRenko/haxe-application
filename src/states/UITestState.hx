@@ -1,5 +1,7 @@
 package states;
 
+import gui.Stamp;
+import gui.Strip;
 import gui.Panel;
 import gui.Checkbox;
 import gui.Button;
@@ -14,7 +16,7 @@ import display.TileBatch;
 import loaders.FontLoader;
 import comps.DisplayObjectComp;
 import gui.Canvas;
-
+import gui.Window;
 /**
  * UI Test State - Testing UI components with Canvas
  */
@@ -121,9 +123,18 @@ class UITestState extends State {
 
         var checkBox:Checkbox = new Checkbox(true, 16, 30);
         canvas.addControl(checkBox);
-        
-        var panel:Panel = new Panel(128, 128, 16, 60);
+
+        var strip:Strip = new Strip(120, 16, 60);
+        canvas.addControl(strip);
+
+        var stamp:Stamp = new Stamp(26, 0, 150);
+        canvas.addControl(stamp);
+
+        var panel:Panel = new Panel(120, 120, 150, 0);
         canvas.addControl(panel);
+
+        var window:Window = new Window("Test", 120, 120, 150, 150);
+        canvas.addControl(window);
 
         trace("UITestState: Canvas setup complete");
         trace("UITestState: UI TileBatch has " + uiTileBatch.getTileCount() + " tiles");

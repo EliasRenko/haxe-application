@@ -11,7 +11,6 @@ class Strip extends Container<Control> {
     public function new(width:Float, x:Float, y:Float) {
         
         super(width, 24, x, y);
-
         type = 'strip';
     }
 
@@ -36,9 +35,7 @@ class Strip extends Container<Control> {
     }
 
     override function release():Void {
-
         __threeSlice.iterate(function (tile) {
-
             ____canvas.tilemap.removeTileInstance(tile);
         });
 
@@ -46,52 +43,40 @@ class Strip extends Container<Control> {
     }
 
     public function addControl(control:Control):Control {
-        
         return __addControl(control);
     }
 
     public function removeControl(control:Control):Void {
-        
         return __removeControl(control);
     }
 
     public function clear():Void {
-
         __clear();
     }
 
     private function __initGraphics():Void {
-
-        __threeSlice.get(0).regionId = ____canvas.sets.get('strip_0');
-
-        __threeSlice.get(1).regionId = ____canvas.sets.get('strip_1');
-
-        __threeSlice.get(2).regionId = ____canvas.sets.get('strip_2');
+        __threeSlice.get(0).regionId = ____canvas.sets.get('strip_1');
+        __threeSlice.get(1).regionId = ____canvas.sets.get('strip_2');
+        __threeSlice.get(2).regionId = ____canvas.sets.get('strip_3');
     }
 
     override function __setGraphicX():Void {
-
         __threeSlice.setX(__x + ____offsetX);
     }
 
     override function __setGraphicY():Void {
-        
         __threeSlice.setY(__y + ____offsetY);
     }
 
     // ** Getters and setters.
 
     override function set_width(value:Float):Float {
-
         __threeSlice.setWidth(value);
-
         return super.set_width(value);
     }
 
     override function set_visible(value:Bool):Bool {
-
         __threeSlice.setVisible(value);
-
         return super.set_visible(value);
     }
 }

@@ -17,6 +17,12 @@
 		{ "id": 17, "name": "panel_8", "dim":[210, 60, 28, 28] },
 		{ "id": 18, "name": "panel_9", "dim":[240, 60, 28, 28] },
 
+		{ "id": 31, "name": "strip_1", "dim":[0, 90, 28, 28] },
+		{ "id": 32, "name": "strip_2", "dim":[30, 90, 28, 28] },
+		{ "id": 33, "name": "strip_3", "dim":[60, 90, 28, 28] },
+		{ "id": 28, "name": "stamp_fold", "dim":[90, 90, 28, 28] },
+		{ "id": 26, "name": "stamp_close", "dim":[120, 90, 28, 28] },
+
 		{ "id": 5, "name": "empty", "dim":[22, 30, 1, 1] },
 		{ "id": 6, "name": "folder", "dim":[0, 76, 18, 16] },
 		{ "id": 7, "name": "grip_0", "dim":[0, 92, 12, 25] },
@@ -29,14 +35,10 @@
 		{ "id": 23, "name": "slider_full_2", "dim":[16, 60, 4, 12] },
 		{ "id": 24, "name": "stamp_brush", "dim":[24, 0, 28, 28] },
 		{ "id": 25, "name": "stamp_clipping", "dim":[52, 0, 28, 28] },
-		{ "id": 26, "name": "stamp_close", "dim":[0, 421, 16, 16] },
 		{ "id": 27, "name": "stamp_file", "dim":[0, 437, 24, 18] },
-		{ "id": 28, "name": "stamp_fold", "dim":[0, 455, 16, 16] },
 		{ "id": 29, "name": "stamp_folder", "dim":[0, 471, 18, 16] },
 		{ "id": 30, "name": "stamp_select", "dim":[80, 0, 28, 28] },
-		{ "id": 31, "name": "strip_0", "dim":[0, 487, 24, 24] },
-		{ "id": 32, "name": "strip_1", "dim":[108, 0, 24, 24] },
-		{ "id": 33, "name": "strip_2", "dim":[132, 0, 24, 24] },
+		
 		{ "id": 34, "name": "windowPanel_0", "dim":[156, 0, 24, 24] },
 		{ "id": 35, "name": "windowPanel_1", "dim":[180, 0, 24, 24] },
 		{ "id": 36, "name": "windowPanel_2", "dim":[204, 0, 24, 24] },

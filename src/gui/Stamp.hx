@@ -17,9 +17,12 @@ class Stamp extends Control {
         
         super(x, y);
 
+        // TODO: Improve the ID handling here. Must pass string, not int.
         __graphic = new Tile(null, id);
-
         __type = 'stamp';
+
+        __height = 28;
+        __width = 28;
     }
 
     override function init():Void {
@@ -29,12 +32,16 @@ class Stamp extends Control {
         //__graphic.parent = ____canvas.tilemap;
 
         ____canvas.tilemap.addTileInstance(__graphic);
-
         __graphic.visible = visible;
 
-        __width = __graphic.width;
+        // __width = __graphic.width;
+        // __height = __graphic.height;
 
-        __height = __graphic.height;
+        __graphic.width = 28;
+        __graphic.height = 28;
+
+        __width = 28;
+        __height = 28;
     }
 
     override function release():Void {
@@ -74,9 +81,7 @@ class Stamp extends Control {
     private function set_id(value:Int):Int {
         
         __graphic.regionId = value;
-
         __width = __graphic.width;
-
         __height = __graphic.height;
 
         return value;
