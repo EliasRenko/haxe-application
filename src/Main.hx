@@ -8,6 +8,7 @@ import states.AtlasState;
 import App;
 import states.CollisionTestState;
 import states.UITestState;
+import states.TileBatchStreamingTest;
 
 class Main {
     public static function main() {
@@ -18,7 +19,7 @@ class Main {
             return;
         }
 
-        app.addState(new UITestState(app));
+        app.addState(new TileBatchStreamingTest(app));
         app.run();
     }
 }

@@ -11,6 +11,7 @@ import math.Matrix;
 import data.Vertices;
 import data.Indices;
 import display.Tile;
+import display.AtlasRegion;
 
 /**
  * TileBatch - Primitive tile batching system
@@ -27,31 +28,37 @@ class TileBatch extends DisplayObject {
     // Dense array storage - tiles at index = tileId
     public var tiles:Array<Tile> = [];
     
-    // Free list for reusing tile IDs when tiles are removed
-    private var __freeTileIds:Array<Int> = [];
-    
     // Atlas regions - dense array storage
     public var atlasRegions:Array<AtlasRegion> = [];
     
     public var atlasTexture:Texture = null;
     
     // Buffer management
-    private var __bufferDirty:Bool = true;  // Full rebuild needed
-    private var __dirtyTiles:Array<Int> = []; // Partial update - tile IDs that changed
+    private var __dirtyTiles:Map<Int, Bool> = new Map(); // Dirty tile tracking (Map prevents duplicates)
+    private var __initialized:Bool = false;  // First-time initialization flag
+    private var __needsRebuild:Bool = false; // Structure changed (add/remove)
     private var __vertexCache:Array<Float32> = [];
     private var __indexCache:Array<UInt32> = [];
     
     // Vertex mapping for partial updates (tileId -> vertex offset in buffer)
     private var __tileVertexOffsets:Array<Int> = []; // tileId -> starting vertex index
-    private var __maxTiles:Int = 1000; // Preallocate capacity
+    private var __maxTiles:Int = 1000; // Maximum tile capacity
     
     /**
      * Create a new TileBatch
      * @param programInfo Shader program for rendering
      * @param texture Atlas texture for all tiles
+     * @param maxTiles Maximum number of tiles this batch can hold (default 1000)
      */
-    public function new(programInfo:ProgramInfo, texture:Texture) {
+    public function new(programInfo:ProgramInfo, texture:Texture, maxTiles:Int = 1000) {
         this.atlasTexture = texture;
+        this.__maxTiles = maxTiles;
+        
+        // Pre-allocate vertex and index buffers (prevents reallocation)
+        // Each tile = 4 vertices * 5 floats = 20 floats
+        // Each tile = 2 triangles * 3 indices = 6 indices
+        __vertexCache = [for (i in 0...(maxTiles * 20)) 0.0];
+        __indexCache = [for (i in 0...(maxTiles * 6)) 0];
         
         // Start with empty vertices and indices
         var emptyVertices = new Vertices([]);
@@ -122,13 +129,8 @@ class TileBatch extends DisplayObject {
             return -1;
         }
         
-        // Reuse freed ID or create new one
-        var tileId:Int;
-        if (__freeTileIds.length > 0) {
-            tileId = __freeTileIds.pop();
-        } else {
-            tileId = tiles.length;
-        }
+        // Create new tile ID (always append - swap-and-pop keeps array dense)
+        var tileId:Int = tiles.length;
         
         var tile = new Tile(this);
         tile.x = x;
@@ -144,8 +146,8 @@ class TileBatch extends DisplayObject {
             tiles[tileId] = tile;
         }
         
-        // Mark this specific tile as dirty
-        __dirtyTiles.push(tileId);
+        // Adding a tile requires rebuild (render count changes)
+        __needsRebuild = true;
         
         if (active) {
             needsBufferUpdate = true;
@@ -158,12 +160,8 @@ class TileBatch extends DisplayObject {
     public function addTileInstance(tile:Tile):Void {
         if (tile == null) return;
 
-        var tileId:Int;
-        if (__freeTileIds.length > 0) {
-            tileId = __freeTileIds.pop();
-        } else {
-            tileId = tiles.length;
-        }
+        // Create new tile ID (always append - swap-and-pop keeps array dense)
+        var tileId:Int = tiles.length;
         
         if (tileId >= tiles.length) {
             tiles.push(tile);
@@ -171,7 +169,8 @@ class TileBatch extends DisplayObject {
             tiles[tileId] = tile;
         }
         
-        __dirtyTiles.push(tileId);
+        // Adding a tile requires rebuild (render count changes)
+        __needsRebuild = true;
 
         if (active) {
             needsBufferUpdate = true;
@@ -179,7 +178,9 @@ class TileBatch extends DisplayObject {
     }
     
     /**
-     * Remove a tile from the batch
+     * Remove a tile from the batch using swap-and-pop
+     * Swaps the removed tile with the last tile, then pops
+     * This avoids full buffer rebuilds by maintaining dense packing
      * @param tileId Tile ID to remove
      * @return True if tile was found and removed
      */
@@ -188,9 +189,19 @@ class TileBatch extends DisplayObject {
             return false;
         }
         
-        tiles[tileId] = null; // Clear the slot
-        __freeTileIds.push(tileId); // Add to free list for reuse
-        __bufferDirty = true; // Removal requires full rebuild (compaction needed)
+        var lastIndex = tiles.length - 1;
+        
+        // Removing a tile requires rebuild (render count changes)
+        if (tileId == lastIndex) {
+            tiles.pop();
+        } else {
+            // Swap with last tile and pop
+            tiles[tileId] = tiles[lastIndex];
+            tiles.pop();
+        }
+        
+        // Trigger rebuild to repack buffer
+        __needsRebuild = true;
         
         if (active) {
             needsBufferUpdate = true;
@@ -201,14 +212,7 @@ class TileBatch extends DisplayObject {
 	public function removeTileInstance(tile:Tile):Bool {
 		for (i in 0...tiles.length) {
 			if (tiles[i] == tile) {
-				tiles[i] = null;
-				__freeTileIds.push(i);
-				__bufferDirty = true; // Removal requires full rebuild
-
-				if (active) {
-					needsBufferUpdate = true;
-				}
-				return true;
+				return removeTile(i);
 			}
 		}
 		return false;
@@ -229,7 +233,9 @@ class TileBatch extends DisplayObject {
         var tile = tiles[tileId];
         tile.x = x;
         tile.y = y;
-        __dirtyTiles.push(tileId);
+        
+        // Position change only - use fast partial update
+        __dirtyTiles.set(tileId, true);
         
         if (active) {
             needsBufferUpdate = true;
@@ -255,8 +261,7 @@ class TileBatch extends DisplayObject {
      */
     public function clear():Void {
         tiles = [];
-        __freeTileIds = [];
-        __bufferDirty = true;
+        __needsRebuild = true;
         
         if (active) {
             needsBufferUpdate = true;
@@ -267,7 +272,7 @@ class TileBatch extends DisplayObject {
      * Generate vertex data directly into cache (no allocations!)
      * Writes 20 floats (4 vertices * 5 components) directly to __vertexCache
      */
-    private inline function generateTileVertices(tile:Tile):Void {
+    private inline function generateTileVerticesAt(tile:Tile, offset:Int):Void {
         // Get UV coordinates from the atlas region (using array index)
         var region = atlasRegions[tile.regionId];
         if (region == null) {
@@ -286,97 +291,104 @@ class TileBatch extends DisplayObject {
         var w = tile.width;
         var h = tile.height;
         
+        // Write vertices directly at offset (no allocations)
+        var idx = offset;
+        
         // Top-left vertex (x, y+h, z, u1, v1)
-        __vertexCache.push(x);
-        __vertexCache.push(y + h);
-        __vertexCache.push(0.0);
-        __vertexCache.push(region.u1);
-        __vertexCache.push(v1);
+        __vertexCache[idx++] = x;
+        __vertexCache[idx++] = y + h;
+        __vertexCache[idx++] = 0.0;
+        __vertexCache[idx++] = region.u1;
+        __vertexCache[idx++] = v1;
         
         // Top-right vertex (x+w, y+h, z, u2, v1)
-        __vertexCache.push(x + w);
-        __vertexCache.push(y + h);
-        __vertexCache.push(0.0);
-        __vertexCache.push(region.u2);
-        __vertexCache.push(v1);
+        __vertexCache[idx++] = x + w;
+        __vertexCache[idx++] = y + h;
+        __vertexCache[idx++] = 0.0;
+        __vertexCache[idx++] = region.u2;
+        __vertexCache[idx++] = v1;
         
         // Bottom-right vertex (x+w, y, z, u2, v2)
-        __vertexCache.push(x + w);
-        __vertexCache.push(y);
-        __vertexCache.push(0.0);
-        __vertexCache.push(region.u2);
-        __vertexCache.push(v2);
+        __vertexCache[idx++] = x + w;
+        __vertexCache[idx++] = y;
+        __vertexCache[idx++] = 0.0;
+        __vertexCache[idx++] = region.u2;
+        __vertexCache[idx++] = v2;
         
         // Bottom-left vertex (x, y, z, u1, v2)
-        __vertexCache.push(x);
-        __vertexCache.push(y);
-        __vertexCache.push(0.0);
-        __vertexCache.push(region.u1);
-        __vertexCache.push(v2);
+        __vertexCache[idx++] = x;
+        __vertexCache[idx++] = y;
+        __vertexCache[idx++] = 0.0;
+        __vertexCache[idx++] = region.u1;
+        __vertexCache[idx++] = v2;
     }
     
     /**
-     * Generate mesh data for all tiles
+     * Initialize static index buffer - indices never change, only vertex count
+     * Called once during first update
      */
-    /**
-     * Full rebuild - regenerates entire mesh from scratch
-     */
-    private function generateMesh():Void {
-        __vertexCache = [];
-        __indexCache = [];
-        __tileVertexOffsets = [];
-        
+    private function initializeIndices():Void {
         var vertexIndex:UInt = 0;
-        var tileCount = 0;
         
-        // Generate mesh for each tile (iterate over array, skip nulls)
-        for (i in 0...tiles.length) {
-            var tile = tiles[i];
-            if (tile == null || !tile.visible) {
-                __tileVertexOffsets[i] = -1; // Mark as not in buffer
-                continue; // Skip null slots and invisible tiles
-            }
+        // Generate indices for maximum tile capacity
+        for (i in 0...__maxTiles) {
+            var indexOffset = i * 6;
             
-            tileCount++;
+            // Two triangles per quad (CCW winding)
+            __indexCache[indexOffset + 0] = vertexIndex + 0;  // Top-left
+            __indexCache[indexOffset + 1] = vertexIndex + 1;  // Top-right
+            __indexCache[indexOffset + 2] = vertexIndex + 2;  // Bottom-right
             
-            // Track where this tile's vertices start in the buffer
-            __tileVertexOffsets[i] = __vertexCache.length;
-            
-            // Write vertices directly to cache (no temp allocations!)
-            generateTileVertices(tile);
-            
-            // Create indices for two triangles (quad)
-            __indexCache.push(vertexIndex + 0);  // Top-left
-            __indexCache.push(vertexIndex + 1);  // Top-right
-            __indexCache.push(vertexIndex + 2);  // Bottom-right
-            
-            __indexCache.push(vertexIndex + 0);  // Top-left
-            __indexCache.push(vertexIndex + 2);  // Bottom-right
-            __indexCache.push(vertexIndex + 3);  // Bottom-left
+            __indexCache[indexOffset + 3] = vertexIndex + 0;  // Top-left
+            __indexCache[indexOffset + 4] = vertexIndex + 2;  // Bottom-right
+            __indexCache[indexOffset + 5] = vertexIndex + 3;  // Bottom-left
             
             vertexIndex += 4;
         }
         
-        // Update DisplayObject vertex data
-        this.vertices = new Vertices(__vertexCache);
+        // Upload indices once (never change)
         this.indices = new Indices(__indexCache);
-        
-        // Update render counts
-        __verticesToRender = Std.int(__vertexCache.length / 5);  // 5 floats per vertex
-        __indicesToRender = __indexCache.length;
-        
-        //trace("TileBatch: Generated mesh - " + __verticesToRender + " vertices, " + __indicesToRender + " indices for " + tileCount + " tiles");
     }
     
     /**
-     * Partial update - only regenerate vertices for dirty tiles
-     * Much faster than full rebuild when only a few tiles change
+     * Compact tiles and rebuild - needed when tiles are added/removed
+     * Tiles are repositioned in buffer to maintain dense packing
      */
-    private function updatePartialBuffers():Void {
-        if (__dirtyTiles.length == 0) return;
+    private function compactAndRebuild():Void {
+        var tileCount = 0;
         
-        // For each dirty tile, regenerate its vertices in-place
-        for (tileId in __dirtyTiles) {
+        // Rebuild entire buffer (tiles may have shifted due to swap-and-pop)
+        for (i in 0...tiles.length) {
+            var tile = tiles[i];
+            if (tile == null || !tile.visible) {
+                continue;
+            }
+            
+            // Calculate where this tile goes in the buffer
+            var vertexOffset = tileCount * 20;
+            __tileVertexOffsets[i] = vertexOffset;
+            
+            // Write vertices at this position
+            generateTileVerticesAt(tile, vertexOffset);
+            
+            tileCount++;
+        }
+        
+        // Update render counts
+        __verticesToRender = tileCount * 4;
+        __indicesToRender = tileCount * 6;
+        
+        // Upload vertex data (indices never change)
+        this.vertices = new Vertices(__vertexCache);
+    }
+    
+    /**
+     * Partial update - only regenerate vertices for dirty tiles (position/UV changes)
+     * ONLY works when tile positions in array didn't change
+     */
+    private function updateDirtyTiles():Void {
+        // For each dirty tile, regenerate its vertices at known offset
+        for (tileId in __dirtyTiles.keys()) {
             if (tileId < 0 || tileId >= tiles.length) continue;
             
             var tile = tiles[tileId];
@@ -385,28 +397,12 @@ class TileBatch extends DisplayObject {
             var vertexOffset = __tileVertexOffsets[tileId];
             if (vertexOffset < 0) continue; // Tile not in buffer
             
-            // Temporarily replace cache to write at specific offset
-            var originalCache = __vertexCache;
-            var tempCache:Array<Float32> = [];
-            __vertexCache = tempCache;
-            
-            // Generate vertices for this tile
-            generateTileVertices(tile);
-            
-            // Copy generated vertices back into original buffer at offset
-            for (i in 0...tempCache.length) {
-                originalCache[vertexOffset + i] = tempCache[i];
-            }
-            
-            // Restore cache
-            __vertexCache = originalCache;
+            // Regenerate vertices for this tile only
+            generateTileVerticesAt(tile, vertexOffset);
         }
         
-        // Update DisplayObject vertex data with modified cache
+        // Upload modified vertex data
         this.vertices = new Vertices(__vertexCache);
-        
-        // Clear dirty list
-        __dirtyTiles = [];
     }
     
     /**
@@ -415,32 +411,38 @@ class TileBatch extends DisplayObject {
     override public function updateBuffers(renderer:Renderer):Void {
         if (!active || atlasTexture == null) return;
         
-        // Strategy: Full rebuild vs partial update
-        // If buffer is dirty (structure changed) or many tiles dirty, do full rebuild
-        // If only a few tiles dirty, do partial update
-        
-        if (__bufferDirty) {
-            // Full rebuild needed (tiles added/removed, structure changed)
-            generateMesh();
+        // First-time initialization (only once)
+        if (!__initialized) {
+            initializeIndices();
+            compactAndRebuild(); // Generate initial vertices
+            // First upload - allocate GPU buffers with all data
             renderer.uploadData(this);
-            __bufferDirty = false;
-            __dirtyTiles = []; // Clear dirty list (full rebuild covers everything)
+            __initialized = true;
+            __needsRebuild = false;
+            __dirtyTiles.clear();
             needsBufferUpdate = false;
-        } else if (__dirtyTiles.length > 0) {
-            // Partial update (only some tiles changed position/visibility)
-            var threshold = Std.int(tiles.length * 0.1); // 10% threshold
-            
-            if (__dirtyTiles.length > threshold) {
-                // Too many dirty tiles - full rebuild is faster
-                generateMesh();
-                renderer.uploadData(this);
-                __dirtyTiles = [];
-            } else {
-                // Few dirty tiles - partial update is faster
-                updatePartialBuffers();
-                renderer.uploadData(this); // Upload modified vertex data
-            }
-            
+            return;
+        }
+        
+        // Handle structural changes (add/remove tiles)
+        if (__needsRebuild) {
+            compactAndRebuild();
+            // Partial upload - only send active tile data
+            var activeFloats = __verticesToRender * 5;
+            renderer.uploadPartialData(this, 0, activeFloats);
+            __needsRebuild = false;
+            __dirtyTiles.clear(); // Rebuild covers all tiles
+            needsBufferUpdate = false;
+            return;
+        }
+        
+        // Handle position updates (fast path - partial upload)
+        if (Lambda.count(__dirtyTiles) > 0) {
+            updateDirtyTiles();
+            // Partial upload - only send active tile data
+            var activeFloats = __verticesToRender * 5;
+            renderer.uploadPartialData(this, 0, activeFloats);
+            __dirtyTiles.clear();
             needsBufferUpdate = false;
         }
     }
@@ -455,6 +457,7 @@ class TileBatch extends DisplayObject {
         
         // Check if we actually have vertices to render
         if (__verticesToRender == 0 || __indicesToRender == 0) {
+            trace("TileBatch: Skipping render - no vertices (__verticesToRender=" + __verticesToRender + ", __indicesToRender=" + __indicesToRender + ")");
             return;
         }
         
@@ -515,15 +518,15 @@ class TileBatch extends DisplayObject {
 /**
  * Data structure representing an atlas region
  */
-class AtlasRegion {
-    public var x:Int = 0;              // Atlas X coordinate in pixels
-    public var y:Int = 0;              // Atlas Y coordinate in pixels
-    public var width:Int = 1;          // Atlas width in pixels
-    public var height:Int = 1;         // Atlas height in pixels
-    public var u1:Float = 0.0;         // Calculated left UV coordinate
-    public var v1:Float = 0.0;         // Calculated top UV coordinate
-    public var u2:Float = 1.0;         // Calculated right UV coordinate
-    public var v2:Float = 1.0;         // Calculated bottom UV coordinate
+// class AtlasRegion {
+//     public var x:Int = 0;              // Atlas X coordinate in pixels
+//     public var y:Int = 0;              // Atlas Y coordinate in pixels
+//     public var width:Int = 1;          // Atlas width in pixels
+//     public var height:Int = 1;         // Atlas height in pixels
+//     public var u1:Float = 0.0;         // Calculated left UV coordinate
+//     public var v1:Float = 0.0;         // Calculated top UV coordinate
+//     public var u2:Float = 1.0;         // Calculated right UV coordinate
+//     public var v2:Float = 1.0;         // Calculated bottom UV coordinate
     
-    public function new() {}
-}
+//     public function new() {}
+// }
