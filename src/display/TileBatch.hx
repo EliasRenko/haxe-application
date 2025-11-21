@@ -13,16 +13,20 @@ import data.Indices;
 import display.Tile;
 
 /**
- * TileBatch - Primitive tile batching system
+ * TileBatch - Orphaning buffer strategy
  * 
- * Core functionality:
- * - Batch multiple tiles using the same texture
- * - Free-form positioning (no grid constraints)
- * - Add/remove individual tiles by ID
- * - Automatic vertex buffer management
- * - Base class for Tilemap and other tile-based systems
+ * Strategy:
+ * - Allocate buffer once for MAX_TILES capacity
+ * - Pre-generate all indices (never change)
+ * - Every frame: rebuild vertex array from visible tiles
+ * - Orphan buffer with glBufferData(NULL)
+ * - Upload actual data with glBufferSubData
+ * - Draw using actual vertex/index counts
  */
 class TileBatch extends DisplayObject {
+    
+    // Maximum tile capacity (buffer allocated for this many tiles)
+    private static inline var MAX_TILES:Int = 1000;
     
     // Tile data structure
     public var tiles:Map<Int, Tile> = new Map(); // tileId -> TileInstance
@@ -32,9 +36,9 @@ class TileBatch extends DisplayObject {
     // Buffer management
     private var __nextTileId:Int = 1; // Auto-incrementing tile ID
     private var __nextRegionId:Int = 1; // Auto-incrementing region ID
-    private var __bufferDirty:Bool = true;
     private var __vertexCache:Array<Float32> = [];
     private var __indexCache:Array<UInt32> = [];
+    private var __bufferCapacity:Int = 0; // Current buffer capacity in tiles
     
     /**
      * Create a new TileBatch
@@ -44,13 +48,13 @@ class TileBatch extends DisplayObject {
     public function new(programInfo:ProgramInfo, texture:Texture) {
         this.atlasTexture = texture;
         
-        // Start with empty vertices and indices
+        // Start with empty vertices but pre-generate indices for MAX_TILES
         var emptyVertices = new Vertices([]);
-        var emptyIndices = new Indices([]);
+        var indices = generateIndices(MAX_TILES);
         
-        super(programInfo, emptyVertices, emptyIndices);
+        super(programInfo, emptyVertices, indices);
         
-        // Set OpenGL properties (matching Image class)
+        // Set OpenGL properties
         mode = GL.TRIANGLES;
         
         // Set proper alpha blending for transparent textures
@@ -61,6 +65,32 @@ class TileBatch extends DisplayObject {
         
         // Set the texture for the display object
         setTexture(texture);
+        
+        __bufferCapacity = 0; // Will be allocated on first init
+    }
+    
+    /**
+     * Pre-generate all indices for maximum tile capacity
+     * Indices never change, so we generate them once
+     */
+    private function generateIndices(tileCount:Int):Indices {
+        var indices:Array<UInt32> = [];
+        
+        for (i in 0...tileCount) {
+            var vertexIndex:UInt32 = i * 4;
+            
+            // Triangle 1
+            indices.push(vertexIndex + 0);  // Top-left
+            indices.push(vertexIndex + 1);  // Top-right
+            indices.push(vertexIndex + 2);  // Bottom-right
+            
+            // Triangle 2
+            indices.push(vertexIndex + 0);  // Top-left
+            indices.push(vertexIndex + 2);  // Bottom-right
+            indices.push(vertexIndex + 3);  // Bottom-left
+        }
+        
+        return new Indices(indices);
     }
     
     /**
@@ -122,28 +152,17 @@ class TileBatch extends DisplayObject {
         tile.regionId = regionId;
         
         tiles.set(tileId, tile);
-        __bufferDirty = true;
-        
-        if (active) {
-            needsBufferUpdate = true;
-        }
         
         var region = atlasRegions.get(regionId);
-        //trace("TileBatch: Added tile " + tileId + " at (" + x + "," + y + ") size=" + width + "x" + height + " using region " + regionId);
         return tileId;
     }
 
-    // TODO: Placeholder for adding existing Tile instances
+    // Add existing Tile instance
     public function addTileInstance(tile:Tile):Void {
         if (tile == null) return;
 
         var tileId = __nextTileId++;
         tiles.set(tileId, tile);
-        __bufferDirty = true;
-
-        if (active) {
-            needsBufferUpdate = true;
-        }
     }
     
     /**
@@ -152,32 +171,18 @@ class TileBatch extends DisplayObject {
      * @return True if tile was found and removed
      */
     public function removeTile(tileId:Int):Bool {
-        if (tiles.exists(tileId)) {
-            tiles.remove(tileId);
-            __bufferDirty = true;
-            
-            if (active) {
-                needsBufferUpdate = true;
+        return tiles.remove(tileId);
+    }
+    
+    public function removeTileInstance(tile:Tile):Bool {
+        for (tileId in tiles.keys()) {
+            if (tiles.get(tileId) == tile) {
+                tiles.remove(tileId);
+                return true;
             }
-            return true;
         }
         return false;
     }
-    
-	public function removeTileInstance(tile:Tile):Bool {
-		for (tileId in tiles.keys()) {
-			if (tiles.get(tileId) == tile) {
-				tiles.remove(tileId);
-				__bufferDirty = true;
-
-				if (active) {
-					needsBufferUpdate = true;
-				}
-				return true;
-			}
-		}
-		return false;
-	}
     
     /**
      * Update a tile's position
@@ -191,15 +196,8 @@ class TileBatch extends DisplayObject {
             var tile = tiles.get(tileId);
             tile.x = x;
             tile.y = y;
-            __bufferDirty = true;
-            
-            if (active) {
-                needsBufferUpdate = true;
-            }
-            
             return true;
         }
-        
         return false;
     }
     
@@ -208,11 +206,6 @@ class TileBatch extends DisplayObject {
      */
     public function clear():Void {
         tiles.clear();
-        __bufferDirty = true;
-        
-        if (active) {
-            needsBufferUpdate = true;
-        }
     }
     
     /**
@@ -280,21 +273,17 @@ class TileBatch extends DisplayObject {
     }
     
     /**
-     * Generate mesh data for all tiles
+     * Build vertex array from all visible tiles
+     * Called every frame - no dirty tracking needed
      */
-    private function generateMesh():Void {
+    private function buildVertexArray():Void {
         __vertexCache = [];
-        __indexCache = [];
         
-        var vertexIndex:UInt = 0;
+        var tileCount = 0;
         
-        // Generate mesh for each tile
-        for (tileId in tiles.keys()) {
-            var tile = tiles.get(tileId);
-
-            if (!tile.visible) {
-                continue; // Skip invisible tiles
-            }
+        // Generate vertices for each visible tile
+        for (tile in tiles) {
+            if (!tile.visible) continue;
             
             // Generate vertices for this tile
             var tileVertices = generateTileVertices(tile);
@@ -302,50 +291,53 @@ class TileBatch extends DisplayObject {
                 __vertexCache.push(vertex);
             }
             
-            // Create indices for two triangles (quad)
-            __indexCache.push(vertexIndex + 0);  // Top-left
-            __indexCache.push(vertexIndex + 1);  // Top-right
-            __indexCache.push(vertexIndex + 2);  // Bottom-right
-            
-            __indexCache.push(vertexIndex + 0);  // Top-left
-            __indexCache.push(vertexIndex + 2);  // Bottom-right
-            __indexCache.push(vertexIndex + 3);  // Bottom-left
-            
-            vertexIndex += 4;
+            tileCount++;
         }
         
-        // Update DisplayObject vertex data
-        this.vertices = new Vertices(__vertexCache);
-        this.indices = new Indices(__indexCache);
-        
-        // Update render counts
-        __verticesToRender = Std.int(__vertexCache.length / 5);  // 5 floats per vertex
-        __indicesToRender = __indexCache.length;
-        
-        var tileCount = 0;
-        for (key in tiles.keys()) tileCount++;
-        
-        //trace("TileBatch: Generated mesh - " + __verticesToRender + " vertices, " + __indicesToRender + " indices for " + tileCount + " tiles");
+        // Update render counts (indices are pre-generated, just set count)
+        __verticesToRender = tileCount * 4;  // 4 vertices per tile
+        __indicesToRender = tileCount * 6;   // 6 indices per tile (2 triangles)
     }
     
     /**
-     * Update buffers when needed
+     * Update buffers - orphan and upload strategy
+     * Called BEFORE render to update vertex data
      */
     override public function updateBuffers(renderer:Renderer):Void {
         if (!active || atlasTexture == null) return;
         
-        if (__bufferDirty) {
-            generateMesh();
-            
-            renderer.uploadData(this);
-            
-            __bufferDirty = false;
-            needsBufferUpdate = false;
+        // Allocate buffer on first update only
+        if (__bufferCapacity == 0) {
+            __bufferCapacity = MAX_TILES;
+            renderer.allocateTileBatchBuffers(this, MAX_TILES);
         }
+        
+        // Rebuild vertex array from visible tiles (every frame)
+        buildVertexArray();
+        
+        // Update vertices object for renderer
+        this.vertices = new Vertices(__vertexCache);
+        
+        // Orphan buffer before uploading (every frame)
+        if (vbo != 0 && __vertexCache.length > 0) {
+            GL.bindBuffer(GL.ARRAY_BUFFER, vbo);
+            
+            // Orphan old buffer storage
+            var maxBufferSize = MAX_TILES * 4 * 5 * 4;
+            untyped __cpp__("glBufferData({0}, {1}, NULL, {2})", GL.ARRAY_BUFFER, maxBufferSize, GL.STREAM_DRAW);
+            
+            // Now upload the actual data using standard method
+            GL.bufferFloatArray(GL.ARRAY_BUFFER, vertices, GL.STREAM_DRAW, vertices.length);
+            
+            GL.bindBuffer(GL.ARRAY_BUFFER, 0);
+        }
+        
+        needsBufferUpdate = false;
     }
     
     /**
      * Render the tile batch
+     * Just sets uniforms - vertex data already updated in updateBuffers()
      */
     override public function render(cameraMatrix:Matrix):Void {
         if (!visible || !active || atlasTexture == null) {
