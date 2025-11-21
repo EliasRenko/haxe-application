@@ -16,17 +16,20 @@ import display.Tile;
  * TileBatch - Orphaning buffer strategy
  * 
  * Strategy:
- * - Allocate buffer once for MAX_TILES capacity
- * - Pre-generate all indices (never change)
+ * - Allocate buffer once for MAX_TILES capacity (GL_STREAM_DRAW)
+ * - Pre-generate all indices (uploaded once with GL_STATIC_DRAW)
  * - Every frame: rebuild vertex array from visible tiles
- * - Orphan buffer with glBufferData(NULL)
- * - Upload actual data with glBufferSubData
+ * - Orphan buffer with glBufferData(NULL, size, GL_STREAM_DRAW)
+ * - Upload actual data with glBufferFloatArray()
  * - Draw using actual vertex/index counts
+ * 
+ * This prevents GPU stalls by allowing the driver to allocate new buffer
+ * regions while the GPU is still reading from old ones.
  */
 class TileBatch extends DisplayObject {
     
     // Maximum tile capacity (buffer allocated for this many tiles)
-    private static inline var MAX_TILES:Int = 1000;
+    private static inline var MAX_TILES:Int = 4000;
     
     // Tile data structure
     public var tiles:Map<Int, Tile> = new Map(); // tileId -> TileInstance

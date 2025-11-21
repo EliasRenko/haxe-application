@@ -35,7 +35,7 @@ class Text {
         this._x = x;
         this._y = y;
 
-        if (font != null) {
+        if (font == null) {
             return;
         }
 
