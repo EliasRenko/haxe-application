@@ -19,15 +19,15 @@ import loaders.FontLoader;
 class TileBatchPerformanceTest extends State {
     
     private var tileBatch:TileBatch;
+    private var tileData:Array<{x:Float, y:Float, width:Float, height:Float, regionId:Int, visible:Bool}> = [];
     private var tileVelocities:Array<{vx:Float, vy:Float}> = [];
-    private var tileIds:Array<Int> = [];
     
     private var bitmapFont:BitmapFont;
     private var fpsText:Text;
     private var fpsUpdateTimer:Float = 0.0;
     private var currentFps:Int = 0;
     
-    private static inline var TILE_COUNT:Int = 4000;
+    private static inline var TILE_COUNT:Int = 1000;
     private static inline var TILE_SIZE:Float = 16.0;
     private static inline var MIN_SPEED:Float = 50.0;
     private static inline var MAX_SPEED:Float = 150.0;
@@ -43,7 +43,7 @@ class TileBatchPerformanceTest extends State {
     override public function init():Void {
         super.init();
         
-        trace("TileBatchPerformanceTest: Initializing 2000 moving tiles");
+        trace("TileBatchPerformanceTest: Initializing 1000 moving tiles");
         
         // Setup camera for 2D
         camera.ortho = true;
@@ -85,8 +85,15 @@ class TileBatchPerformanceTest extends State {
             var x = Math.random() * (screenWidth - TILE_SIZE);
             var y = Math.random() * (screenHeight - TILE_SIZE);
             
-            var tileId = tileBatch.addTile(x, y, TILE_SIZE, TILE_SIZE, regionId);
-            tileIds.push(tileId);
+            // Add tile data
+            tileData.push({
+                x: x,
+                y: y,
+                width: TILE_SIZE,
+                height: TILE_SIZE,
+                regionId: regionId,
+                visible: true
+            });
             
             // Random velocity
             var speed = MIN_SPEED + Math.random() * (MAX_SPEED - MIN_SPEED);
@@ -156,11 +163,8 @@ class TileBatchPerformanceTest extends State {
         }
         
         // Update all tile positions
-        for (i in 0...tileIds.length) {
-            var tileId = tileIds[i];
-            var tile = tileBatch.getTile(tileId);
-            if (tile == null) continue;
-            
+        for (i in 0...tileData.length) {
+            var tile = tileData[i];
             var vel = tileVelocities[i];
             
             // Update position
@@ -184,6 +188,9 @@ class TileBatchPerformanceTest extends State {
                 vel.vy = -Math.abs(vel.vy);
             }
         }
+        
+        // Set tile data for rendering
+        tileBatch.setTileData(tileData);
         
         // Exit on ESC
         if (app.input.keyboard.released(27)) { // ESC key

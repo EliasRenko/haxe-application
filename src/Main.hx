@@ -1,9 +1,5 @@
 package;
 
-//import states.ImageTestState;
-//import states.CollisionTest;
-//import states.TextTestState;
-import states.TileBatchFastTest;
 import states.AtlasState;
 import App;
 import states.CollisionTestState;
@@ -19,7 +15,7 @@ class Main {
             return;
         }
 
-        app.addState(new TileBatchPerformanceTest(app));
+        app.addState(new UITestState(app));
         app.run();
     }
 }

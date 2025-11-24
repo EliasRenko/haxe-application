@@ -1,5 +1,6 @@
 package states;
 
+import display.ManagedTileBatch;
 import gui.Stamp;
 import gui.Strip;
 import gui.Panel;
@@ -24,7 +25,7 @@ class UITestState extends State {
     
     private var canvas:Canvas;
 
-    var uiTileBatch:TileBatch;
+    var uiTileBatch:ManagedTileBatch;
     var bitmapFont:BitmapFont;
     
     public function new(app:App) {
@@ -67,7 +68,7 @@ class UITestState extends State {
         var programInfo = renderer.createProgramInfo("textured", vertShader, fragShader);
         
         // Create TileBatch for UI elements
-        uiTileBatch = new TileBatch(programInfo, uiTexture);
+        uiTileBatch = new ManagedTileBatch(programInfo, uiTexture);
         uiTileBatch.init(renderer);
         
         // Add UI batch to scene for rendering

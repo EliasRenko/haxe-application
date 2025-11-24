@@ -3,7 +3,7 @@ package display;
 import ProgramInfo;
 import Texture;
 import loaders.FontData;
-import display.TileBatch;
+import display.ManagedTileBatch;
 
 /**
  * BitmapFont - Manages a bitmap font atlas and shared rendering
@@ -11,7 +11,7 @@ import display.TileBatch;
  * Extends TileBatch to batch multiple Text instances using the same font.
  * Handles font atlas regions and character metrics.
  */
-class BitmapFont extends TileBatch {
+class BitmapFont extends ManagedTileBatch {
     
     public var fontData:FontData;
     private var charCodeToRegion:Map<Int, Int> = new Map();  // Map character code to region ID

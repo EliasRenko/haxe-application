@@ -13,12 +13,12 @@ import data.Indices;
 import display.Tile;
 
 /**
- * TileBatch - Orphaning buffer strategy
+ * TileBatch - Primitive orphaning renderer
  * 
  * Strategy:
  * - Allocate buffer once for MAX_TILES capacity (GL_STREAM_DRAW)
  * - Pre-generate all indices (uploaded once with GL_STATIC_DRAW)
- * - Every frame: rebuild vertex array from visible tiles
+ * - Every frame: take tile data and build vertex array
  * - Orphan buffer with glBufferData(NULL, size, GL_STREAM_DRAW)
  * - Upload actual data with glBufferFloatArray()
  * - Draw using actual vertex/index counts
@@ -29,15 +29,15 @@ import display.Tile;
 class TileBatch extends DisplayObject {
     
     // Maximum tile capacity (buffer allocated for this many tiles)
-    private static inline var MAX_TILES:Int = 4000;
+    private static inline var MAX_TILES:Int = 1000;
     
-    // Tile data structure
-    public var tiles:Map<Int, Tile> = new Map(); // tileId -> TileInstance
     public var atlasTexture:Texture = null;
     public var atlasRegions:Map<Int, AtlasRegion> = new Map(); // regionId -> AtlasRegion
     
+    // Current tile data (set each frame)
+    private var __currentTileData:Array<{x:Float, y:Float, width:Float, height:Float, regionId:Int, visible:Bool}> = [];
+    
     // Buffer management
-    private var __nextTileId:Int = 1; // Auto-incrementing tile ID
     private var __nextRegionId:Int = 1; // Auto-incrementing region ID
     private var __vertexCache:Array<Float32> = [];
     private var __indexCache:Array<UInt32> = [];
@@ -131,96 +131,23 @@ class TileBatch extends DisplayObject {
     }
     
     /**
-     * Add a tile to the batch using a predefined atlas region
-     * @param x World X position
-     * @param y World Y position
-     * @param width Tile width in world units
-     * @param height Tile height in world units
-     * @param regionId Atlas region ID (from defineRegion)
-     * @return Tile ID for future reference
+     * Set tile data for this frame
+     * @param tileData Array of tile data objects
      */
-    public function addTile(x:Float, y:Float, width:Float, height:Float, regionId:Int):Int {
-        if (!atlasRegions.exists(regionId)) {
-            trace("TileBatch: Error - Region ID " + regionId + " does not exist!");
-            return -1;
-        }
-        
-        var tileId = __nextTileId++;
-        
-        var tile = new Tile(this);
-        tile.x = x;
-        tile.y = y;
-        tile.width = width;
-        tile.height = height;
-        tile.regionId = regionId;
-        
-        tiles.set(tileId, tile);
-        
-        var region = atlasRegions.get(regionId);
-        return tileId;
-    }
-
-    // Add existing Tile instance
-    public function addTileInstance(tile:Tile):Void {
-        if (tile == null) return;
-
-        var tileId = __nextTileId++;
-        tiles.set(tileId, tile);
-    }
-    
-    /**
-     * Remove a tile from the batch
-     * @param tileId Tile ID to remove
-     * @return True if tile was found and removed
-     */
-    public function removeTile(tileId:Int):Bool {
-        return tiles.remove(tileId);
-    }
-    
-    public function removeTileInstance(tile:Tile):Bool {
-        for (tileId in tiles.keys()) {
-            if (tiles.get(tileId) == tile) {
-                tiles.remove(tileId);
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    /**
-     * Update a tile's position
-     * @param tileId Tile ID to update
-     * @param x New world X position
-     * @param y New world Y position
-     * @return True if tile was found and updated
-     */
-    public function updateTilePosition(tileId:Int, x:Float, y:Float):Bool {
-        if (tiles.exists(tileId)) {
-            var tile = tiles.get(tileId);
-            tile.x = x;
-            tile.y = y;
-            return true;
-        }
-        return false;
-    }
-    
-    /**
-     * Clear all tiles from the batch
-     */
-    public function clear():Void {
-        tiles.clear();
+    public function setTileData(tileData:Array<{x:Float, y:Float, width:Float, height:Float, regionId:Int, visible:Bool}>):Void {
+        __currentTileData = tileData;
     }
     
     /**
      * Generate vertex data for a single tile
      */
-    private function generateTileVertices(tile:Tile):Array<Float> {
+    private function generateTileVertices(tileData:{x:Float, y:Float, width:Float, height:Float, regionId:Int, visible:Bool}):Array<Float> {
         var vertices = [];
         
         // Get UV coordinates from the atlas region
-        var region = atlasRegions.get(tile.regionId);
+        var region = atlasRegions.get(tileData.regionId);
         if (region == null) {
-            trace("TileBatch: Warning - Region ID " + tile.regionId + " not found, using default UVs");
+            trace("TileBatch: Warning - Region ID " + tileData.regionId + " not found, using default UVs");
             // Use default full texture UVs as fallback
             region = new AtlasRegion();
             region.u1 = 0.0;
@@ -228,11 +155,6 @@ class TileBatch extends DisplayObject {
             region.u2 = 1.0;
             region.v2 = 0.0;
         }
-        
-        // Debug the UV coordinates being used for rendering
-        // trace("TileBatch: generateTileVertices DEBUG for tile regionId=" + tile.regionId);
-        // trace("  Region UV stored: (" + region.u1 + "," + region.v1 + ") to (" + region.u2 + "," + region.v2 + ")");
-        // trace("  Final vertex UV (flipped): v1=" + region.v2 + ", v2=" + region.v1);
         
         // IMPORTANT: Flip V coordinates to compensate for Y-axis flip in Camera
         // The Camera now has (0,0) at top-left with Y increasing downward
@@ -245,29 +167,29 @@ class TileBatch extends DisplayObject {
         // Format: [x, y, z, u, v] per vertex
         
         // Top-left
-        vertices.push(tile.x + tile.offsetX);
-        vertices.push(tile.y + tile.offsetY + tile.height);
+        vertices.push(tileData.x);
+        vertices.push(tileData.y + tileData.height);
         vertices.push(0.0);
         vertices.push(region.u1);
         vertices.push(v1);  // Flipped V
         
         // Top-right
-        vertices.push(tile.x + tile.offsetX + tile.width);
-        vertices.push(tile.y + tile.offsetY + tile.height);
+        vertices.push(tileData.x + tileData.width);
+        vertices.push(tileData.y + tileData.height);
         vertices.push(0.0);
         vertices.push(region.u2);
         vertices.push(v1);  // Flipped V
         
         // Bottom-right
-        vertices.push(tile.x + tile.offsetX + tile.width);
-        vertices.push(tile.y + tile.offsetY);
+        vertices.push(tileData.x + tileData.width);
+        vertices.push(tileData.y);
         vertices.push(0.0);
         vertices.push(region.u2);
         vertices.push(v2);  // Flipped V
         
         // Bottom-left
-        vertices.push(tile.x + tile.offsetX);
-        vertices.push(tile.y + tile.offsetY);
+        vertices.push(tileData.x);
+        vertices.push(tileData.y);
         vertices.push(0.0);
         vertices.push(region.u1);
         vertices.push(v2);  // Flipped V
@@ -276,7 +198,7 @@ class TileBatch extends DisplayObject {
     }
     
     /**
-     * Build vertex array from all visible tiles
+     * Build vertex array from current tile data
      * Called every frame - no dirty tracking needed
      */
     private function buildVertexArray():Void {
@@ -284,12 +206,12 @@ class TileBatch extends DisplayObject {
         
         var tileCount = 0;
         
-        // Generate vertices for each visible tile
-        for (tile in tiles) {
-            if (!tile.visible) continue;
+        // Generate vertices for each tile in current data
+        for (tileData in __currentTileData) {
+            if (!tileData.visible) continue;
             
             // Generate vertices for this tile
-            var tileVertices = generateTileVertices(tile);
+            var tileVertices = generateTileVertices(tileData);
             for (vertex in tileVertices) {
                 __vertexCache.push(vertex);
             }
@@ -361,29 +283,6 @@ class TileBatch extends DisplayObject {
         
         // Set uniforms for tile rendering
         uniforms.set("uMatrix", finalMatrix.data);
-    }
-    
-    /**
-     * Get the number of tiles in the batch
-     */
-    public function getTileCount():Int {
-        var count = 0;
-        for (key in tiles.keys()) count++;
-        return count;
-    }
-    
-    /**
-     * Check if a tile exists
-     */
-    public function hasTile(tileId:Int):Bool {
-        return tiles.exists(tileId);
-    }
-    
-    /**
-     * Get tile instance (for reading properties)
-     */
-    public function getTile(tileId:Int):Tile {
-        return tiles.get(tileId);
     }
     
     /**

@@ -1,5 +1,6 @@
 package gui;
 
+import display.ManagedTileBatch;
 import Entity;
 import State;
 import Renderer;
@@ -15,7 +16,7 @@ import haxe.Json;
 class Canvas extends Entity {
     
     // Public properties
-    public var tilemap:TileBatch;
+    public var tilemap:ManagedTileBatch;
     public var font:BitmapFont;
     public var width:Float = 640;
     public var height:Float = 480;
@@ -67,7 +68,7 @@ class Canvas extends Entity {
      * @param tileBatch TileBatch for UI elements
      * @param font BitmapFont for text rendering
      */
-    public function initializeGraphics(tileBatch:TileBatch, font:BitmapFont):Void {
+    public function initializeGraphics(tileBatch:ManagedTileBatch, font:BitmapFont):Void {
         this.tilemap = tileBatch;
         this.font = font;
         
