@@ -39,8 +39,6 @@ class TileBatch extends DisplayObject {
     
     // Buffer management
     private var __nextRegionId:Int = 1; // Auto-incrementing region ID
-    private var __vertexCache:Array<Float32> = [];
-    private var __indexCache:Array<UInt32> = [];
     private var __bufferCapacity:Int = 0; // Current buffer capacity in tiles
     
     /**
@@ -196,13 +194,13 @@ class TileBatch extends DisplayObject {
         
         return vertices;
     }
-    
+
     /**
      * Build vertex array from current tile data
      * Called every frame - no dirty tracking needed
      */
     private function buildVertexArray():Void {
-        __vertexCache = [];
+        vertices = [];
         
         var tileCount = 0;
         
@@ -213,7 +211,7 @@ class TileBatch extends DisplayObject {
             // Generate vertices for this tile
             var tileVertices = generateTileVertices(tileData);
             for (vertex in tileVertices) {
-                __vertexCache.push(vertex);
+                vertices.push(vertex);
             }
             
             tileCount++;
@@ -241,10 +239,11 @@ class TileBatch extends DisplayObject {
         buildVertexArray();
         
         // Update vertices object for renderer
-        this.vertices = new Vertices(__vertexCache);
+        //this.vertices = new Vertices(__vertexCache);
         
         // Orphan buffer before uploading (every frame)
-        if (vbo != 0 && __vertexCache.length > 0) {
+        if (vbo != 0 && vertices.length > 0) {
+            
             GL.bindBuffer(GL.ARRAY_BUFFER, vbo);
             
             // Orphan old buffer storage

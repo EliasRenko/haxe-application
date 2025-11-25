@@ -47,6 +47,9 @@ class App extends Runtime {
 
     override function release():Void {
 
+        var text = "Bye, SDL_SaveFile!";
+        var success = saveBytes("output.txt", text);
+
         // Release current state
         if (currentState != null) {
             currentState.release();
