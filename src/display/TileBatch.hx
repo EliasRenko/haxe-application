@@ -35,7 +35,7 @@ class TileBatch extends DisplayObject {
     public var atlasRegions:Map<Int, AtlasRegion> = new Map(); // regionId -> AtlasRegion
     
     // Current tile data (set each frame)
-    private var __currentTileData:Array<{x:Float, y:Float, width:Float, height:Float, regionId:Int, visible:Bool}> = [];
+    //private var __currentTileData:Array<{x:Float, y:Float, width:Float, height:Float, regionId:Int, visible:Bool}> = [];
     
     // Buffer management
     private var __nextRegionId:Int = 1; // Auto-incrementing region ID
@@ -129,18 +129,10 @@ class TileBatch extends DisplayObject {
     }
     
     /**
-     * Set tile data for this frame
-     * @param tileData Array of tile data objects
-     */
-    public function setTileData(tileData:Array<{x:Float, y:Float, width:Float, height:Float, regionId:Int, visible:Bool}>):Void {
-        __currentTileData = tileData;
-    }
-    
-    /**
      * Generate vertex data for a single tile
      */
-    private function generateTileVertices(tileData:{x:Float, y:Float, width:Float, height:Float, regionId:Int, visible:Bool}):Array<Float> {
-        var vertices = [];
+    private function generateTileVertices(tileData:{x:Float, y:Float, width:Float, height:Float, regionId:Int, visible:Bool}):Void {
+        //var vertices = [];
         
         // Get UV coordinates from the atlas region
         var region = atlasRegions.get(tileData.regionId);
@@ -191,43 +183,59 @@ class TileBatch extends DisplayObject {
         vertices.push(0.0);
         vertices.push(region.u1);
         vertices.push(v2);  // Flipped V
-        
-        return vertices;
     }
 
     /**
      * Build vertex array from current tile data
      * Called every frame - no dirty tracking needed
      */
-    private function buildVertexArray():Void {
-        vertices = [];
+    // private function buildVertexArray():Void {
+    //     vertices = [];
         
-        var tileCount = 0;
+    //     var tileCount = 0;
         
-        // Generate vertices for each tile in current data
-        for (tileData in __currentTileData) {
-            if (!tileData.visible) continue;
+    //     // Generate vertices for each tile in current data
+    //     for (tileData in __currentTileData) {
+    //         if (!tileData.visible) continue;
             
-            // Generate vertices for this tile
-            var tileVertices = generateTileVertices(tileData);
-            for (vertex in tileVertices) {
-                vertices.push(vertex);
-            }
+    //         // Generate vertices for this tile
+    //         var tileVertices = generateTileVertices(tileData);
+    //         for (vertex in tileVertices) {
+    //             vertices.push(vertex);
+    //         }
             
-            tileCount++;
-        }
+    //         tileCount++;
+    //     }
         
-        // Update render counts (indices are pre-generated, just set count)
-        __verticesToRender = tileCount * 4;  // 4 vertices per tile
-        __indicesToRender = tileCount * 6;   // 6 indices per tile (2 triangles)
-    }
+    //     // Update render counts (indices are pre-generated, just set count)
+    //     __verticesToRender = tileCount * 4;  // 4 vertices per tile
+    //     __indicesToRender = tileCount * 6;   // 6 indices per tile (2 triangles)
+    // }
     
+    public function buildTile(tile:Tile):Void {
+        
+        generateTileVertices({
+            x: tile.x + tile.offsetX,
+            y: tile.y + tile.offsetY,
+            width: tile.width,
+            height: tile.height,
+            regionId: tile.regionId,
+            visible: tile.visible
+        });        
+
+        __verticesToRender += 4;
+        __indicesToRender += 6;
+    }
+
     /**
      * Update buffers - orphan and upload strategy
      * Called BEFORE render to update vertex data
      */
     override public function updateBuffers(renderer:Renderer):Void {
         if (!active || atlasTexture == null) return;
+
+        //__verticesToRender = 0;
+        //__indicesToRender = 0;
         
         // Allocate buffer on first update only
         if (__bufferCapacity == 0) {
@@ -236,14 +244,14 @@ class TileBatch extends DisplayObject {
         }
         
         // Rebuild vertex array from visible tiles (every frame)
-        buildVertexArray();
+        //buildVertexArray();
         
         // Update vertices object for renderer
         //this.vertices = new Vertices(__vertexCache);
         
         // Orphan buffer before uploading (every frame)
         if (vbo != 0 && vertices.length > 0) {
-            
+
             GL.bindBuffer(GL.ARRAY_BUFFER, vbo);
             
             // Orphan old buffer storage
@@ -282,6 +290,14 @@ class TileBatch extends DisplayObject {
         
         // Set uniforms for tile rendering
         uniforms.set("uMatrix", finalMatrix.data);
+    }
+
+    override public function postRender():Void {
+        // Reset counts after rendering
+        __verticesToRender = 0;
+        __indicesToRender = 0;
+
+        vertices = [];
     }
     
     /**

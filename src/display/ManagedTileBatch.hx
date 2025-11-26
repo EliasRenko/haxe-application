@@ -146,29 +146,10 @@ class ManagedTileBatch extends TileBatch {
      * Update buffers - build tile data from stored tiles and pass to base class
      */
     override public function updateBuffers(renderer:Renderer):Void {
-        if (!active || atlasTexture == null) return;
-        
-        // Allocate buffer on first update only
-        if (__bufferCapacity == 0) {
-            __bufferCapacity = MAX_TILES;
-            renderer.allocateTileBatchBuffers(this, MAX_TILES);
-        }
-        
-        // Build tile data from stored tiles
-        var tileData = [];
+
         for (tile in tiles) {
-            tileData.push({
-                x: tile.x + tile.offsetX,
-                y: tile.y + tile.offsetY,
-                width: tile.width,
-                height: tile.height,
-                regionId: tile.regionId,
-                visible: tile.visible
-            });
+            buildTile(tile);
         }
-        
-        // Set tile data for rendering
-        setTileData(tileData);
         
         // Call base class updateBuffers (which will use the set tile data)
         super.updateBuffers(renderer);

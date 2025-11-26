@@ -7,6 +7,7 @@ import Renderer;
 import ProgramInfo;
 import Texture;
 import display.TileBatch;
+import display.Tile;
 import display.BitmapFont;
 import display.Text;
 import comps.DisplayObjectComp;
@@ -19,7 +20,7 @@ import loaders.FontLoader;
 class TileBatchPerformanceTest extends State {
     
     private var tileBatch:TileBatch;
-    private var tileData:Array<{x:Float, y:Float, width:Float, height:Float, regionId:Int, visible:Bool}> = [];
+    private var tileData:Array<Tile> = [];
     private var tileVelocities:Array<{vx:Float, vy:Float}> = [];
     
     private var bitmapFont:BitmapFont;
@@ -84,23 +85,19 @@ class TileBatchPerformanceTest extends State {
         for (i in 0...TILE_COUNT) {
             var x = Math.random() * (screenWidth - TILE_SIZE);
             var y = Math.random() * (screenHeight - TILE_SIZE);
-            
-            // Add tile data
-            tileData.push({
-                x: x,
-                y: y,
-                width: TILE_SIZE,
-                height: TILE_SIZE,
-                regionId: regionId,
-                visible: true
-            });
-            
+            var tile = new Tile(tileBatch, regionId);
+            tile.x = x;
+            tile.y = y;
+            tile.width = TILE_SIZE;
+            tile.height = TILE_SIZE;
+            tile.visible = true;
+            tileData.push(tile);
+
             // Random velocity
             var speed = MIN_SPEED + Math.random() * (MAX_SPEED - MIN_SPEED);
             var angle = Math.random() * Math.PI * 2;
             var vx = Math.cos(angle) * speed;
             var vy = Math.sin(angle) * speed;
-            
             tileVelocities.push({vx: vx, vy: vy});
         }
         
@@ -166,11 +163,11 @@ class TileBatchPerformanceTest extends State {
         for (i in 0...tileData.length) {
             var tile = tileData[i];
             var vel = tileVelocities[i];
-            
+
             // Update position
             tile.x += vel.vx * dt;
             tile.y += vel.vy * dt;
-            
+
             // Bounce off edges
             if (tile.x <= 0) {
                 tile.x = 0;
@@ -179,7 +176,7 @@ class TileBatchPerformanceTest extends State {
                 tile.x = screenWidth - TILE_SIZE;
                 vel.vx = -Math.abs(vel.vx);
             }
-            
+
             if (tile.y <= 0) {
                 tile.y = 0;
                 vel.vy = Math.abs(vel.vy);
@@ -187,10 +184,12 @@ class TileBatchPerformanceTest extends State {
                 tile.y = screenHeight - TILE_SIZE;
                 vel.vy = -Math.abs(vel.vy);
             }
+
+            tileBatch.buildTile(tile);
         }
         
         // Set tile data for rendering
-        tileBatch.setTileData(tileData);
+        //tileBatch.setTileData(tileData);
         
         // Exit on ESC
         if (app.input.keyboard.released(27)) { // ESC key

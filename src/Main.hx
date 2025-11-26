@@ -15,7 +15,7 @@ class Main {
             return;
         }
 
-        app.addState(new UITestState(app));
+        app.addState(new TileBatchPerformanceTest(app));
         app.run();
     }
 }
