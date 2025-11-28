@@ -13,7 +13,7 @@ class Pool<T> {
         /** Create a new pool with an initial cache size,
             an optional fixed size limit,
             and create callbacks */
-    public function new( initial_size:Int, fixed_size_limit:Int=0, create_callback:Void->T){
+    public function new(initial_size:Int, fixed_size_limit:Int=0, create_callback:Void->T){
 
         items = [];
         size_limit = fixed_size_limit;

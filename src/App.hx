@@ -345,6 +345,16 @@ class App extends Runtime {
         @:privateAccess __input.mouse.onMouseMotion(x, y, xrel, yrel);
     }
 
+    // Window event handlers
+    override function onWindowResized(windowId:Int, width:Int, height:Int):Void {
+        renderer.setViewport(width, height);
+        renderer.framebuffer.resize(width, height);
+
+        for (state in states) {
+            state.onWindowResized(width, height);
+        }
+    }
+
     // Getters and setters
     public function get_input():Input {
         return __input;

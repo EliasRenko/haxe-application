@@ -77,14 +77,14 @@ class UITestState extends State {
         addEntity(uiEntity);
         
         // Load font
-        var fontData = FontLoader.load(app.resources.getText("fonts/nokia.json"));
+        var fontData = FontLoader.load(app.resources.getText("fonts/gohu14.json"));
         if (fontData == null) {
             trace("UITestState: Failed to load font");
             return;
         }
         
         // Load font texture
-        var fontTextureData = app.resources.getTexture("textures/nokia.tga");
+        var fontTextureData = app.resources.getTexture("textures/gohu14.tga");
         if (fontTextureData == null) {
             trace("UITestState: Failed to load font texture");
             return;
@@ -161,5 +161,13 @@ class UITestState extends State {
         super.render(renderer);
 
         canvas.render(renderer, camera.getMatrix());
+    }
+
+    override public function onWindowResized(width:Int, height:Int):Void {
+        super.onWindowResized(width, height);
+        
+        if (canvas != null) {
+            canvas.resize(width, height);
+        }
     }
 }

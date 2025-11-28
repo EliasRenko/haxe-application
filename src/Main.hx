@@ -20,6 +20,7 @@ class Main {
         }
 
         app.addState(new TileBatchPerformanceTest(app));
+        //app.addState(new UITestState(app));
         app.run();
     }
 }

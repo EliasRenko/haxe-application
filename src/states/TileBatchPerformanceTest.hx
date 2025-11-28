@@ -27,8 +27,8 @@ class TileBatchPerformanceTest extends State {
     private var fpsUpdateTimer:Float = 0.0;
     private var currentFps:Int = 0;
     
-    private static inline var TILE_COUNT:Int = 4000;
-    private static inline var TILE_SIZE:Float = 16.0;
+    private static inline var TILE_COUNT:Int = 3000;
+    private static inline var TILE_SIZE:Float = 32.0;
     private static inline var MIN_SPEED:Float = 50.0;
     private static inline var MAX_SPEED:Float = 150.0;
     private static inline var FPS_UPDATE_INTERVAL:Float = 0.25; // Update FPS display 4 times per second
@@ -48,13 +48,12 @@ class TileBatchPerformanceTest extends State {
         // Setup camera for 2D
         camera.ortho = true;
         
-        screenWidth = app.renderer.windowWidth;
-        screenHeight = app.renderer.windowHeight;
+        var size = app.window.size;
         
         var renderer = app.renderer;
         
         // Load texture atlas
-        var textureData = app.resources.getTexture("textures/gui.tga");
+        var textureData = app.resources.getTexture("textures/dev_tiles.tga");
         if (textureData == null) {
             trace("TileBatchPerformanceTest: Failed to load texture");
             return;
@@ -78,12 +77,12 @@ class TileBatchPerformanceTest extends State {
         addEntity(entity);
         
         // Define a single atlas region (using a small portion of the texture)
-        var regionId = tileBatch.defineRegion(0, 0, 16, 16);
+        var regionId = tileBatch.defineRegion(0, 0, 32, 32);
         
         // Create 1000 tiles at random positions with random velocities
         for (i in 0...TILE_COUNT) {
-            var x = Math.random() * (screenWidth - TILE_SIZE);
-            var y = Math.random() * (screenHeight - TILE_SIZE);
+            var x = Math.random() * (size.x - TILE_SIZE);
+            var y = Math.random() * (size.y - TILE_SIZE);
             
             var tileId = tileBatch.addTile(x, y, TILE_SIZE, TILE_SIZE, regionId);
             tileIds.push(tileId);
@@ -139,12 +138,14 @@ class TileBatchPerformanceTest extends State {
         addEntity(fontEntity);
         
         // Create FPS text instance
-        fpsText = new Text(bitmapFont, "FPS: 60 | Tiles: " + TILE_COUNT, 10, screenHeight - 20);
+        fpsText = new Text(bitmapFont, "FPS: 60 | Tiles: " + TILE_COUNT, 10, app.window.size.y - 20);
     }
     
     override public function update(dt:Float):Void {
         super.update(dt);
         
+        var size = app.window.size;
+
         // Update FPS counter
         fpsUpdateTimer += dt;
         if (fpsUpdateTimer >= FPS_UPDATE_INTERVAL) {
@@ -171,16 +172,16 @@ class TileBatchPerformanceTest extends State {
             if (tile.x <= 0) {
                 tile.x = 0;
                 vel.vx = Math.abs(vel.vx);
-            } else if (tile.x + TILE_SIZE >= screenWidth) {
-                tile.x = screenWidth - TILE_SIZE;
+            } else if (tile.x + TILE_SIZE >= size.x) {
+                tile.x = size.x - TILE_SIZE;
                 vel.vx = -Math.abs(vel.vx);
             }
             
             if (tile.y <= 0) {
                 tile.y = 0;
                 vel.vy = Math.abs(vel.vy);
-            } else if (tile.y + TILE_SIZE >= screenHeight) {
-                tile.y = screenHeight - TILE_SIZE;
+            } else if (tile.y + TILE_SIZE >= size.y) {
+                tile.y = size.y - TILE_SIZE;
                 vel.vy = -Math.abs(vel.vy);
             }
         }
