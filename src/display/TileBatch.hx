@@ -3,7 +3,7 @@ package display;
 import cpp.Float32;
 import cpp.UInt32;
 import GL;
-import DisplayObject;
+import display.Transformable;
 import ProgramInfo;
 import Renderer;
 import Texture;
@@ -26,7 +26,7 @@ import display.Tile;
  * This prevents GPU stalls by allowing the driver to allocate new buffer
  * regions while the GPU is still reading from old ones.
  */
-class TileBatch extends DisplayObject {
+class TileBatch extends Transformable {
     
     // Maximum tile capacity (buffer allocated for this many tiles)
     private static inline var MAX_TILES:Int = 1000;
@@ -275,21 +275,13 @@ class TileBatch extends DisplayObject {
         if (!visible || !active || atlasTexture == null) {
             return;
         }
-        
-        // Check if we actually have vertices to render
-        if (__verticesToRender == 0 || __indicesToRender == 0) {
-            return;
-        }
-        
-        // Update transformation matrix based on current properties
-        updateTransform();
-        
-        // Create final matrix by combining object matrix with camera matrix
-        var finalMatrix = Matrix.copy(matrix);
-        finalMatrix.append(cameraMatrix);
-        
-        // Set uniforms for tile rendering
-        uniforms.set("uMatrix", finalMatrix.data);
+		
+		transform.update();
+		var finalMatrix = Matrix.copy(transform.matrix);
+		finalMatrix.append(cameraMatrix);
+		
+		// Set the transform matrix in uniforms map
+		uniforms.set("uMatrix", finalMatrix.data);
     }
 
     override public function postRender():Void {

@@ -10,7 +10,8 @@ import display.TileBatch;
 import display.Tile;
 import display.BitmapFont;
 import display.Text;
-import comps.DisplayObjectComp;
+import comps.TransformComponent;
+import comps.RenderComponent;
 import loaders.FontLoader;
 
 /**
@@ -72,10 +73,17 @@ class TileBatchPerformanceTest extends State {
         tileBatch = new TileBatch(programInfo, texture);
         tileBatch.init(renderer);
         
-        // Add to scene
+        // Add to scene using new ECS components
         var entity = new Entity("tile_batch");
-        var displayComp = new DisplayObjectComp(tileBatch);
-        entity.addComponent(displayComp);
+        
+        // Add RenderComponent with the TileBatch DisplayObject
+        var renderComp = new RenderComponent(tileBatch);
+        entity.components.add(renderComp);
+        
+        // Add TransformComponent (no transform needed for this, but required for RenderSystem)
+        var transformComp = new TransformComponent();
+        entity.components.add(transformComp);
+        
         addEntity(entity);
         
         // Define a single atlas region (using a small portion of the texture)
@@ -136,10 +144,19 @@ class TileBatchPerformanceTest extends State {
         bitmapFont = new BitmapFont(monoProgramInfo, fontTexture, fontData);
         bitmapFont.init(renderer);
         
-        // Add font to scene
+        // Add font to scene using new ECS components
         var fontEntity = new Entity("fps_text");
-        var fontDisplay = new DisplayObjectComp(bitmapFont);
-        fontEntity.addComponent(fontDisplay);
+        
+        // Add RenderComponent with the BitmapFont DisplayObject
+        var renderComp = new RenderComponent(bitmapFont);
+        fontEntity.components.add(renderComp);
+        
+        // Add TransformComponent for positioning the text
+        var transformComp = new TransformComponent();
+        transformComp.transform.x = 10;
+        transformComp.transform.y = screenHeight - 20;
+        fontEntity.components.add(transformComp);
+        
         addEntity(fontEntity);
         
         // Create FPS text instance

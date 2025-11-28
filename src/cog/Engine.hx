@@ -3,6 +3,7 @@ package cog;
 import cog.Node;
 
 class Engine {
+  
   public var active:Bool = true;
   public var systems:Map<Int, Array<System>> = [];
   public var components:Array<Components> = [];
@@ -16,6 +17,7 @@ class Engine {
   public function step(dt:Float, group:Int = 0) {
     if (active && systems.exists(group)) for (system in systems[group]) system.try_step(dt);
   }
+
   /**
    * Adds the `system` to the Engine.
    * @param system

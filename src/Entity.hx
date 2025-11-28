@@ -5,6 +5,7 @@ import math.Matrix;
 import utils.Rect;
 import Component;
 import comps.DisplayObjectComp;
+import cog.Components;
 
 /**
  * Base class for game entities (game objects)
@@ -19,8 +20,11 @@ class Entity {
     public var state:State = null; // Reference to parent state
     public var hitbox:Rect; // Collision hitbox
     
-    // Component system
-    private var components:Array<Component> = [];
+    // Cog Components for ECS integration
+    public var components:Components;
+    
+    // Legacy component system (deprecated - use Cog components instead)
+    private var __components:Array<Component> = [];
     private var componentMap:Map<String, Component> = new Map();
     
     // Private entity counter for auto-generating IDs
@@ -28,6 +32,7 @@ class Entity {
     
     public function new(id:String = null) {
         this.id = id != null ? id : "entity_" + (__nextId++);
+        this.components = new Components();
         trace("Created entity '" + this.id + "'");
     }
     
@@ -42,7 +47,7 @@ class Entity {
             return cast componentMap.get(className);
         }
         
-        components.push(component);
+        __components.push(component);
         componentMap.set(className, component);
         component.onAdded(this);
         
@@ -61,7 +66,7 @@ class Entity {
             return false;
         }
         
-        components.remove(component);
+        __components.remove(component);
         componentMap.remove(className);
         component.onRemoved();
         component.cleanup();
@@ -90,7 +95,7 @@ class Entity {
      * Get all components of this entity
      */
     public function getComponents():Array<Component> {
-        return components.copy();
+        return __components.copy();
     }
     
     /**
@@ -101,7 +106,7 @@ class Entity {
         if (!active) return;
         
         // Update all components
-        for (component in components) {
+        for (component in __components) {
             if (component.enabled) {
                 component.update(deltaTime);
             }
@@ -115,7 +120,7 @@ class Entity {
         if (!active) return;
         
         // Late update all components
-        for (component in components) {
+        for (component in __components) {
             if (component.enabled) {
                 component.lateUpdate(deltaTime);
             }
@@ -150,10 +155,10 @@ class Entity {
         }
 
         // Clean up all components
-        for (component in components) {
+        for (component in __components) {
             component.cleanup();
         }
-        components = [];
+        __components = [];
         componentMap.clear();
         
         // Remove from state if attached
@@ -169,8 +174,8 @@ class Entity {
      */
     public function getDebugInfo():String {
         var displayComp = getComponent(DisplayObjectComp);
-        var pos = displayComp != null ? '(${displayComp.x}, ${displayComp.y}, ${displayComp.z})' : '(no display)';
-        var componentInfo = components.length > 0 ? ', Components: ${components.length}' : '';
+        var pos = displayComp != null ? '(has display)' : '(no display)';
+        var componentInfo = __components.length > 0 ? ', Components: ${__components.length}' : '';
         return 'Entity "${id}" at ${pos} - Active: ${active}, Visible: ${visible}${componentInfo}';
     }
 }

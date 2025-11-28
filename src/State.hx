@@ -1,16 +1,19 @@
 package;
 
 import comps.DisplayObjectComp;
+import comps.RenderComponent;
 import Entity;
 import Camera;
 import App;
+import cog.Engine;
+import cog.System;
+import cog.systems.RenderSystem;
 
 /**
  * Base class for game states (worlds/scenes/levels)
  * States manage collections of entities and handle state-specific logic
  */
 class State {
-    
     // State properties
     public var active:Bool = true;
     public var app(get, null):App;
@@ -18,7 +21,15 @@ class State {
     public var entities:Array<Entity> = [];
     public var name:String;
     public var id:Int;
-    
+
+    // ECS system lists
+    public var updateSystems:Array<System> = [];
+    public var renderSystems:Array<System> = [];
+
+    // Cog ECS engine for this state (for update systems only)
+    public var engine:Engine;
+    public var renderSystem:RenderSystem;
+
     // Privates
     private var __app:App;
     private static var __nextId:Int = 0;
@@ -40,6 +51,13 @@ class State {
         camera.yaw = 0.0;
         camera.roll = 0.0;
         
+        // Initialize Cog ECS engine (for update systems only)
+        engine = new Engine();
+
+        // Create RenderSystem (not added to engine)
+        renderSystem = new RenderSystem(app.renderer, camera);
+        renderSystems.push(renderSystem);
+
         trace("Created state '" + name + "' with ID " + id + " and camera");
     }
     
@@ -49,14 +67,17 @@ class State {
      */
     public function update(deltaTime:Float):Void {
         if (!active) return;
-        
-        // Update all active entities in this state
+
+        // Step all update systems (engine only contains update systems)
+        engine.step(deltaTime);
+
+        // Update all active entities in this state (for custom entity logic)
         for (entity in entities) {
             if (entity != null && entity.active) {
                 entity.update(deltaTime);
             }
         }
-        
+
         // Late update all active entities
         for (entity in entities) {
             if (entity != null && entity.active) {
@@ -67,22 +88,13 @@ class State {
     
     /**
      * Called every frame to render state entities
-     * Override in subclasses for custom rendering order/effects
+     * Rendering is now handled by RenderSystem in the Cog engine during update()
+     * This method is kept for backward compatibility but is no longer used
      */
     public function render(renderer:Renderer):Void {
-        if (!active) return;
-        
-        // Calculate camera matrix for this state's world
-        // This creates the View + Projection matrix
-        camera.renderMatrix(renderer.windowWidth, renderer.windowHeight);
-        var viewProjectionMatrix = camera.getMatrix();
-        
-        // Render all active and visible entities in this state with the camera matrix
-        for (entity in entities) {
-            if (entity != null && entity.active && entity.visible) {
-                entity.render(renderer, viewProjectionMatrix);
-            }
-        }
+        // Step all render systems (RenderSystem, UI, etc.)
+        for (sys in renderSystems) sys.step(0);
+        // Add post-processing or UI here if needed
     }
     
     /**
@@ -96,12 +108,14 @@ class State {
         
         entities.push(entity);
         entity.state = this;
+        
+        // Add entity's Cog components to the engine
+        engine.add_components(entity.components);
 
-        // TODO: Initialize DisplayObject from the component altogether.
-        // This is a workaround to because you cant access the renderer from Entity directly.
-        var displayComp = entity.getComponent(DisplayObjectComp);
-        if (displayComp != null && displayComp.displayObject != null && !displayComp.displayObject.active) {
-            displayComp.displayObject.init(__app.renderer);
+        // Initialize DisplayObject from RenderComponent (using Cog component access)
+        var renderComp = entity.components.get(RenderComponent);
+        if (renderComp != null && renderComp.displayObject != null && !renderComp.displayObject.active) {
+            renderComp.displayObject.init(__app.renderer);
             trace("Initialized DisplayObject for entity '" + entity.id + "'");
         }
         
@@ -118,6 +132,10 @@ class State {
         var removed = entities.remove(entity);
         if (removed) {
             entity.state = null;
+            
+            // Remove entity's components from Cog engine
+            engine.remove_components(entity.components);
+            
             trace("Removed entity '" + entity.id + "' from state '" + name + "'");
         }
         return removed;
