@@ -1,9 +1,5 @@
 package;
 
-//import states.ImageTestState;
-//import states.CollisionTest;
-//import states.TextTestState;
-import states.TileBatchFastTest;
 import states.AtlasState;
 import App;
 import states.CollisionTestState;

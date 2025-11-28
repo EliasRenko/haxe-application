@@ -6,7 +6,7 @@ import App;
 import Renderer;
 import ProgramInfo;
 import Texture;
-import display.TileBatch;
+import display.ManagedTileBatch;
 import display.BitmapFont;
 import display.Text;
 import loaders.FontLoader;
@@ -35,7 +35,7 @@ import comps.DisplayObjectComp;
 class CollisionTestState extends State {
     
     // Rendering
-    private var tileBatch:TileBatch;
+    private var tileBatch:ManagedTileBatch;
     private var texture:Texture;
     private var programInfo:ProgramInfo;
     
@@ -86,7 +86,7 @@ class CollisionTestState extends State {
         texture = renderer.uploadTexture(textureData);
         
         // Create TileBatch for rendering tiles
-        tileBatch = new TileBatch(programInfo, texture);
+        tileBatch = new ManagedTileBatch(programInfo, texture);
         
         // Define atlas region (using first 32x32 tile)
         var regionId = tileBatch.defineRegion(0, 0, 32, 32);
@@ -308,7 +308,7 @@ class PlayerEntity extends Entity {
     public var y:Float = 0;
     public var collisionShape:Circle;
     
-    private var tileBatch:TileBatch;
+    private var tileBatch:ManagedTileBatch;
     private var texture:Texture;
     private var tileId:Int = -1;
     private var keyboard:input.Keyboard;
@@ -336,7 +336,7 @@ class PlayerEntity extends Entity {
         if (textureData != null) {
             texture = renderer.uploadTexture(textureData);
             
-            tileBatch = new TileBatch(programInfo, texture);
+            tileBatch = new ManagedTileBatch(programInfo, texture);
             
             // Define atlas region (use second tile at x=32)
             var regionId = tileBatch.defineRegion(32, 0, 32, 32);
