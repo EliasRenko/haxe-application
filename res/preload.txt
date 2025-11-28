@@ -6,14 +6,16 @@
 textures/gui.json
 
 # Fonts
-fonts/gohu.json
+fonts/gohu11.json
+fonts/gohu14.json
 fonts/nokia.json
 
 # Textures
 textures/dev1.tga
 textures/dev_tiles.tga
 textures/nokiafc22.tga
-textures/gohu.tga
+textures/gohu11.tga
+textures/gohu14.tga
 textures/nokia.tga
 textures/gui.tga
 

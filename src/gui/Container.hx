@@ -15,28 +15,23 @@ class Container<T:Control> extends Control {
     private var __controls:List<T> = new List<T>();
 
     public function new(width:Float, height:Float, x:Float, y:Float) {
-        
         super(x, y);
 
         __width = width;
-
         __height = height;
 
         __type = 'container';
     }
 
     override function init():Void {
-
         super.init();
 
         for (control in __controls) {
-
             __initControl(control);
         }
     }
 
     override function release():Void {
-
         __clear();
 
         super.release();
@@ -90,18 +85,23 @@ class Container<T:Control> extends Control {
         super.update();
     }
 
-    override function onMouseEnter():Void {
+    public function resize(width:Float, height:Float):Void {
+        
+        this.width = width;
+        this.height = height;
 
+        
+    }
+
+    override function onMouseEnter():Void {
         super.onMouseEnter();
     }
 
     override function onMouseLeave():Void {
-
         super.onMouseLeave();
     }
 
     override function onMouseHover():Void {
-
         super.onMouseHover();
     }
     
@@ -121,7 +121,6 @@ class Container<T:Control> extends Control {
     }
 
     override function ____setOffsetX(value:Float):Void {
-        
         super.____setOffsetX(value);
 
         for (control in __controls) {
@@ -131,11 +130,9 @@ class Container<T:Control> extends Control {
     }
 
     override function ____setOffsetY(value:Float):Void {
-        
         super.____setOffsetY(value);
 
         for (control in __controls) {
-
             @:privateAccess control.____setOffsetY(__y + ____offsetY);
         }
     }
@@ -143,14 +140,11 @@ class Container<T:Control> extends Control {
     // ** Getters and setters.
 
     private function get_controls():List<T> {
-
 		return __controls;
     }
 
     override function set_visible(value:Bool):Bool {
-
         for (control in __controls) {
-
             control.visible = value;
         }
 
@@ -158,11 +152,9 @@ class Container<T:Control> extends Control {
     }
     
     override function set_x(value:Float):Float {
-
         super.set_x(value);
 
         for (control in __controls) {
-
             @:privateAccess control.____setOffsetX(__x + ____offsetX);
         }
 
@@ -170,11 +162,9 @@ class Container<T:Control> extends Control {
     }
 
     override function set_y(value:Float):Float {
-
         super.set_y(value);
 
         for (control in __controls) {
-
             @:privateAccess control.____setOffsetY(__y + ____offsetY);
         }
 

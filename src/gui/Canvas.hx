@@ -130,6 +130,13 @@ class Canvas extends Entity {
         __container.update();
     }
     
+    public function resize(width:Int, height:Int) {
+        this.width = width;
+        this.height = height;
+
+        __container.resize(width, height);
+    }
+
     // Mouse getters
     private function get_mouseX():Float {
         return parentState.app.input.mouse.x;

@@ -1,8 +1,8 @@
 {
 	"font": {
 		"info": {
-			"_face": "GohuFont",
-			"_size": "-30",
+			"_face": "Gohu11",
+			"_size": "-22",
 			"_bold": "0",
 			"_italic": "0",
 			"_charset": "",
@@ -29,7 +29,7 @@
 		"pages": {
 			"page": {
 				"_id": "0",
-				"_file": "gohu.tga"
+				"_file": "gohu11.tga"
 			}
 		},
 		"chars": {

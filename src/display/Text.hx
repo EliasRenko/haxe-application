@@ -35,11 +35,9 @@ class Text {
         this._x = x;
         this._y = y;
 
-        if (font == null) {
-            return;
+        if (font != null) {
+            this.font = font;
         }
-
-        this.font = font;
 
         if (text.length > 0) {
             setText(text);
@@ -151,7 +149,7 @@ class Text {
     public function updatePosition():Void {
         // Regenerate text at new position
         var currentText = textString;
-        textString = ""; // Force regeneration
+        //textString = ""; // Force regeneration
         setText(currentText);
     }
     

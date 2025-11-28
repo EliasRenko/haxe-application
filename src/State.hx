@@ -74,7 +74,9 @@ class State {
         
         // Calculate camera matrix for this state's world
         // This creates the View + Projection matrix
-        camera.renderMatrix(renderer.windowWidth, renderer.windowHeight);
+
+        var size = app.window.size;
+        camera.renderMatrix(size.x, size.y);
         var viewProjectionMatrix = camera.getMatrix();
         
         // Render all active and visible entities in this state with the camera matrix
@@ -195,6 +197,10 @@ class State {
     public function release():Void {
         trace("State '" + name + "' released");
         active = false;
+    }
+
+    public function onWindowResized(width:Int, height:Int):Void {
+        
     }
     
     /**
