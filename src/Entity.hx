@@ -132,10 +132,10 @@ class Entity {
         }
         
         // Get DisplayObjectComponent if it exists
-        var displayComp = getComponent(DisplayObjectComp);
-        if (displayComp != null && displayComp.displayObject != null && displayComp.visible) {
-            renderer.renderDisplayObject(displayComp.displayObject, viewProjectionMatrix);
-        }
+        // var displayComp = getComponent(DisplayObjectComp);
+        // if (displayComp != null && displayComp.displayObject != null && displayComp.visible) {
+        //     renderer.renderDisplayObject(displayComp.displayObject, viewProjectionMatrix);
+        // }
     }
     
     /**
@@ -144,10 +144,10 @@ class Entity {
     public function cleanup(renderer:Renderer):Void {
 
         // TODO: Workaround to release DisplayObject from DisplayObjectComp
-        var displayComp = getComponent(DisplayObjectComp);
-        if (displayComp != null && displayComp.displayObject != null) {
-            displayComp.displayObject.release(renderer);
-        }
+        // var displayComp = getComponent(DisplayObjectComp);
+        // if (displayComp != null && displayComp.displayObject != null) {
+        //     displayComp.displayObject.release(renderer);
+        // }
 
         // Clean up all components
         for (component in components) {

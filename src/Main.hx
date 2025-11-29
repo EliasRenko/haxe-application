@@ -1,9 +1,9 @@
 package;
 
-import states.AtlasState;
+//import states.AtlasState;
 import App;
-import states.CollisionTestState;
-import states.UITestState;
+//import states.CollisionTestState;
+//import states.UITestState;
 import states.TileBatchPerformanceTest;
 
 class Main {

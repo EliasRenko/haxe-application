@@ -10,7 +10,7 @@ import display.TileBatch;
 import display.Tile;
 import display.BitmapFont;
 import display.Text;
-import comps.DisplayObjectComp;
+import entity.DisplayEntity;
 import loaders.FontLoader;
 
 /**
@@ -71,10 +71,8 @@ class TileBatchPerformanceTest extends State {
         tileBatch = new TileBatch(programInfo, texture);
         tileBatch.init(renderer);
         
-        // Add to scene
-        var entity = new Entity("tile_batch");
-        var displayComp = new DisplayObjectComp(tileBatch);
-        entity.addComponent(displayComp);
+        // Add to scene using DisplayEntity
+        var entity = new DisplayEntity(tileBatch, "tile_batch");
         addEntity(entity);
         
         // Define a single atlas region (using a small portion of the texture)
@@ -135,10 +133,8 @@ class TileBatchPerformanceTest extends State {
         bitmapFont = new BitmapFont(monoProgramInfo, fontTexture, fontData);
         bitmapFont.init(renderer);
         
-        // Add font to scene
-        var fontEntity = new Entity("fps_text");
-        var fontDisplay = new DisplayObjectComp(bitmapFont);
-        fontEntity.addComponent(fontDisplay);
+        // Add font to scene using DisplayEntity
+        var fontEntity = new DisplayEntity(bitmapFont, "fps_text");
         addEntity(fontEntity);
         
         // Create FPS text instance
