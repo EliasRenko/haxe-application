@@ -2,9 +2,9 @@ package;
 
 //import states.AtlasState;
 import App;
-//import states.CollisionTestState;
+import states.CollisionTestState;
 //import states.UITestState;
-import states.TileBatchPerformanceTest;
+//import states.TileBatchPerformanceTest;
 
 class Main {
     public static function main() {
@@ -15,7 +15,7 @@ class Main {
             return;
         }
 
-        app.addState(new TileBatchPerformanceTest(app));
+        app.addState(new CollisionTestState(app));
         //app.addState(new UITestState(app));
         app.run();
     }

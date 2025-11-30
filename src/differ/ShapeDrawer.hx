@@ -10,13 +10,17 @@ class ShapeDrawer {
 
 //Public API
 
-    public function new() {
+    var lineBatch:display.LineBatch;
 
+    public function new(lineBatch:display.LineBatch) {
+        this.lineBatch = lineBatch;
     } //new
 
-        /** Draw a line between p0 and p1. Implement this function at minimum in custom drawing handlers */
+    /** Draw a line between p0 and p1. Batches to LineBatch with red as default color. */
     public function drawLine( p0x:Float, p0y:Float, p1x:Float, p1y:Float, ?startPoint:Bool = true ) {
-
+        // Default color: red (RGBA)
+        var color:Array<Float> = [1.0, 0.0, 0.0, 1.0];
+        lineBatch.addLine(p0x, p0y, 0.0, p1x, p1y, 0.0, color, color);
     } //drawLine
 
         /** Draw a `Shape`, it will determine the type and draw it for you. */

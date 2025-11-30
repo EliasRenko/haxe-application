@@ -15,7 +15,7 @@ import differ.shapes.Circle;
 import differ.shapes.Polygon;
 import differ.shapes.Shape;
 import differ.data.ShapeCollision;
-import comps.DisplayObjectComp;
+import entity.DisplayEntity;
 
 
 /**
@@ -55,6 +55,8 @@ class CollisionTestState extends State {
     private static inline var PLAYER_SPEED:Float = 200.0;
     private static inline var PLAYER_RADIUS:Float = 16.0;
     
+        private var lineBatch:display.LineBatch;
+        private var shapeDrawer:differ.ShapeDrawer;
     public function new(app:App) {
         super("CollisionTestState", app);
     }
@@ -87,6 +89,7 @@ class CollisionTestState extends State {
         
         // Create TileBatch for rendering tiles
         tileBatch = new ManagedTileBatch(programInfo, texture);
+        tileBatch.init(renderer);
         
         // Define atlas region (using first 32x32 tile)
         var regionId = tileBatch.defineRegion(0, 0, 32, 32);
@@ -95,9 +98,7 @@ class CollisionTestState extends State {
         createTestLevel(regionId);
         
         // Create TileBatch entity for rendering
-        var tileBatchEntity = new Entity("level_tiles");
-        var tileBatchDisplay = new DisplayObjectComp(tileBatch);
-        tileBatchEntity.addComponent(tileBatchDisplay);
+        var tileBatchEntity = new DisplayEntity(tileBatch, "level_tiles");
         addEntity(tileBatchEntity);
         
         // Create player
@@ -109,6 +110,15 @@ class CollisionTestState extends State {
         // Setup text display for velocity
         setupTextDisplay(renderer);
         
+        // Setup debug line batch and shape drawer
+        var lineVertShader = app.resources.getText("shaders/line.vert");
+        var lineFragShader = app.resources.getText("shaders/line.frag");
+        var lineProgram = renderer.createProgramInfo("line", lineVertShader, lineFragShader);
+        lineBatch = new display.LineBatch(lineProgram, false); // not persistent
+        shapeDrawer = new differ.ShapeDrawer(lineBatch);
+        var lineEntity = new entity.DisplayEntity(lineBatch, "debug_lines");
+        addEntity(lineEntity);
+
         trace("CollisionTestState: Setup complete");
     }
     
@@ -117,14 +127,14 @@ class CollisionTestState extends State {
      */
     private function setupTextDisplay(renderer:Renderer):Void {
         // Load font
-        var fontData = FontLoader.load(app.resources.getText("fonts/gohu.json"));
+        var fontData = FontLoader.load(app.resources.getText("fonts/nokia.json"));
         if (fontData == null) {
             trace("CollisionTestState: Failed to load font");
             return;
         }
         
         // Load font texture
-        var fontTextureData = app.resources.getTexture("textures/gohu.tga");
+        var fontTextureData = app.resources.getTexture("textures/nokia.tga");
         if (fontTextureData == null) {
             trace("CollisionTestState: Failed to load font texture");
             return;
@@ -144,9 +154,7 @@ class CollisionTestState extends State {
         bitmapFont.init(renderer);
         
         // Add font to scene for rendering
-        var fontEntity = new Entity("bitmap_font");
-        var fontDisplay = new DisplayObjectComp(bitmapFont);
-        fontEntity.addComponent(fontDisplay);
+        var fontEntity = new DisplayEntity(bitmapFont, "bitmap_font");
         addEntity(fontEntity);
         
         // Create text instances
@@ -259,6 +267,44 @@ class CollisionTestState extends State {
                 entity.lateUpdate(deltaTime);
             }
         }
+
+        // Debug draw: player and collision shapes
+        if (shapeDrawer != null && player != null && player.collisionShape != null) {
+            shapeDrawer.drawShape(player.collisionShape);
+        }
+        if (shapeDrawer != null) {
+            for (tile in collisionTiles) {
+                shapeDrawer.drawShape(tile.shape);
+            }
+        }
+        
+    }
+
+    override public function render(renderer:Renderer):Void {
+
+        // // Debug: Check if lineBatch DisplayEntity is active and visible
+        // for (entity in entities) {
+        //     if (Std.is(entity, entity.DisplayEntity)) {
+        //         var de = cast(entity, entity.DisplayEntity);
+        //         if (de.displayObject == lineBatch) {
+        //             trace('LineBatch DisplayEntity: active=' + de.active + ', visible=' + de.visible);
+        //         }
+        //     }
+        // }
+
+        // // Debug: Check if lines are batched
+        // if (lineBatch != null) {
+        //     trace('LineBatch: lineCount=' + lineBatch.lineCount + ', vertices=' + lineBatch.vertices.length);
+        // }
+
+        super.render(renderer);
+
+        if (lineBatch != null && !lineBatch.isPersistent()) {
+            lineBatch.clear();
+        }
+        
+        //lineBatch.render(camera.getMatrix());
+        //renderer.renderDisplayObject(lineBatch, camera.getMatrix());
     }
     
     /**
@@ -345,9 +391,8 @@ class PlayerEntity extends Entity {
             tileId = tileBatch.addTile(0, 0, PLAYER_SIZE, PLAYER_SIZE, regionId);
             tileBatch.updateBuffers(renderer);
             
-            // Add DisplayObjectComp for rendering
-            var displayComp = new DisplayObjectComp(tileBatch);
-            addComponent(displayComp);
+            // Add DisplayEntity for rendering
+            // (Handled by state if needed, or refactor PlayerEntity to DisplayEntity if always renderable)
         }
         
         // Create collision shape (circle)

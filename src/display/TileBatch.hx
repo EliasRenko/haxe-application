@@ -238,30 +238,30 @@ class TileBatch extends DisplayObject {
         //__indicesToRender = 0;
         
         // Allocate buffer on first update only
-        if (__bufferCapacity == 0) {
-            __bufferCapacity = MAX_TILES;
-            renderer.allocateTileBatchBuffers(this, MAX_TILES);
-        }
+        // if (__bufferCapacity == 0) {
+        //     __bufferCapacity = MAX_TILES;
+        //     renderer.allocateTileBatchBuffers(this, MAX_TILES);
+        // }
         
         // Rebuild vertex array from visible tiles (every frame)
         //buildVertexArray();
         
         // Update vertices object for renderer
         //this.vertices = new Vertices(__vertexCache);
-        
-        // Orphan buffer before uploading (every frame)
+
         if (vbo != 0 && vertices.length > 0) {
 
-            GL.bindBuffer(GL.ARRAY_BUFFER, vbo);
+            // GL.bindBuffer(GL.ARRAY_BUFFER, vbo);
             
-            // Orphan old buffer storage
-            var maxBufferSize = MAX_TILES * 4 * 5 * 4;
-            untyped __cpp__("glBufferData({0}, {1}, NULL, {2})", GL.ARRAY_BUFFER, maxBufferSize, GL.STREAM_DRAW);
+            // // Orphan old buffer storage
+            // var maxBufferSize = MAX_TILES * 4 * 5 * 4;
+            // untyped __cpp__("glBufferData({0}, {1}, NULL, {2})", GL.ARRAY_BUFFER, maxBufferSize, GL.STREAM_DRAW);
             
-            // Now upload the actual data using standard method
-            GL.bufferFloatArray(GL.ARRAY_BUFFER, vertices, GL.STREAM_DRAW, vertices.length);
+            // // Now upload the actual data using standard method
+            // GL.bufferFloatArray(GL.ARRAY_BUFFER, vertices, GL.STREAM_DRAW, vertices.length);
             
-            GL.bindBuffer(GL.ARRAY_BUFFER, 0);
+            // GL.bindBuffer(GL.ARRAY_BUFFER, 0);
+            renderer.orphanAndUploadData(this, MAX_TILES * 4 * 5 * 4);
         }
         
         needsBufferUpdate = false;
