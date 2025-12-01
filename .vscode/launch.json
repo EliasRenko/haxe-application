@@ -5,7 +5,7 @@
             "name": "Debug Haxe Engine",
             "type": "hxcpp",
             "request": "launch", 
-            "program": "${workspaceFolder}/bin/debug/Main-debug.exe",
+            "program": "${workspaceFolder}/bin/debug/native/Main-debug.exe",
             "internalConsoleOptions": "openOnSessionStart"
         }
     ]

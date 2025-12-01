@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "../../haxe-native"
+		},
+		{
+			"path": "../../haxe-web"
 		}
 	],
 	"settings": {}

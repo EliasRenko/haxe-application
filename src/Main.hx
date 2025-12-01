@@ -1,5 +1,7 @@
 package;
 
+#if native
+
 //import states.AtlasState;
 import App;
 import states.CollisionTestState;
@@ -20,3 +22,14 @@ class Main {
         app.run();
     }
 }
+
+#elseif web
+
+class Main {
+
+    public static function main() {
+        trace("Running in web backend");
+    }
+}
+
+#end

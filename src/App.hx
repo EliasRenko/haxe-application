@@ -1,6 +1,8 @@
 package;
 
-class App extends Runtime {
+import impl.IRuntime;
+
+class App extends Backend {
     
     // State Management
     public var states:Array<State> = [];
@@ -373,5 +375,11 @@ class App extends Runtime {
 
     public function get_renderer():Renderer {
         return __renderer;
+    }
+}
+
+private class Backend extends #if web WebBackend #else NativeBackend #end implements IRuntime {
+    public function new() {
+        super();
     }
 }
