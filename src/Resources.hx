@@ -1,5 +1,5 @@
+package;
 
-// TODO: Replace sys.FileSystem with SDL IO functions (SDL_GetPathInfo)
 import sys.FileSystem;
 
 import Promise;
@@ -31,14 +31,18 @@ private class __Resources {
         return false;
     }
 
-    public function exists(path:String):Bool {
-        var fullPath = __resourceFolder + "/" + path;
-        try {
-            return FileSystem.exists(fullPath);
-        } catch (e:Dynamic) {
-            return false;
-        }
-    }
+    // public function exists(path:String):Bool {
+    //     var fullPath = __resourceFolder + "/" + path;
+    //     try {
+    //         return FileSystem.exists(fullPath);
+    //     } catch (e:Dynamic) {
+    //         return false;
+    //     }
+    // }
+
+	public function exists(path:String):Bool {
+        return __parent.exists(__resourceFolder + "/" + path);
+	}
 
     public function getText(name:String):String {
         var fullPath = __resourceFolder + "/" + name;
