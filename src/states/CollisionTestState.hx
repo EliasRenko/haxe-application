@@ -8,6 +8,7 @@ import ProgramInfo;
 import Texture;
 import display.ManagedTileBatch;
 import display.BitmapFont;
+import display.Image;
 import display.Text;
 import loaders.FontLoader;
 import differ.Collision;
@@ -35,6 +36,7 @@ import entity.DisplayEntity;
 class CollisionTestState extends State {
     
     // Rendering
+    private var background:Image;
     private var tileBatch:ManagedTileBatch;
     private var texture:Texture;
     private var programInfo:ProgramInfo;
@@ -55,8 +57,9 @@ class CollisionTestState extends State {
     private static inline var PLAYER_SPEED:Float = 200.0;
     private static inline var PLAYER_RADIUS:Float = 16.0;
     
-        private var lineBatch:display.LineBatch;
-        private var shapeDrawer:differ.ShapeDrawer;
+    private var lineBatch:display.LineBatch;
+    private var shapeDrawer:differ.ShapeDrawer;
+
     public function new(app:App) {
         super("CollisionTestState", app);
     }
@@ -83,6 +86,16 @@ class CollisionTestState extends State {
             trace("CollisionTestState: Failed to load texture");
             return;
         }
+
+        var skyTextureData = app.resources.getTexture("textures/sky.tga");
+        var skyTexture = renderer.uploadTexture(skyTextureData);
+        background = new Image(programInfo, skyTexture);
+        background.init(renderer); // Initialize GPU buffers
+
+        var backgroundEntity = new DisplayEntity(background, "background");
+        backgroundEntity.displayObject = background;
+        addEntity(backgroundEntity);
+
         
         // Upload texture to GPU
         texture = renderer.uploadTexture(textureData);

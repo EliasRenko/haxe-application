@@ -1,6 +1,5 @@
 package;
 
-import comps.DisplayObjectComp;
 import Entity;
 import Camera;
 import App;

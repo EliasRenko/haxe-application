@@ -4,7 +4,6 @@ import State;
 import App;
 import Entity;
 import display.Text;
-import comps.DisplayObjectComp;
 import loaders.FontLoader;
 import loaders.FontData;
 
@@ -82,13 +81,9 @@ class TextTestState extends State {
         
         // Create entities and add to the scene
         var helloEntity = new Entity("hello_text");
-        var helloDisplayComp = new DisplayObjectComp(helloText);
-        helloEntity.addComponent(helloDisplayComp);
         addEntity(helloEntity);
         
         var dynamicEntity = new Entity("dynamic_text");
-        var dynamicDisplayComp = new DisplayObjectComp(dynamicText);
-        dynamicEntity.addComponent(dynamicDisplayComp);
         addEntity(dynamicEntity);
         
         trace("TextTestState: Created text displays");

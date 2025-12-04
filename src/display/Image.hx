@@ -1,5 +1,7 @@
 package display;
 
+import data.Indices;
+import data.Vertices;
 import GL;
 import DisplayObject;
 import ProgramInfo;
@@ -7,7 +9,7 @@ import Renderer;
 import math.Matrix;
 import Texture;
 
-class Image extends DisplayObject {
+class Image extends Transform {
 	
 	// Publics
 	public var angle(get, set):Float;
@@ -31,21 +33,20 @@ class Image extends DisplayObject {
 		// Create quad vertices (position + UV coordinates)
 		// Format: x, y, z, u, v (5 floats per vertex)
 		// Origin at top-left (0,0), extending right (+X) and down (+Y)
-		// UV coordinates: flipped V to match corrected camera matrix coordinate system
-		var vertices = [
-			// Top-left (origin) - UV (0,1) maps to top-left of texture (V flipped)
-			0.0,  0.0,  0.0,  0.0, 1.0,
-			// Top-right - UV (1,1) maps to top-right of texture (V flipped)
-			w,    0.0,  0.0,  1.0, 1.0,
-			// Bottom-right - UV (1,0) maps to bottom-right of texture (V flipped)
-			w,    h,    0.0,  1.0, 0.0,
-			// Bottom-left - UV (0,0) maps to bottom-left of texture (V flipped)
-			0.0,  h,    0.0,  0.0, 0.0
+		var vertices:Vertices = [
+			// Top-left (origin) - UV (0,0) maps to top-left of texture
+			0.0,  0.0,  0.0,  0.0, 0.0,
+			// Top-right - UV (1,0) maps to top-right of texture
+			w,    0.0,  0.0,  1.0, 0.0,
+			// Bottom-right - UV (1,1) maps to bottom-right of texture
+			w,    h,    0.0,  1.0, 1.0,
+			// Bottom-left - UV (0,1) maps to bottom-left of texture
+			0.0,  h,    0.0,  0.0, 1.0
 		];
 
-		var indices = [0, 1, 2, 0, 2, 3]; // Two triangles to make a quad
+		var indices:Indices = [0, 1, 2, 0, 2, 3]; // Two triangles to make a quad
 
-		super(programInfo, new Vertices(vertices), new Indices(indices));
+		super(programInfo, vertices, indices);
 
 		// Set OpenGL properties
 		mode = GL.TRIANGLES;
@@ -86,16 +87,15 @@ class Image extends DisplayObject {
 	
 	public function setUV(x:Float, y:Float, width:Float, height:Float):Void {
 		// Update UV coordinates - vertex order: [top-left, top-right, bottom-right, bottom-left]
-		// Flip V coordinates to match the corrected camera matrix coordinate system
 		vertices.set(3, x);              // Top-left U
 		vertices.set(8, x + width);      // Top-right U  
 		vertices.set(13, x + width);     // Bottom-right U
 		vertices.set(18, x);             // Bottom-left U
 		
-		vertices.set(4, y + height);     // Top-left V (flipped)
-		vertices.set(9, y + height);     // Top-right V (flipped)
-		vertices.set(14, y);             // Bottom-right V (flipped)
-		vertices.set(19, y);             // Bottom-left V (flipped)
+		vertices.set(4, y);              // Top-left V
+		vertices.set(9, y);              // Top-right V
+		vertices.set(14, y + height);    // Bottom-right V
+		vertices.set(19, y + height);    // Bottom-left V
 		
 		// Mark for buffer update on next render
 		if (active) {
@@ -121,7 +121,7 @@ class Image extends DisplayObject {
 	
 	private function set_angle(value:Float):Float {
 		__angle = (value %= 360) >= 0 ? value : (value + 360);
-		__shouldTransform = true;
+		//__shouldTransform = true;
 		return value;
 	}
 
@@ -133,7 +133,7 @@ class Image extends DisplayObject {
 		vertices.set(16, -(value * scaleY) - originY);
 		
 		__height = value;
-		__shouldTransform = true;
+		//__shouldTransform = true;
 		
 		// Mark for buffer update on next render
 		if (active) {
@@ -151,7 +151,7 @@ class Image extends DisplayObject {
 		vertices.set(15, 0 - originX);
 		
 		__width = value;
-		__shouldTransform = true;
+		//__shouldTransform = true;
 		
 		// Mark for buffer update on next render
 		if (active) {
@@ -175,7 +175,7 @@ class Image extends DisplayObject {
 
 	private function set_originX(value:Float):Float {
 		__originX = value;
-		__shouldTransform = true;
+		//__shouldTransform = true;
 		width = __width;
 		return __originX;
 	}
@@ -186,7 +186,7 @@ class Image extends DisplayObject {
 
 	private function set_originY(value:Float):Float {
 		__originY = value;
-		__shouldTransform = true;
+		//__shouldTransform = true;
 		height = __height;
 		return __originY;
 	}

@@ -51,12 +51,6 @@ class TileComp extends Component {
      * Sync position from entity if other components moved it
      */
     override public function lateUpdate(deltaTime:Float):Void {
-        // If entity has a DisplayObjectComponent, sync from it
-        var displayComp = entity.getComponent(DisplayObjectComp);
-        if (displayComp != null) {
-            if (displayComp.x != x || displayComp.y != y) {
-                setPosition(displayComp.x, displayComp.y);
-            }
-        }
+        // Position managed by other components (e.g. VelocityComp)
     }
 }

@@ -15,7 +15,6 @@ import Texture;
 import display.BitmapFont;
 import display.TileBatch;
 import loaders.FontLoader;
-import comps.DisplayObjectComp;
 import gui.Canvas;
 import gui.Window;
 /**
@@ -73,8 +72,6 @@ class UITestState extends State {
         
         // Add UI batch to scene for rendering
         var uiEntity = new Entity("ui_batch");
-        var uiDisplay = new DisplayObjectComp(uiTileBatch);
-        uiEntity.addComponent(uiDisplay);
         addEntity(uiEntity);
         
         // Load font
@@ -103,8 +100,6 @@ class UITestState extends State {
         
         // Add font to scene for rendering
         var fontEntity = new Entity("bitmap_font");
-        var fontDisplay = new DisplayObjectComp(bitmapFont);
-        fontEntity.addComponent(fontDisplay);
         addEntity(fontEntity);
         
         // Create canvas

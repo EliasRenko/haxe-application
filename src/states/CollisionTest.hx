@@ -1,6 +1,5 @@
 package states;
 
-import comps.DisplayObjectComp;
 import comps.TileComp;
 import comps.VelocityComp;
 import State;
@@ -8,9 +7,12 @@ import App;
 import Entity;
 import Renderer;
 import display.TileBatch;
+import display.Image;
 
 class CollisionTest extends State {
     
+    private var background:Image;
+
     private var tileBatch:TileBatch;
     private var tileEntities:Array<Entity> = [];
     
@@ -32,6 +34,13 @@ class CollisionTest extends State {
         var fragShader = app.resources.getText("shaders/textured.frag");
         var programInfo = renderer.createProgramInfo("Image", vertShader, fragShader);
         
+        var skyTexture = app.resources.getTexture("textures/sky.tga");
+        background = new Image(programInfo, skyTexture);
+
+        var backgroundEntity = new Entity("background");
+        backgroundEntity.displayObject = background;
+        addEntity(backgroundEntity);
+
         // Load the dev_tiles.tga texture
         var textureData = app.resources.getTexture("textures/dev_tiles.tga");
         if (textureData == null) {
@@ -71,10 +80,7 @@ class CollisionTest extends State {
         
         // Create the batch entity (handles rendering for all tiles)
         var tileBatchEntity = new Entity("tilebatch");
-        var tileBatchDisplay = new DisplayObjectComp(tileBatch);
-        tileBatchEntity.addComponent(tileBatchDisplay);
         addEntity(tileBatchEntity);
-        trace("Created TileBatch entity with DisplayObjectComponent");
         
         // Create 6 individual tile entities
         var tileSize = 32;

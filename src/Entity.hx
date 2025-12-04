@@ -4,7 +4,6 @@ import State;
 import math.Matrix;
 import utils.Rect;
 import Component;
-import comps.DisplayObjectComp;
 
 /**
  * Base class for game entities (game objects)
@@ -131,11 +130,7 @@ class Entity {
             return;
         }
         
-        // Get DisplayObjectComponent if it exists
-        // var displayComp = getComponent(DisplayObjectComp);
-        // if (displayComp != null && displayComp.displayObject != null && displayComp.visible) {
-        //     renderer.renderDisplayObject(displayComp.displayObject, viewProjectionMatrix);
-        // }
+        // Override in subclasses to implement custom rendering
     }
     
     /**
@@ -162,9 +157,7 @@ class Entity {
      * Get debug info about this entity
      */
     public function getDebugInfo():String {
-        var displayComp = getComponent(DisplayObjectComp);
-        var pos = displayComp != null ? '(${displayComp.x}, ${displayComp.y}, ${displayComp.z})' : '(no display)';
         var componentInfo = components.length > 0 ? ', Components: ${components.length}' : '';
-        return 'Entity "${id}" at ${pos} - Active: ${active}, Visible: ${visible}${componentInfo}';
+        return 'Entity "${id}" - Active: ${active}, Visible: ${visible}${componentInfo}';
     }
 }

@@ -40,9 +40,9 @@ private class __Resources {
     //     }
     // }
 
-	public function exists(path:String):Bool {
-        return __parent.exists(__resourceFolder + "/" + path);
-	}
+	// public function exists(path:String):Bool {
+    //     return __parent.exists(__resourceFolder + "/" + path);
+	// }
 
     public function getText(name:String):String {
         var fullPath = __resourceFolder + "/" + name;

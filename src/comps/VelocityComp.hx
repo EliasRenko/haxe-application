@@ -4,7 +4,7 @@ import Component;
 
 /**
  * Adds velocity-based movement to an entity
- * Works with both DisplayObjectComp and TileComp
+ * Works with TileComp
  */
 class VelocityComp extends Component {
     public var velocityX:Float = 0;
@@ -19,15 +19,7 @@ class VelocityComp extends Component {
     override public function update(deltaTime:Float):Void {
         if (!enabled || entity == null) return;
         
-        // Try to update DisplayObjectComp first
-        var displayComp = entity.getComponent(DisplayObjectComp);
-        if (displayComp != null) {
-            displayComp.x += velocityX * deltaTime;
-            displayComp.y += velocityY * deltaTime;
-            return;
-        }
-        
-        // Otherwise try to update TileComp
+        // Update TileComp
         var tileComp = entity.getComponent(TileComp);
         if (tileComp != null) {
             var newX = tileComp.x + velocityX * deltaTime;
