@@ -118,7 +118,7 @@ class CollisionTestState extends State {
         player = new PlayerEntity(this, programInfo, renderer);
         player.x = 400;
         player.y = 300;
-        addEntity(player);
+        //addEntity(player);
         
         // Setup text display for velocity
         setupTextDisplay(renderer);
@@ -130,7 +130,7 @@ class CollisionTestState extends State {
         lineBatch = new display.LineBatch(lineProgram, false); // not persistent
         shapeDrawer = new differ.ShapeDrawer(lineBatch);
         var lineEntity = new entity.DisplayEntity(lineBatch, "debug_lines");
-        addEntity(lineEntity);
+        //addEntity(lineEntity);
 
         trace("CollisionTestState: Setup complete");
     }

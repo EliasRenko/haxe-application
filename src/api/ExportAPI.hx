@@ -18,6 +18,7 @@ extern "C" {
     __declspec(dllexport) void HxcppThreadAttach();
     __declspec(dllexport) void HxcppThreadDetach();
     __declspec(dllexport) void HxcppGarbageCollect(bool major);
+    __declspec(dllexport) void EngineTestConsole();
     
     __declspec(dllexport) int EngineInit();
     __declspec(dllexport) void EngineUpdate(float deltaTime);
@@ -35,19 +36,82 @@ extern "C" {
 // Implement the C exports
 @:cppFileCode('
 #include <hx/Thread.h>
+#include <windows.h>
+#include <io.h>
+#include <fcntl.h>
+#include <stdio.h>
 
 static bool hxcpp_initialized = false;
 static hx::AutoGCFreeZone *mainZone = NULL;
 
+static bool console_redirected = false;
+
+void RedirectConsole() {
+    if (console_redirected) return;
+    
+    // Allocate console
+    if (!AllocConsole()) {
+        // Console might already exist, try to attach
+        if (!AttachConsole(ATTACH_PARENT_PROCESS)) {
+            return;
+        }
+    }
+    
+    // Redirect stdout
+    FILE* fpStdout = nullptr;
+    freopen_s(&fpStdout, "CONOUT$", "w", stdout);
+    
+    // Redirect stderr  
+    FILE* fpStderr = nullptr;
+    freopen_s(&fpStderr, "CONOUT$", "w", stderr);
+    
+    // Redirect stdin
+    FILE* fpStdin = nullptr;
+    freopen_s(&fpStdin, "CONIN$", "r", stdin);
+    
+    // Disable buffering
+    setvbuf(stdout, NULL, _IONBF, 0);
+    setvbuf(stderr, NULL, _IONBF, 0);
+    
+    console_redirected = true;
+    
+    printf("========================================\\n");
+    printf("DLL Console Initialized\\n");
+    printf("========================================\\n");
+    fflush(stdout);
+}
+
+// Custom trace function that writes directly to console
+void EngineTrace(const char* msg) {
+    if (!console_redirected) RedirectConsole();
+    printf("[HAXE] %s\\n", msg);
+    fflush(stdout);
+}
+
 extern "C" {
+    // Test function to verify console output
+    __declspec(dllexport) void EngineTestConsole() {
+        RedirectConsole();
+        printf("TEST: Console is working!\\n");
+        fflush(stdout);
+        EngineTrace("TEST: EngineTrace is working!");
+    }
+    
     // Haxe runtime initialization
     __declspec(dllexport) const char* HxcppInit() {
         if (hxcpp_initialized) {
             return NULL;  // Already initialized
         }
+        
+        // Redirect console first
+        RedirectConsole();
+        
         const char* err = hx::Init();
         if (err == NULL) {
             hxcpp_initialized = true;
+            printf("Haxe runtime initialized\\n");
+        } else {
+            printf("Haxe init error: %s\\n", err);
         }
         return err;  // Returns NULL on success, error message on failure
     }
@@ -133,6 +197,11 @@ class ExportAPI {
     private static var app:App = null;
     private static var initialized:Bool = false;
     
+    // Custom log function that uses printf directly
+    private static function log(msg:String):Void {
+        untyped __cpp__("EngineTrace({0})", msg);
+    }
+    
     /**
      * Initialize the engine
      * @return 1 on success, 0 on failure
@@ -140,22 +209,22 @@ class ExportAPI {
     @:keep
     public static function engineInit():Int {
         if (initialized) {
-            trace("Engine already initialized");
+            log("Engine already initialized");
             return 1;
         }
         
         try {
-            trace("ExportAPI: Initializing engine...");
+            log("ExportAPI: Initializing engine...");
             app = new App();
             if (!app.init()) {
-                trace("ExportAPI: App.init() failed");
+                log("ExportAPI: App.init() failed");
                 return 0;
             }
             initialized = true;
-            trace("ExportAPI: Engine initialized successfully");
+            log("ExportAPI: Engine initialized successfully");
             return 1;
         } catch (e:Dynamic) {
-            trace("ExportAPI: Init error: " + e);
+            log("ExportAPI: Init error: " + e);
             return 0;
         }
     }
@@ -166,10 +235,17 @@ class ExportAPI {
      */
     @:keep
     public static function engineUpdate(deltaTime:Float):Void {
-        if (app != null && initialized) {
+        if (app == null || !initialized) {
+            log("ExportAPI: Cannot update - engine not initialized");
+            return;
+        }
+        
+        try {
             // Process events and update frame
             app.processEvents();
             app.updateFrame(deltaTime);
+        } catch (e:Dynamic) {
+            log("ExportAPI: Update error: " + e);
         }
     }
     
@@ -178,8 +254,29 @@ class ExportAPI {
      */
     @:keep
     public static function engineRender():Void {
-        if (app != null && initialized) {
+        if (app == null || !initialized) {
+            log("ExportAPI: Cannot render - engine not initialized");
+            return;
+        }
+        
+        try {
+            log("ExportAPI: Starting render...");
+            if (app.renderer == null) {
+                log("ExportAPI: Renderer is null!");
+                return;
+            }
+            log("ExportAPI: Renderer OK, calling renderFrame...");
             app.renderFrame();
+            log("ExportAPI: renderFrame completed");
+        } catch (e:Dynamic) {
+            log("ExportAPI: Render error: " + e);
+            #if cpp
+            var stack = haxe.CallStack.exceptionStack();
+            log("Stack trace:");
+            for (item in stack) {
+                log("  " + haxe.CallStack.toString([item]));
+            }
+            #end
         }
     }
     

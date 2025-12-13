@@ -1,16 +1,16 @@
 # DLL Build Configuration for C# Integration
 
 # Copy dependencies to DLL output folder
---macro Sys.command("cmd", ["/c", "..\\bat\\copy-files.bat", "..\\..\\haxe-native\\include", "..\\bin\\dll\\include"])
---macro Sys.command("cmd", ["/c", "..\\bat\\copy-files.bat", "..\\..\\haxe-native\\lib", "..\\bin\\dll\\lib"])
---macro Sys.command("cmd", ["/c", "if not exist ..\\bin\\dll\\src mkdir ..\\bin\\dll\\src"])
---macro Sys.command("cmd", ["/c", "copy ..\\..\\haxe-native\\src\\glad.c ..\\bin\\dll\\src\\glad.c"])
---macro Sys.command("cmd", ["/c", "copy ..\\..\\haxe-native\\lib\\SDL3.dll ..\\bin\\dll\\SDL3.dll"])
---macro Sys.command("cmd", ["/c", "..\\bat\\copy-files.bat", "..\\res", "..\\bin\\dll\\res"])
+--macro Sys.command("cmd", ["/c", ".\\bat\\copy-files.bat", "..\\haxe-native\\include", ".\\bin\\dll\\include"])
+--macro Sys.command("cmd", ["/c", ".\\bat\\copy-files.bat", "..\\haxe-native\\lib", ".\\bin\\dll\\lib"])
+--macro Sys.command("cmd", ["/c", "if not exist bin\\debug\\src mkdir bin\\dll\\src"])
+--macro Sys.command("cmd", ["/c", "copy ..\\haxe-native\\src\\glad.c bin\\dll\\src\\glad.c"])
+--macro Sys.command("cmd", ["/c", "copy ..\\haxe-native\\lib\\SDL3.dll bin\\dll\\SDL3.dll"])
+--macro Sys.command("cmd", ["/c", ".\\bat\\copy-files.bat", "res", ".\\bin\\dll\\res"])
 
--cp ../src
+-cp src
 -main Main
--cpp ../bin/dll
+-cpp bin/dll
 
 # DLL-specific flags
 -D dll
@@ -32,4 +32,9 @@
 -debug
 
 # Add entity field to COG Components class
---macro cog.Macros.add_data("entity", "Main.EntityECS")
+# --macro cog.Macros.add_data("entity", "Main.EntityECS")
+
+# Post-compilation: Copy DLL and hash to C# project output directory
+--cmd copy bin\\dll\\Main-debug.dll "C:\\Users\\Renko\\source\\repos\\DRC2D_Wrapper\\DRC2D_Wrapper\\bin\\x64\\Debug\\netcoreapp3.1\\Main-debug.dll"
+--cmd copy bin\\dll\\Main-debug.dll.hash "C:\\Users\\Renko\\source\\repos\\DRC2D_Wrapper\\DRC2D_Wrapper\\bin\\x64\\Debug\\netcoreapp3.1\\Main-debug.dll.hash"
+--cmd copy bin\\dll\\SDL3.dll "C:\\Users\\Renko\\source\\repos\\DRC2D_Wrapper\\DRC2D_Wrapper\\bin\\x64\\Debug\\netcoreapp3.1\\SDL3.dll"

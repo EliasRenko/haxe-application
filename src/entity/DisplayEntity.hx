@@ -25,7 +25,7 @@ class DisplayEntity extends Entity {
     /**
      * Render this entity's DisplayObject if active and visible.
      */
-    override public function render(renderer:Dynamic, viewProjectionMatrix:math.Matrix):Void {
+    override public function render(renderer:Renderer, viewProjectionMatrix:math.Matrix):Void {
         if (!active || !visible || displayObject == null || !displayObject.visible) {
             return;
         }
