@@ -1,0 +1,35 @@
+# DLL Build Configuration for C# Integration
+
+# Copy dependencies to DLL output folder
+--macro Sys.command("cmd", ["/c", "..\\bat\\copy-files.bat", "..\\..\\haxe-native\\include", "..\\bin\\dll\\include"])
+--macro Sys.command("cmd", ["/c", "..\\bat\\copy-files.bat", "..\\..\\haxe-native\\lib", "..\\bin\\dll\\lib"])
+--macro Sys.command("cmd", ["/c", "if not exist ..\\bin\\dll\\src mkdir ..\\bin\\dll\\src"])
+--macro Sys.command("cmd", ["/c", "copy ..\\..\\haxe-native\\src\\glad.c ..\\bin\\dll\\src\\glad.c"])
+--macro Sys.command("cmd", ["/c", "copy ..\\..\\haxe-native\\lib\\SDL3.dll ..\\bin\\dll\\SDL3.dll"])
+--macro Sys.command("cmd", ["/c", "..\\bat\\copy-files.bat", "..\\res", "..\\bin\\dll\\res"])
+
+-cp ../src
+-main Main
+-cpp ../bin/dll
+
+# DLL-specific flags
+-D dll
+-D dll_link
+-D HXCPP_DLL_EXPORT
+-D HXCPP_M64
+-D HXCPP_CPP11
+-D HXCPP_NO_PCH
+-D HXCPP_NO_PRECOMPILED_HEADERS
+-D no-deprecation-warnings
+
+# Link haxe-native library
+-lib haxe-native
+
+# Optimization
+-dce full
+
+# Debug symbols for development
+-debug
+
+# Add entity field to COG Components class
+--macro cog.Macros.add_data("entity", "Main.EntityECS")

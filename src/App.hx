@@ -358,6 +358,60 @@ class App extends Runtime {
         }
     }
 
+    // DLL API methods - expose frame control for external callers
+    public function processEvents():Void {
+        handleEvents();
+    }
+
+    public function updateFrame(deltaTime:Float):Void {
+        // Update input system
+        if (__input != null) {
+            __input.update();
+        }
+        
+        // Update current state if one is active
+        if (currentState != null && currentState.active) {
+            currentState.update(deltaTime);
+        }
+        
+        // Post-update input (clear pressed/released states)
+        if (__input != null) {
+            __input.postUpdate();
+        }
+    }
+
+    public function renderFrame():Void {
+        if (__renderer != null) {
+            __renderer.render();
+            if (__renderer.usePostProcessing) {
+                // STEP 1: Render scene to framebuffer
+                __renderer.bindFramebuffer();
+                __renderer.clearScreen();
+                __renderer.initializeRenderState();
+                
+                if (currentState != null && currentState.active) {
+                    currentState.render(__renderer);
+                }
+                
+                // STEP 2: Render framebuffer to screen with post-processing
+                __renderer.unbindFramebuffer();
+                __renderer.clearScreen();
+                __renderer.renderToScreen();
+            } else {
+                __renderer.clearScreen();
+                __renderer.initializeRenderState();
+                
+                if (currentState != null && currentState.active) {
+                    currentState.render(__renderer);
+                }
+            }
+        }
+    }
+
+    public function swapBuffers():Void {
+        SDL.swapWindow(__window.ptr);
+    }
+
     // Getters and setters
     public function get_input():Input {
         return __input;
