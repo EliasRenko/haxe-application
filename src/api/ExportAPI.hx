@@ -21,15 +21,20 @@ extern "C" {
     __declspec(dllexport) void EngineTestConsole();
     
     __declspec(dllexport) int EngineInit();
+    __declspec(dllexport) int EngineInitWithWindow(void* hwnd);
     __declspec(dllexport) void EngineUpdate(float deltaTime);
     __declspec(dllexport) void EngineRender();
     __declspec(dllexport) void EngineSwapBuffers();
     __declspec(dllexport) void EngineShutdown();
+    __declspec(dllexport) void EngineRelease();
     __declspec(dllexport) void EngineLoadState(int stateIndex);
     __declspec(dllexport) int EngineIsRunning();
     __declspec(dllexport) int EngineGetWindowWidth();
     __declspec(dllexport) int EngineGetWindowHeight();
     __declspec(dllexport) void EngineSetWindowSize(int width, int height);
+    __declspec(dllexport) void* EngineGetWindowHandle();
+    __declspec(dllexport) void EngineSetWindowPosition(int x, int y);
+    __declspec(dllexport) void EngineSetWindowSizeAndBorderless(int width, int height);
 }
 ')
 
@@ -131,7 +136,7 @@ extern "C" {
     }
     
     // Engine API - these use NativeAttach scope guards
-    __declspec(dllexport) int EngineInit() {
+    __declspec(dllexport) int init() {
         // Ensure runtime is initialized first
         if (!hxcpp_initialized) {
             const char* err = hx::Init();
@@ -141,52 +146,59 @@ extern "C" {
         
         // Use NativeAttach to properly set up the thread
         hx::NativeAttach attach;
-        return ::api::ExportAPI_obj::engineInit();
+        return ::api::ExportAPI_obj::init();
     }
     
-    __declspec(dllexport) void EngineUpdate(float deltaTime) {
-        hx::NativeAttach attach;
-        ::api::ExportAPI_obj::engineUpdate(deltaTime);
+    __declspec(dllexport) void update(float deltaTime) {
+        ::api::ExportAPI_obj::update(deltaTime);
     }
     
-    __declspec(dllexport) void EngineRender() {
-        hx::NativeAttach attach;
-        ::api::ExportAPI_obj::engineRender();
+    __declspec(dllexport) void render() {
+        ::api::ExportAPI_obj::render();
     }
     
-    __declspec(dllexport) void EngineSwapBuffers() {
-        hx::NativeAttach attach;
-        ::api::ExportAPI_obj::engineSwapBuffers();
+    __declspec(dllexport) void swapBuffers() {
+        ::api::ExportAPI_obj::swapBuffers();
     }
     
     __declspec(dllexport) void EngineShutdown() {
-        hx::NativeAttach attach;
         ::api::ExportAPI_obj::engineShutdown();
     }
     
-    __declspec(dllexport) void EngineLoadState(int stateIndex) {
-        hx::NativeAttach attach;
-        ::api::ExportAPI_obj::engineLoadState(stateIndex);
+    __declspec(dllexport) void release() {
+        ::api::ExportAPI_obj::release();
+    }
+    
+    __declspec(dllexport) void loadState(int stateIndex) {
+        ::api::ExportAPI_obj::loadState(stateIndex);
     }
     
     __declspec(dllexport) int EngineIsRunning() {
-        hx::NativeAttach attach;
         return ::api::ExportAPI_obj::engineIsRunning();
     }
     
     __declspec(dllexport) int EngineGetWindowWidth() {
-        hx::NativeAttach attach;
         return ::api::ExportAPI_obj::engineGetWindowWidth();
     }
     
     __declspec(dllexport) int EngineGetWindowHeight() {
-        hx::NativeAttach attach;
         return ::api::ExportAPI_obj::engineGetWindowHeight();
     }
     
     __declspec(dllexport) void EngineSetWindowSize(int width, int height) {
-        hx::NativeAttach attach;
         ::api::ExportAPI_obj::engineSetWindowSize(width, height);
+    }
+    
+    __declspec(dllexport) void* getWindowHandle() {
+        return ::api::ExportAPI_obj::getWindowHandle();
+    }
+    
+    __declspec(dllexport) void EngineSetWindowPosition(int x, int y) {
+        ::api::ExportAPI_obj::engineSetWindowPosition(x, y);
+    }
+    
+    __declspec(dllexport) void EngineSetWindowSizeAndBorderless(int width, int height) {
+        ::api::ExportAPI_obj::engineSetWindowSizeAndBorderless(width, height);
     }
 }
 ')
@@ -207,7 +219,7 @@ class ExportAPI {
      * @return 1 on success, 0 on failure
      */
     @:keep
-    public static function engineInit():Int {
+    public static function init():Int {
         if (initialized) {
             log("Engine already initialized");
             return 1;
@@ -234,7 +246,7 @@ class ExportAPI {
      * @param deltaTime Time since last frame in seconds
      */
     @:keep
-    public static function engineUpdate(deltaTime:Float):Void {
+    public static function update(deltaTime:Float):Void {
         if (app == null || !initialized) {
             log("ExportAPI: Cannot update - engine not initialized");
             return;
@@ -253,7 +265,7 @@ class ExportAPI {
      * Render one frame
      */
     @:keep
-    public static function engineRender():Void {
+    public static function render():Void {
         if (app == null || !initialized) {
             log("ExportAPI: Cannot render - engine not initialized");
             return;
@@ -267,6 +279,7 @@ class ExportAPI {
             }
             log("ExportAPI: Renderer OK, calling renderFrame...");
             app.renderFrame();
+            app.swapBuffers();
             log("ExportAPI: renderFrame completed");
         } catch (e:Dynamic) {
             log("ExportAPI: Render error: " + e);
@@ -284,7 +297,7 @@ class ExportAPI {
      * Swap window buffers (present frame)
      */
     @:keep
-    public static function engineSwapBuffers():Void {
+    public static function swapBuffers():Void {
         if (app != null && initialized) {
             app.swapBuffers();
         }
@@ -304,12 +317,27 @@ class ExportAPI {
     }
     
     /**
+     * Release/cleanup engine resources
+     * Calls app.release() to properly cleanup all resources
+     */
+    @:keep
+    public static function release():Void {
+        log("ExportAPI: Releasing engine resources...");
+        if (app != null) {
+            app.release();
+            log("ExportAPI: Engine resources released");
+            app = null;
+            initialized = false;
+        }
+    }
+    
+    /**
      * Load a game state by ID
      * @param stateId State identifier (0=CollisionTest, 1=UITest, etc.)
      * @return 1 on success, 0 on failure
      */
     @:keep
-    public static function engineLoadState(stateId:Int):Int {
+    public static function loadState(stateId:Int):Int {
         if (app == null || !initialized) {
             trace("ExportAPI: Engine not initialized");
             return 0;
@@ -382,6 +410,39 @@ class ExportAPI {
         if (app != null && initialized) {
             // TODO: Implement window resize
             trace("ExportAPI: SetWindowSize not yet implemented");
+        }
+    }
+    
+    /**
+     * Get native window handle (HWND on Windows)
+     * Returns void* which can be cast to IntPtr in C#
+     */
+    @:keep
+    public static function getWindowHandle():cpp.RawPointer<cpp.Void> {
+        if (app != null && initialized && app.window != null) {
+            return untyped __cpp__("SDL_GetPointerProperty(SDL_GetWindowProperties({0}), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL)", app.window.ptr);
+        }
+        return null;
+    }
+    
+    /**
+     * Set window position (screen coordinates)
+     */
+    @:keep
+    public static function engineSetWindowPosition(x:Int, y:Int):Void {
+        if (app != null && initialized && app.window != null) {
+            //app.window.setPosition(x, y);
+        }
+    }
+    
+    /**
+     * Set window size and make it borderless for embedding
+     */
+    @:keep
+    public static function engineSetWindowSizeAndBorderless(width:Int, height:Int):Void {
+        if (app != null && initialized && app.window != null) {
+            //app.window.setSize(width, height);
+            //app.window.setBorderless(true);
         }
     }
     

@@ -35,6 +35,6 @@
 # --macro cog.Macros.add_data("entity", "Main.EntityECS")
 
 # Post-compilation: Copy DLL and hash to C# project output directory
---cmd copy bin\\dll\\Main-debug.dll "C:\\Users\\Renko\\source\\repos\\DRC2D_Wrapper\\DRC2D_Wrapper\\bin\\x64\\Debug\\netcoreapp3.1\\Main-debug.dll"
---cmd copy bin\\dll\\Main-debug.dll.hash "C:\\Users\\Renko\\source\\repos\\DRC2D_Wrapper\\DRC2D_Wrapper\\bin\\x64\\Debug\\netcoreapp3.1\\Main-debug.dll.hash"
---cmd copy bin\\dll\\SDL3.dll "C:\\Users\\Renko\\source\\repos\\DRC2D_Wrapper\\DRC2D_Wrapper\\bin\\x64\\Debug\\netcoreapp3.1\\SDL3.dll"
+--cmd copy bin\\dll\\Main-debug.dll "C:\Users\Renko\Documents\Libraries\csharp-editor\bin\Debug\Main-debug.dll"
+--cmd copy bin\\dll\\Main-debug.dll.hash "C:\Users\Renko\Documents\Libraries\csharp-editor\bin\Debug\Main-debug.dll.hash"
+--cmd copy bin\\dll\\SDL3.dll "C:\Users\Renko\Documents\Libraries\csharp-editor\bin\Debug\SDL3.dll"
