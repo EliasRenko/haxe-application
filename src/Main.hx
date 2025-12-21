@@ -1,20 +1,18 @@
 package;
 
 import App;
+import states.EditorState;
 import states.CollisionTestState;
 #if dll
-import api.ExportAPI;
+import Editor;
 #end
 
 class Main {
     public static function main() {
         
         #if dll
-        // DLL mode - do nothing in main, wait for C# to call exports
-        trace("Haxe Engine DLL loaded - ready for API calls");
-        trace("Available exports: EngineInit, EngineUpdate, EngineRender, etc.");
-        // Note: ExportAPI class must be referenced to ensure it's compiled
-        var _ = ExportAPI.engineIsRunning;
+        // DLL mode - delegate to Editor class
+        Editor.main();
         #else
         // Normal executable mode
         var app = new App();
@@ -23,7 +21,7 @@ class Main {
             return;
         }
 
-        app.addState(new CollisionTestState(app));
+        app.addState(new EditorState(app));
         app.run();
         #end
     }

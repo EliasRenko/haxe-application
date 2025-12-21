@@ -9,7 +9,7 @@
 --macro Sys.command("cmd", ["/c", ".\\bat\\copy-files.bat", "res", ".\\bin\\dll\\res"])
 
 -cp src
--main Main
+-main Editor
 -cpp bin/dll
 
 # DLL-specific flags

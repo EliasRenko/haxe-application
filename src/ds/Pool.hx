@@ -1,4 +1,4 @@
-package;
+package ds;
 
 @:generic
 class Pool<T> {

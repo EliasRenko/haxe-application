@@ -1,15 +1,10 @@
-package api;
+package;
 
 import states.EditorState;
-import App;
 
 /**
- * C API Export Layer for DLL
- * Exposes Haxe engine functions to C# via C calling convention
- * 
- * To use from C#:
- * [DllImport("Main-debug.dll", CallingConvention = CallingConvention.Cdecl)]
- * public static extern int EngineInit();
+ * Editor class - DLL entry point and API for C# integration
+ * Combines the main DLL initialization and export API in one place
  */
 
 // Inject C exports at header level (global scope)
@@ -22,7 +17,6 @@ extern "C" {
     __declspec(dllexport) void EngineTestConsole();
     
     __declspec(dllexport) int EngineInit();
-    __declspec(dllexport) int EngineInitWithWindow(void* hwnd);
     __declspec(dllexport) void EngineUpdate(float deltaTime);
     __declspec(dllexport) void EngineRender();
     __declspec(dllexport) void EngineSwapBuffers();
@@ -49,7 +43,6 @@ extern "C" {
 
 static bool hxcpp_initialized = false;
 static hx::AutoGCFreeZone *mainZone = NULL;
-
 static bool console_redirected = false;
 
 void RedirectConsole() {
@@ -137,7 +130,7 @@ extern "C" {
     }
     
     // Engine API - these use NativeAttach scope guards
-    __declspec(dllexport) int init() {
+    __declspec(dllexport) int EngineInit() {
         // Ensure runtime is initialized first
         if (!hxcpp_initialized) {
             const char* err = hx::Init();
@@ -147,68 +140,76 @@ extern "C" {
         
         // Use NativeAttach to properly set up the thread
         hx::NativeAttach attach;
-        return ::api::ExportAPI_obj::init();
+        return ::Editor_obj::init();
     }
     
-    __declspec(dllexport) void updateFrame(float deltaTime) {
-        ::api::ExportAPI_obj::updateFrame(deltaTime);
+    __declspec(dllexport) void EngineUpdate(float deltaTime) {
+        ::Editor_obj::updateFrame(deltaTime);
     }
     
-    __declspec(dllexport) void render() {
-        ::api::ExportAPI_obj::render();
+    __declspec(dllexport) void EngineRender() {
+        ::Editor_obj::render();
     }
     
-    __declspec(dllexport) void swapBuffers() {
-        ::api::ExportAPI_obj::swapBuffers();
+    __declspec(dllexport) void EngineSwapBuffers() {
+        ::Editor_obj::swapBuffers();
     }
     
     __declspec(dllexport) void EngineShutdown() {
-        ::api::ExportAPI_obj::engineShutdown();
+        ::Editor_obj::engineShutdown();
     }
     
-    __declspec(dllexport) void release() {
-        ::api::ExportAPI_obj::release();
+    __declspec(dllexport) void EngineRelease() {
+        ::Editor_obj::release();
     }
     
-    __declspec(dllexport) void loadState(int stateIndex) {
-        ::api::ExportAPI_obj::loadState(stateIndex);
+    __declspec(dllexport) void EngineLoadState(int stateIndex) {
+        ::Editor_obj::loadState(stateIndex);
     }
     
     __declspec(dllexport) int EngineIsRunning() {
-        return ::api::ExportAPI_obj::engineIsRunning();
+        return ::Editor_obj::engineIsRunning();
     }
     
     __declspec(dllexport) int EngineGetWindowWidth() {
-        return ::api::ExportAPI_obj::engineGetWindowWidth();
+        return ::Editor_obj::engineGetWindowWidth();
     }
     
     __declspec(dllexport) int EngineGetWindowHeight() {
-        return ::api::ExportAPI_obj::engineGetWindowHeight();
+        return ::Editor_obj::engineGetWindowHeight();
     }
     
     __declspec(dllexport) void EngineSetWindowSize(int width, int height) {
-        ::api::ExportAPI_obj::engineSetWindowSize(width, height);
+        ::Editor_obj::engineSetWindowSize(width, height);
     }
     
-    __declspec(dllexport) void* getWindowHandle() {
-        return ::api::ExportAPI_obj::getWindowHandle();
+    __declspec(dllexport) void* EngineGetWindowHandle() {
+        return ::Editor_obj::getWindowHandle();
     }
     
-    __declspec(dllexport) void setWindowPosition(int x, int y) {
-        ::api::ExportAPI_obj::setWindowPosition(x, y);
+    __declspec(dllexport) void EngineSetWindowPosition(int x, int y) {
+        ::Editor_obj::setWindowPosition(x, y);
     }
     
     __declspec(dllexport) void EngineSetWindowSizeAndBorderless(int width, int height) {
-        ::api::ExportAPI_obj::engineSetWindowSizeAndBorderless(width, height);
+        ::Editor_obj::engineSetWindowSizeAndBorderless(width, height);
     }
 }
 ')
 
-class ExportAPI {
+class Editor {
     
     // Store app instance
     private static var app:App = null;
     private static var initialized:Bool = false;
+    
+    /**
+     * DLL Main - called when DLL mode is active
+     */
+    public static function main():Void {
+        trace("Haxe Engine DLL loaded - ready for API calls");
+        trace("Available exports: EngineInit, EngineUpdate, EngineRender, etc.");
+    }
     
     // Custom log function that uses printf directly
     private static function log(msg:String):Void {
@@ -227,17 +228,22 @@ class ExportAPI {
         }
         
         try {
-            log("ExportAPI: Initializing engine...");
+            log("Editor: Initializing engine...");
             app = new App();
             if (!app.init()) {
-                log("ExportAPI: App.init() failed");
+                log("Editor: App.init() failed");
                 return 0;
             }
+            
+            // Load the editor state by default
+            app.addState(new EditorState(app));
+            log("Editor: EditorState loaded");
+            
             initialized = true;
-            log("ExportAPI: Engine initialized successfully");
+            log("Editor: Engine initialized successfully");
             return 1;
         } catch (e:Dynamic) {
-            log("ExportAPI: Init error: " + e);
+            log("Editor: Init error: " + e);
             return 0;
         }
     }
@@ -249,7 +255,7 @@ class ExportAPI {
     @:keep
     public static function updateFrame(deltaTime:Float):Void {
         if (app == null || !initialized) {
-            log("ExportAPI: Cannot update - engine not initialized");
+            log("Editor: Cannot update - engine not initialized");
             return;
         }
         
@@ -258,7 +264,7 @@ class ExportAPI {
             app.processEvents();
             app.updateFrame(deltaTime);
         } catch (e:Dynamic) {
-            log("ExportAPI: Update error: " + e);
+            log("Editor: Update error: " + e);
         }
     }
     
@@ -268,22 +274,14 @@ class ExportAPI {
     @:keep
     public static function render():Void {
         if (app == null || !initialized) {
-            log("ExportAPI: Cannot render - engine not initialized");
+            log("Editor: Cannot render - engine not initialized");
             return;
         }
         
         try {
-            log("ExportAPI: Starting render...");
-            if (app.renderer == null) {
-                log("ExportAPI: Renderer is null!");
-                return;
-            }
-            log("ExportAPI: Renderer OK, calling renderFrame...");
             app.renderFrame();
-            app.swapBuffers();
-            log("ExportAPI: renderFrame completed");
         } catch (e:Dynamic) {
-            log("ExportAPI: Render error: " + e);
+            log("Editor: Render error: " + e);
             #if cpp
             var stack = haxe.CallStack.exceptionStack();
             log("Stack trace:");
@@ -309,7 +307,7 @@ class ExportAPI {
      */
     @:keep
     public static function engineShutdown():Void {
-        trace("ExportAPI: Shutting down engine...");
+        log("Editor: Shutting down engine...");
         if (app != null) {
             app.release();
             app = null;
@@ -319,14 +317,13 @@ class ExportAPI {
     
     /**
      * Release/cleanup engine resources
-     * Calls app.release() to properly cleanup all resources
      */
     @:keep
     public static function release():Void {
-        log("ExportAPI: Releasing engine resources...");
+        log("Editor: Releasing engine resources...");
         if (app != null) {
             app.release();
-            log("ExportAPI: Engine resources released");
+            log("Editor: Engine resources released");
             app = null;
             initialized = false;
         }
@@ -334,37 +331,29 @@ class ExportAPI {
     
     /**
      * Load a game state by ID
-     * @param stateId State identifier (0=CollisionTest, 1=UITest, etc.)
+     * @param stateId State identifier
      * @return 1 on success, 0 on failure
      */
     @:keep
     public static function loadState(stateId:Int):Int {
         if (app == null || !initialized) {
-            trace("ExportAPI: Engine not initialized");
+            log("Editor: Engine not initialized");
             return 0;
         }
         
         try {
-            trace("ExportAPI: Loading state " + stateId);
+            log("Editor: Loading state " + stateId);
             switch (stateId) {
                 case 0: 
                     app.addState(new EditorState(app));
-                    trace("ExportAPI: EditorState loaded");
-                case 1: 
-                    #if false // Disabled until UITestState is fixed
-                    app.addState(new states.UITestState(app));
-                    trace("ExportAPI: UITestState loaded");
-                    #else
-                    trace("ExportAPI: UITestState not available");
-                    return 0;
-                    #end
+                    log("Editor: EditorState loaded");
                 default: 
-                    trace("ExportAPI: Unknown state ID: " + stateId);
+                    log("Editor: Unknown state ID: " + stateId);
                     return 0;
             }
             return 1;
         } catch (e:Dynamic) {
-            trace("ExportAPI: LoadState error: " + e);
+            log("Editor: LoadState error: " + e);
             return 0;
         }
     }
@@ -409,8 +398,7 @@ class ExportAPI {
     @:keep
     public static function engineSetWindowSize(width:Int, height:Int):Void {
         if (app != null && initialized) {
-            // TODO: Implement window resize
-            trace("ExportAPI: SetWindowSize not yet implemented");
+            log("Editor: SetWindowSize not yet implemented");
         }
     }
     
@@ -446,11 +434,4 @@ class ExportAPI {
             //app.window.setBorderless(true);
         }
     }
-    
-    // Future API extensions can be added here:
-    // - Input injection
-    // - Camera control
-    // - Entity manipulation
-    // - Resource loading
-    // - Debug visualization
 }
