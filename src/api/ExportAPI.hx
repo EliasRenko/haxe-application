@@ -149,8 +149,8 @@ extern "C" {
         return ::api::ExportAPI_obj::init();
     }
     
-    __declspec(dllexport) void update(float deltaTime) {
-        ::api::ExportAPI_obj::update(deltaTime);
+    __declspec(dllexport) void updateFrame(float deltaTime) {
+        ::api::ExportAPI_obj::updateFrame(deltaTime);
     }
     
     __declspec(dllexport) void render() {
@@ -193,8 +193,8 @@ extern "C" {
         return ::api::ExportAPI_obj::getWindowHandle();
     }
     
-    __declspec(dllexport) void EngineSetWindowPosition(int x, int y) {
-        ::api::ExportAPI_obj::engineSetWindowPosition(x, y);
+    __declspec(dllexport) void setWindowPosition(int x, int y) {
+        ::api::ExportAPI_obj::setWindowPosition(x, y);
     }
     
     __declspec(dllexport) void EngineSetWindowSizeAndBorderless(int width, int height) {
@@ -246,7 +246,7 @@ class ExportAPI {
      * @param deltaTime Time since last frame in seconds
      */
     @:keep
-    public static function update(deltaTime:Float):Void {
+    public static function updateFrame(deltaTime:Float):Void {
         if (app == null || !initialized) {
             log("ExportAPI: Cannot update - engine not initialized");
             return;
@@ -429,9 +429,9 @@ class ExportAPI {
      * Set window position (screen coordinates)
      */
     @:keep
-    public static function engineSetWindowPosition(x:Int, y:Int):Void {
+    public static function setWindowPosition(x:Int, y:Int):Void {
         if (app != null && initialized && app.window != null) {
-            //app.window.setPosition(x, y);
+            app.window.setPosition(x, y);
         }
     }
     

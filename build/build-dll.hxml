@@ -38,3 +38,4 @@
 --cmd copy bin\\dll\\Main-debug.dll "C:\Users\Renko\Documents\Libraries\csharp-editor\bin\Debug\Main-debug.dll"
 --cmd copy bin\\dll\\Main-debug.dll.hash "C:\Users\Renko\Documents\Libraries\csharp-editor\bin\Debug\Main-debug.dll.hash"
 --cmd copy bin\\dll\\SDL3.dll "C:\Users\Renko\Documents\Libraries\csharp-editor\bin\Debug\SDL3.dll"
+--cmd xcopy /E /I /Y bin\\dll\\res "C:\Users\Renko\Documents\Libraries\csharp-editor\bin\Debug\res"

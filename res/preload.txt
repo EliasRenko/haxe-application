@@ -31,3 +31,5 @@ shaders/mono.vert
 shaders/mono.frag
 shaders/line.vert
 shaders/line.frag
+shaders/grid.vert
+shaders/grid.frag

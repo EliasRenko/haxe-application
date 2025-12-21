@@ -10,6 +10,7 @@ import display.ManagedTileBatch;
 import display.BitmapFont;
 import display.Image;
 import display.Text;
+import display.Grid;
 import loaders.FontLoader;
 import differ.Collision;
 import differ.shapes.Circle;
@@ -37,6 +38,7 @@ class CollisionTestState extends State {
     
     // Rendering
     private var background:Image;
+    private var grid:Grid;
     private var tileBatch:ManagedTileBatch;
     private var texture:Texture;
     private var programInfo:ProgramInfo;
@@ -96,6 +98,21 @@ class CollisionTestState extends State {
         backgroundEntity.displayObject = background;
         addEntity(backgroundEntity);
 
+        // Create infinite grid for visual reference
+        var gridVertShader = app.resources.getText("shaders/grid.vert");
+        var gridFragShader = app.resources.getText("shaders/grid.frag");
+        var gridProgramInfo = renderer.createProgramInfo("grid", gridVertShader, gridFragShader);
+        grid = new Grid(gridProgramInfo, 5000.0); // 5000 unit quad
+        grid.gridSize = 128.0; // 128 pixel large grid
+        grid.subGridSize = 32.0; // 32 pixel small grid
+        grid.setGridColor(0.2, 0.4, 0.6); // Blue-ish grid lines
+        grid.setBackgroundColor(0.0, 0.0, 0.0); // Black background
+        grid.fadeDistance = 3000.0;
+        grid.z = -1.0; // Place grid behind other objects
+        grid.init(renderer);
+        
+        var gridEntity = new DisplayEntity(grid, "grid");
+        addEntity(gridEntity);
         
         // Upload texture to GPU
         texture = renderer.uploadTexture(textureData);
