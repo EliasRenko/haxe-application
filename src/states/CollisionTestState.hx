@@ -266,37 +266,39 @@ class CollisionTestState extends State {
 
     override public function update(deltaTime:Float):Void {
 
-        // Update player FIRST (before other entities)
-        if (player != null && player.active) {
-            player.update(deltaTime);
+        super.update(deltaTime);
+
+        // // Update player FIRST (before other entities)
+        // if (player != null && player.active) {
+        //     player.update(deltaTime);
             
-            // Update velocity text displays
-            if (velocityXText != null) {
-                velocityXText.setText("Velocity X: " + Math.round(player.velocityX * 10) / 10);
-            }
-            if (velocityYText != null) {
-                velocityYText.setText("Velocity Y: " + Math.round(player.velocityY * 10) / 10);
-            }
-        }
+        //     // Update velocity text displays
+        //     if (velocityXText != null) {
+        //         velocityXText.setText("Velocity X: " + Math.round(player.velocityX * 10) / 10);
+        //     }
+        //     if (velocityYText != null) {
+        //         velocityYText.setText("Velocity Y: " + Math.round(player.velocityY * 10) / 10);
+        //     }
+        // }
         
-        // Check collisions AFTER player movement
-        if (player != null && player.collisionShape != null) {
-            checkCollisions();
-        }
+        // // Check collisions AFTER player movement
+        // if (player != null && player.collisionShape != null) {
+        //     checkCollisions();
+        // }
         
-        // Update other entities (skip player since we already updated it)
-        for (entity in entities) {
-            if (entity != null && entity != player && entity.active) {
-                entity.update(deltaTime);
-            }
-        }
+        // // Update other entities (skip player since we already updated it)
+        // for (entity in entities) {
+        //     if (entity != null && entity != player && entity.active) {
+        //         entity.update(deltaTime);
+        //     }
+        // }
         
-        // Late update all entities
-        for (entity in entities) {
-            if (entity != null && entity.active) {
-                entity.lateUpdate(deltaTime);
-            }
-        }
+        // // Late update all entities
+        // for (entity in entities) {
+        //     if (entity != null && entity.active) {
+        //         entity.lateUpdate(deltaTime);
+        //     }
+        // }
 
         // Debug draw: player and collision shapes
         if (shapeDrawer != null && player != null && player.collisionShape != null) {
@@ -453,19 +455,19 @@ class PlayerEntity extends Entity {
         // Get horizontal input
         velocityX = 0;
         
-        if (keyboard.check(Keycode.A)) {
-            velocityX = -PLAYER_SPEED;
-        }
-        if (keyboard.check(Keycode.D)) {
-            velocityX = PLAYER_SPEED;
-        }
+        // if (keyboard.check(Keycode.A)) {
+        //     velocityX = -PLAYER_SPEED;
+        // }
+        // if (keyboard.check(Keycode.D)) {
+        //     velocityX = PLAYER_SPEED;
+        // }
         
-        // Jump input (Space or W) - only when grounded
-        var wantToJump = keyboard.pressed(Keycode.SPACE) || keyboard.pressed(Keycode.W);
-        if (wantToJump && wasGrounded) {
-            velocityY = JUMP_VELOCITY;
-            trace("Player jumped! wasGrounded=" + wasGrounded + " isGrounded=" + isGrounded);
-        }
+        // // Jump input (Space or W) - only when grounded
+        // var wantToJump = keyboard.pressed(Keycode.SPACE) || keyboard.pressed(Keycode.W);
+        // if (wantToJump && wasGrounded) {
+        //     velocityY = JUMP_VELOCITY;
+        //     trace("Player jumped! wasGrounded=" + wasGrounded + " isGrounded=" + isGrounded);
+        // }
         
         // Update position
         x += velocityX * deltaTime;

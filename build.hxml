@@ -1,2 +1,2 @@
-build/build-dll.hxml
+build/build-native.hxml
 #build/build-android.hxml

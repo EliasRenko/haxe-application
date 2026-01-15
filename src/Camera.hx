@@ -11,6 +11,10 @@ class Camera {
     public var y:Float = 0;
     public var z:Float = 0;
     
+    // Zoom factor (for orthographic projection)
+    // Values > 1.0 zoom in, values < 1.0 zoom out
+    public var zoom:Float = 1.0;
+    
     // 3D Rotation (in degrees for easier use)
     public var pitch(get, set):Float;  // X-axis rotation
     public var yaw(get, set):Float;    // Y-axis rotation  
@@ -47,10 +51,17 @@ class Camera {
             // IMPORTANT: Orthographic projection with TOP-LEFT origin (0,0)
             // This is the standard 2D coordinate system for UI and games
             // DO NOT CHANGE - ensures (0,0) is at top-left, Y increases downward
-            var left = 0.0;
-            var right = width;
-            var top = 0.0;        // Top is 0 (standard 2D coordinates)
-            var bottom = height;  // Bottom is screen height (Y increases downward)
+            // Apply zoom by scaling the view bounds
+            var halfWidth = (width / zoom) * 0.5;
+            var halfHeight = (height / zoom) * 0.5;
+            var centerX = width * 0.5;
+            var centerY = height * 0.5;
+            
+            var left = centerX - halfWidth;
+            var right = centerX + halfWidth;
+            var top = centerY - halfHeight;
+            var bottom = centerY + halfHeight;
+            
             var near = -10.0;     // Allow objects behind the camera
             var far = 10.0;       // Allow objects in front of the camera
             __matrix.append(Matrix.createOrthoMatrix(left, right, bottom, top, near, far));

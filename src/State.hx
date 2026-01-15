@@ -21,6 +21,8 @@ class State {
     // Privates
     private var __app:App;
     private static var __nextId:Int = 0;
+
+    private var cameraDebug:Bool = false;
     
     public function new(name:String, app:App) {
         this.name = name;
@@ -60,6 +62,43 @@ class State {
         for (entity in entities) {
             if (entity != null && entity.active) {
                 entity.lateUpdate(deltaTime);
+            }
+        }
+
+        // Debug control: Toggle camera debug mode with 'C' key
+        if (app.input.keyboard.released(Keycode.C)) {
+            cameraDebug = !cameraDebug;
+        }
+
+        // If camera debug mode is active, allow camera movement with arrow keys
+        if (cameraDebug) {
+            var moveSpeed:Float = 5.0 * deltaTime;
+            if (app.input.keyboard.pressed(Keycode.A)) {
+                camera.x -= moveSpeed;
+            }
+            if (app.input.keyboard.pressed(Keycode.D)) {
+                camera.x += moveSpeed;
+            }
+            if (app.input.keyboard.pressed(Keycode.W)) {
+                camera.y += moveSpeed;
+            }
+            if (app.input.keyboard.pressed(Keycode.S)) {
+                camera.y -= moveSpeed;
+            }
+        }
+
+        // If camera debug is active, allow for zooming with W/S keys
+        if (cameraDebug) {
+            var zoomSpeed:Float = 2.0 * deltaTime;
+            if (app.input.keyboard.check(Keycode.W)) {
+                // Zoom in (increase zoom factor)
+                camera.zoom += zoomSpeed;
+                if (camera.zoom > 10.0) camera.zoom = 10.0; // Limit max zoom
+            }
+            if (app.input.keyboard.check(Keycode.S)) {
+                // Zoom out (decrease zoom factor)
+                camera.zoom -= zoomSpeed;
+                if (camera.zoom < 0.1) camera.zoom = 0.1; // Limit min zoom
             }
         }
     }

@@ -21,7 +21,7 @@ class Main {
             return;
         }
 
-        app.addState(new EditorState(app));
+        app.addState(new CollisionTestState(app));
         app.run();
         #end
     }
