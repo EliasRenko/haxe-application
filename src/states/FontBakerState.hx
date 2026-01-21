@@ -94,18 +94,21 @@ class FontBakerState extends State {
             app.resources.loadTexture("fonts/nokiafc22_baked.tga", false).then((fontTextureData) -> {
                 var fontTexture = renderer.uploadTexture(fontTextureData);
                 
-                // Create mono shader for text
-                var monoVertShader = app.resources.getText("shaders/mono.vert");
-                var monoFragShader = app.resources.getText("shaders/mono.frag");
-                var monoProgramInfo = renderer.createProgramInfo("mono_baked_font", monoVertShader, monoFragShader);
+                // Create text shader
+                trace("FontBakerState: Loading text shaders...");
+                var textVertShader = app.resources.getText("shaders/text.vert");
+                trace("FontBakerState: text.vert loaded: " + (textVertShader != null) + " length=" + (textVertShader != null ? textVertShader.length : 0));
+                var textFragShader = app.resources.getText("shaders/text.frag");
+                trace("FontBakerState: text.frag loaded: " + (textFragShader != null) + " length=" + (textFragShader != null ? textFragShader.length : 0));
+                var textProgramInfo = renderer.createProgramInfo("text", textVertShader, textFragShader);
                 
-                trace("FontBakerState: DEBUG - Shader loaded: " + (monoProgramInfo != null));
+                trace("FontBakerState: DEBUG - Shader loaded: " + (textProgramInfo != null));
                 trace("FontBakerState: DEBUG - Font texture ID: " + fontTexture.id);
                 trace("FontBakerState: DEBUG - Font texture size: " + fontTextureData.width + "x" + fontTextureData.height);
                 trace("FontBakerState: DEBUG - Font data characters: " + Lambda.count(fontData.chars));
                 
                 // Create bitmap font
-                bitmapFont = new BitmapFont(monoProgramInfo, fontTexture, fontData);
+                bitmapFont = new BitmapFont(textProgramInfo, fontTexture, fontData);
                 bitmapFont.init(renderer);
                 
                 trace("FontBakerState: DEBUG - BitmapFont created, visible=" + bitmapFont.visible);
@@ -200,6 +203,9 @@ class FontBakerState extends State {
     private var renderFrameCount:Int = 0;
     
     override public function render(renderer:Renderer):Void {
+        // Enable alpha blending for text transparency
+        renderer.setBlendMode(true);
+        
         // Only log first 3 frames to reduce spam
         if (renderFrameCount < 3) {
             if (bitmapFont != null) {

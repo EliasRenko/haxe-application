@@ -29,6 +29,8 @@ shaders/textured.vert
 shaders/textured.frag
 shaders/mono.vert
 shaders/mono.frag
+shaders/text.vert
+shaders/text.frag
 shaders/line.vert
 shaders/line.frag
 shaders/grid.vert

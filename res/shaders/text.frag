@@ -4,14 +4,13 @@ in vec2 TexCoord;
 out vec4 FragColor;
 
 uniform sampler2D uTexture;
-uniform vec4 uColor = vec4(1.0, 1.0, 1.0, 1.0); // Default white color
+uniform vec4 uColor = vec4(1.0, 1.0, 1.0, 1.0);
 
 void main() {
-    // Sample the red channel from the texture (bitmap font)
-    float texValue = texture(uTexture, TexCoord).r;
+    // Sample the texture (RGBA format with white RGB + alpha)
+    vec4 texSample = texture(uTexture, TexCoord);
     
-    // DEBUG: Output raw texture value to see what we're getting
-    // If we see variation, the texture has data
-    // If we see solid color, the texture is uniform or UV mapping is wrong
-    FragColor = vec4(texValue, texValue, texValue, 1.0);
+    // Use the alpha channel as the glyph mask
+    // Output: colored glyph with proper transparency
+    FragColor = vec4(uColor.rgb, uColor.a * texSample.a);
 }
