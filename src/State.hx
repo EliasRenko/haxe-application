@@ -72,17 +72,17 @@ class State {
 
         // If camera debug mode is active, allow camera movement with arrow keys
         if (cameraDebug) {
-            var moveSpeed:Float = 5.0 * deltaTime;
-            if (app.input.keyboard.pressed(Keycode.A)) {
+            var moveSpeed:Float = 1000.0 * deltaTime;
+            if (app.input.keyboard.check(Keycode.A)) {
                 camera.x -= moveSpeed;
             }
-            if (app.input.keyboard.pressed(Keycode.D)) {
+            if (app.input.keyboard.check(Keycode.D)) {
                 camera.x += moveSpeed;
             }
-            if (app.input.keyboard.pressed(Keycode.W)) {
+            if (app.input.keyboard.check(Keycode.W)) {
                 camera.y += moveSpeed;
             }
-            if (app.input.keyboard.pressed(Keycode.S)) {
+            if (app.input.keyboard.check(Keycode.S)) {
                 camera.y -= moveSpeed;
             }
         }
@@ -90,12 +90,12 @@ class State {
         // If camera debug is active, allow for zooming with W/S keys
         if (cameraDebug) {
             var zoomSpeed:Float = 2.0 * deltaTime;
-            if (app.input.keyboard.check(Keycode.W)) {
+            if (app.input.keyboard.check(Keycode.E)) {
                 // Zoom in (increase zoom factor)
                 camera.zoom += zoomSpeed;
                 if (camera.zoom > 10.0) camera.zoom = 10.0; // Limit max zoom
             }
-            if (app.input.keyboard.check(Keycode.S)) {
+            if (app.input.keyboard.check(Keycode.Q)) {
                 // Zoom out (decrease zoom factor)
                 camera.zoom -= zoomSpeed;
                 if (camera.zoom < 0.1) camera.zoom = 0.1; // Limit min zoom
