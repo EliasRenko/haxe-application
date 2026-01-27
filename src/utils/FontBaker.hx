@@ -287,6 +287,15 @@ class FontBaker {
                     "_greenChnl": "4",
                     "_blueChnl": "4"
                 },
+                metrics: {
+                    "_ascent": Std.string(ascent),
+                    "_descent": Std.string(descent),
+                    "_lineGap": Std.string(lineGap),
+                    "_unitsPerEM": Std.string(unitsPerEM),
+                    "_scale": Std.string(scale),
+                    "_scaledAscent": Std.string(scaledAscent),
+                    "_scaledDescent": Std.string(scaledDescent)
+                },
                 pages: {
                     page: {
                         "_id": "0",
