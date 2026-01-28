@@ -11,6 +11,7 @@ import cpp.NativeArray;
 import cpp.UInt8;
 import loaders.TGAExporter;
 import data.TextureData;
+import utils.BakedFontData;
 
 /**
  * FontBaker - Generates pixel-perfect bitmap font atlases from TrueType fonts
@@ -25,33 +26,35 @@ import data.TextureData;
 class FontBaker {
     
     /**
-     * Bake a TrueType font to bitmap atlas + JSON metadata
+     * Bake a TrueType font to bitmap atlas in memory
      * 
      * Optimized for pixel art fonts - renders at exact size without anti-aliasing.
+     * Returns BakedFontData which can be used directly for rendering or exported to files.
      * 
      * @param ttfPath Path to .ttf font file (e.g., "res/fonts/nokiafc22.ttf")
-     * @param outputName Output name without extension (e.g., "nokiafc22_baked")
+     * @param fontName Font name for metadata
      * @param fontSize Font size in pixels (MUST match font's designed size for pixel art)
      * @param atlasWidth Atlas texture width (power of 2, e.g., 512)
      * @param atlasHeight Atlas texture height (power of 2, e.g., 512)
      * @param firstChar First character to bake (32 = space)
      * @param numChars Number of characters to bake (96 = ASCII printable)
+     * @return BakedFontData with all font properties and texture data
      */
     public static function bakeFont(
         ttfPath:String,
-        outputName:String,
+        fontName:String,
         fontSize:Float = 16,
         atlasWidth:Int = 512,
         atlasHeight:Int = 512,
         firstChar:Int = 32,
         numChars:Int = 96
-    ):Void {
+    ):BakedFontData {
         trace("FontBaker: Loading font from " + ttfPath);
         
         // Read font file
         if (!FileSystem.exists(ttfPath)) {
             trace("FontBaker: ERROR - Font file not found: " + ttfPath);
-            return;
+            throw "Font file not found: " + ttfPath;
         }
         
         var fontBytes = File.getBytes(ttfPath);
@@ -67,7 +70,7 @@ class FontBaker {
         var initResult = STB_Truetype.initFont(fontInfoPtr, fontPtr, 0);
         if (initResult == 0) {
             trace("FontBaker: ERROR - Failed to initialize font");
-            return;
+            throw "Failed to initialize font";
         }
         
         // Get font vertical metrics
@@ -157,7 +160,7 @@ class FontBaker {
         
         if (packResult == 0) {
             trace("FontBaker: ERROR - Failed to initialize pack context");
-            return;
+            throw "Failed to initialize pack context";
         }
         
         // Set oversampling to 1x1 - NO oversampling for pixel art!
@@ -183,7 +186,7 @@ class FontBaker {
         if (result == 0) {
             trace("FontBaker: ERROR - Failed to pack font");
             STB_Truetype.packEnd(packContext);
-            return;
+            throw "Failed to pack font - atlas too small or font too large";
         }
         
         trace("FontBaker: Successfully packed font!");
@@ -215,8 +218,7 @@ class FontBaker {
         trace("FontBaker: Font metrics - lineHeight=" + lineHeight + ", base=" + base + " (ascent=" + scaledAscent + ", descent=" + scaledDescent + ")");
         
         // Build JSON metadata (compatible with FontLoader format)
-        var fontName = outputName;
-        var atlasFileName = outputName + ".tga";
+        var atlasFileName = fontName + ".tga";
         var chars = [];
         
         trace("FontBaker: Extracting character data...");
@@ -259,62 +261,18 @@ class FontBaker {
             });
         }
         
-        var jsonData = {
-            font: {
-                info: {
-                    "_face": fontName,
-                    "_size": Std.string(Std.int(fontSize)),
-                    "_bold": "0",
-                    "_italic": "0",
-                    "_charset": "",
-                    "_unicode": "1",
-                    "_stretchH": "100",
-                    "_smooth": "0",
-                    "_aa": "1",
-                    "_padding": "1,1,1,1",
-                    "_spacing": "1,1",
-                    "_outline": "0"
-                },
-                common: {
-                    "_lineHeight": Std.string(lineHeight),
-                    "_base": Std.string(base),
-                    "_scaleW": Std.string(atlasWidth),
-                    "_scaleH": Std.string(atlasHeight),
-                    "_pages": "1",
-                    "_packed": "0",
-                    "_alphaChnl": "0",
-                    "_redChnl": "4",
-                    "_greenChnl": "4",
-                    "_blueChnl": "4"
-                },
-                metrics: {
-                    "_ascent": Std.string(ascent),
-                    "_descent": Std.string(descent),
-                    "_lineGap": Std.string(lineGap),
-                    "_unitsPerEM": Std.string(unitsPerEM),
-                    "_scale": Std.string(scale),
-                    "_scaledAscent": Std.string(scaledAscent),
-                    "_scaledDescent": Std.string(scaledDescent)
-                },
-                pages: {
-                    page: {
-                        "_id": "0",
-                        "_file": atlasFileName
-                    }
-                },
-                chars: {
-                    char: chars
-                }
-            }
+        // Store metrics for export
+        var metricsData = {
+            "_ascent": Std.string(ascent),
+            "_descent": Std.string(descent),
+            "_lineGap": Std.string(lineGap),
+            "_unitsPerEM": Std.string(unitsPerEM),
+            "_scale": Std.string(scale),
+            "_scaledAscent": Std.string(scaledAscent),
+            "_scaledDescent": Std.string(scaledDescent)
         };
         
-        // Save metadata JSON
-        var jsonPath = "res/fonts/" + outputName + ".json";
-        var jsonString = Json.stringify(jsonData, null, "  ");
-        File.saveContent(jsonPath, jsonString);
-        trace("FontBaker: Saved metadata to " + jsonPath);
-        
-        // Convert atlas to RGBA for TGA export
+        // Convert atlas to RGBA for texture
         var rgbaPixels = new haxe.io.UInt8Array(atlasWidth * atlasHeight * 4);
         for (i in 0...atlasPixels.length) {
             var alpha = atlasPixels[i];
@@ -325,13 +283,23 @@ class FontBaker {
             rgbaPixels[idx + 3] = alpha; // A (use font alpha as alpha channel)
         }
         
-        // Save atlas texture
+        // Create texture data
         var textureData = new TextureData(rgbaPixels, 4, atlasWidth, atlasHeight, true);
-        var tgaPath = "res/fonts/" + outputName + ".tga";
-        TGAExporter.saveToTGA(textureData, tgaPath);
-        trace("FontBaker: Saved atlas to " + tgaPath);
         
         trace("FontBaker: Font baking complete!");
-        trace("  Load with: FontLoader.load(resources.getText('fonts/" + outputName + ".json'))");
+        trace("  Font data ready in memory - call exportToFiles() to save to disk");
+        
+        // Return baked font data
+        return new BakedFontData(
+            fontName,
+            Std.int(fontSize),
+            atlasWidth,
+            atlasHeight,
+            lineHeight,
+            base,
+            textureData,
+            chars,
+            metricsData
+        );
     }
 }
