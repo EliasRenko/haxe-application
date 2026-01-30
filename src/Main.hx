@@ -3,7 +3,7 @@ package;
 import App;
 import states.EditorState;
 import states.CollisionTestState;
-import states.FontBakerState;
+//import states.FontBakerState;
 #if dll
 import Editor;
 #end
@@ -23,7 +23,7 @@ class Main {
         }
 
         // Run FontBakerState to generate font atlas from nokiafc22.ttf
-        app.addState(new FontBakerState(app));
+        //app.addState(new FontBakerState(app));
         app.run();
         #end
     }

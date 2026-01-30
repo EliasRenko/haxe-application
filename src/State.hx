@@ -42,6 +42,7 @@ class State {
         camera.roll = 0.0;
         
         trace("Created state '" + name + "' with ID " + id + " and camera");
+        app.log.debug(1, "Created state '" + name + "' with ID " + id + " and camera");
     }
     
     /**
@@ -68,6 +69,7 @@ class State {
         // Debug control: Toggle camera debug mode with 'C' key
         if (app.input.keyboard.released(Keycode.C)) {
             cameraDebug = !cameraDebug;
+            app.log.debug(1, "Camera debug mode: " + (cameraDebug ? "ON" : "OFF"));
         }
 
         // If camera debug mode is active, allow camera movement with arrow keys

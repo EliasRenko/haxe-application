@@ -1,5 +1,8 @@
 package;
 
+import Log.LogCategory;
+import Log.LogPriority;
+
 class App extends Runtime {
     
     // State Management
@@ -28,10 +31,12 @@ class App extends Runtime {
     override function init():Bool {
         super.init();
 
-        __log = new Log(this);
+        __log = new Log(this #if debug , true #end);
         __resources = new Resources(this);
         __input = new Input(this);
         __renderer = new Renderer(this, 640, 480);
+
+        __log.debug(LogCategory.APP, "App initialized in debug mode");
 
         preload();
 
@@ -116,7 +121,7 @@ class App extends Runtime {
             // Wait for all assets to load
             Promise.all(files)
                 .then(function(results:Array<Dynamic>) {
-                    __log.info(Log.CATEGORY_APP,"Successfully preloaded " + results.length + " assets");
+                    __log.info(LogCategory.APP,"Successfully preloaded " + results.length + " assets");
 
                     // // Add both states but start with the TilemapFast state for visual demo
                     // __log.engineInfo("Setting up states...");
@@ -131,11 +136,11 @@ class App extends Runtime {
                     // switchToState(tilemapFastState);
                 })
                 .onError(function(error:String) {
-                    __log.error(Log.CATEGORY_APP,"Failed to preload some assets: " + error);
+                    __log.error(LogCategory.APP,"Failed to preload some assets: " + error);
                 });
         })
         .onError(function(error:String) {
-            __log.error(Log.CATEGORY_APP,"Failed to load preload.txt: " + error);
+            __log.error(LogCategory.APP,"Failed to load preload.txt: " + error);
         });
     }
 
@@ -144,12 +149,12 @@ class App extends Runtime {
      */
     public function addState(state:State):State {
         if (state == null) {
-            __log.warn(Log.CATEGORY_APP,"Warning: Attempted to add null state");
+            __log.warn(LogCategory.APP,"Warning: Attempted to add null state");
             return null;
         }
         
         states.push(state);
-        __log.info(Log.CATEGORY_APP,"Added state '" + state.name + "' to app (total states: " + states.length + ")");
+        __log.info(LogCategory.APP,"Added state '" + state.name + "' to app (total states: " + states.length + ")");
         
         // If no current state, make this the current one
         if (currentState == null) {
@@ -167,7 +172,7 @@ class App extends Runtime {
         
         var removed = states.remove(state);
         if (removed) {
-            __log.info(Log.CATEGORY_APP, "Removed state '" + state.name + "' from app");
+            __log.info(LogCategory.APP, "Removed state '" + state.name + "' from app");
             
             // If this was the current state, release it
             if (currentState == state) {
@@ -218,7 +223,7 @@ class App extends Runtime {
         }
         
         if (!stateExists) {
-            __log.warn(Log.CATEGORY_APP, "Warning: Attempted to switch to state '" + state.name + "' that is not in states array");
+            __log.warn(LogCategory.APP, "Warning: Attempted to switch to state '" + state.name + "' that is not in states array");
             return false;
         }
         
@@ -231,7 +236,7 @@ class App extends Runtime {
         currentState = state;
         currentState.init();
 
-        __log.info(Log.CATEGORY_APP, "Switched to state '" + state.name + "'");
+        __log.info(LogCategory.APP, "Switched to state '" + state.name + "'");
 
         return true;
     }
@@ -245,7 +250,7 @@ class App extends Runtime {
                 return switchToState(state);
             }
         }
-        __log.warn(Log.CATEGORY_APP, "Warning: State '" + name + "' not found");
+        __log.warn(LogCategory.APP, "Warning: State '" + name + "' not found");
         return false;
     }
     
@@ -338,10 +343,12 @@ class App extends Runtime {
     // Mouse event handlers
     override function onMouseButtonDown(x:Float, y:Float, button:Int, windowId:Int):Void {
         @:privateAccess __input.mouse.onButtonDown(x, y, button);
+        logDebug(2, "Mouse button " + button + " down at (" + x + ", " + y + ")");
     }
 
     override function onMouseButtonUp(x:Float, y:Float, button:Int, windowId:Int):Void {
         @:privateAccess __input.mouse.onButtonUp(x, y, button);
+        logDebug(2, "Mouse button " + button + " up at (" + x + ", " + y + ")");
     }
 
     override function onMouseMotion(x:Float, y:Float, xrel:Float, yrel:Float, windowId:Int):Void {

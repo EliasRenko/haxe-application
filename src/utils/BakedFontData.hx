@@ -39,10 +39,13 @@ class BakedFontData {
     /**
      * Export this baked font to JSON and TGA files
      * 
-     * @param outputName Output name without extension (e.g., "nokiafc22_16")
+     * @param basePath Base output path without extension (e.g., "res/fonts/arial_20" or "C:\\fonts\\arial_20")
      */
-    public function exportToFiles(outputName:String):Void {
-        var atlasFileName = outputName + ".tga";
+    public function exportToFiles(basePath:String):Void {
+        // Extract just the filename from the base path for the atlas reference
+        var lastSlash = Std.int(Math.max(basePath.lastIndexOf("/"), basePath.lastIndexOf("\\\\")));
+        var fileName = basePath.substring(lastSlash + 1);
+        var atlasFileName = fileName + ".tga";
         
         var jsonData = {
             font: {
@@ -85,14 +88,14 @@ class BakedFontData {
             }
         };
         
-        // Save metadata JSON
-        var jsonPath = "res/fonts/" + outputName + ".json";
+        // Save metadata JSON - use path as-is
+        var jsonPath = basePath + ".json";
         var jsonString = Json.stringify(jsonData, null, "  ");
         File.saveContent(jsonPath, jsonString);
         trace("BakedFontData: Saved metadata to " + jsonPath);
         
-        // Save atlas texture
-        var tgaPath = "res/fonts/" + outputName + ".tga";
+        // Save atlas texture - use path as-is
+        var tgaPath = basePath + ".tga";
         TGAExporter.saveToTGA(textureData, tgaPath);
         trace("BakedFontData: Saved atlas to " + tgaPath);
     }

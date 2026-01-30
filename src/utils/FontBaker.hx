@@ -26,12 +26,12 @@ import utils.BakedFontData;
 class FontBaker {
     
     /**
-     * Bake a TrueType font to bitmap atlas in memory
+     * Bake a TrueType font to bitmap atlas in memory from raw bytes
      * 
      * Optimized for pixel art fonts - renders at exact size without anti-aliasing.
      * Returns BakedFontData which can be used directly for rendering or exported to files.
      * 
-     * @param ttfPath Path to .ttf font file (e.g., "res/fonts/nokiafc22.ttf")
+     * @param fontBytes Raw TTF font data
      * @param fontName Font name for metadata
      * @param fontSize Font size in pixels (MUST match font's designed size for pixel art)
      * @param atlasWidth Atlas texture width (power of 2, e.g., 512)
@@ -40,8 +40,8 @@ class FontBaker {
      * @param numChars Number of characters to bake (96 = ASCII printable)
      * @return BakedFontData with all font properties and texture data
      */
-    public static function bakeFont(
-        ttfPath:String,
+    public static function bakeFontFromBytes(
+        fontBytes:haxe.io.Bytes,
         fontName:String,
         fontSize:Float = 16,
         atlasWidth:Int = 512,
@@ -49,16 +49,7 @@ class FontBaker {
         firstChar:Int = 32,
         numChars:Int = 96
     ):BakedFontData {
-        trace("FontBaker: Loading font from " + ttfPath);
-        
-        // Read font file
-        if (!FileSystem.exists(ttfPath)) {
-            trace("FontBaker: ERROR - Font file not found: " + ttfPath);
-            throw "Font file not found: " + ttfPath;
-        }
-        
-        var fontBytes = File.getBytes(ttfPath);
-        trace("FontBaker: Read " + fontBytes.length + " bytes");
+        trace("FontBaker: Baking font from " + fontBytes.length + " bytes");
         
         // Get native pointer for font initialization
         var fontPtr:cpp.ConstPointer<cpp.UInt8> = untyped __cpp__("(const unsigned char*){0}->b->GetBase()",  fontBytes);
