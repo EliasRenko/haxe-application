@@ -327,28 +327,32 @@ class App extends Runtime {
     override function onKeyDown(keycode:Int, scancode:Int, repeat:Bool, mod:Int, windowId:Int):Void {
         #if use_scancodes
         @:privateAccess __input.keyboard.onKeyDown(scancode, repeat, mod);
+        log.info(LogCategory.INPUT, "Key down: " + scancode);
         #else
         @:privateAccess __input.keyboard.onKeyDown(keycode, repeat, mod);
+        log.info(LogCategory.INPUT, "Key down: " + keycode);
         #end
     }
 
     override function onKeyUp(keycode:Int, scancode:Int, repeat:Bool, mod:Int, windowId:Int):Void {
         #if use_scancodes
         @:privateAccess __input.keyboard.onKeyUp(scancode, repeat, mod);
+        log.info(LogCategory.INPUT, "Key up: " + scancode);
         #else
         @:privateAccess __input.keyboard.onKeyUp(keycode, repeat, mod);
+        log.info(LogCategory.INPUT, "Key up: " + keycode);
         #end
     }
 
     // Mouse event handlers
     override function onMouseButtonDown(x:Float, y:Float, button:Int, windowId:Int):Void {
         @:privateAccess __input.mouse.onButtonDown(x, y, button);
-        logDebug(2, "Mouse button " + button + " down at (" + x + ", " + y + ")");
+        log.info(LogCategory.INPUT, "Mouse button " + button + " down at (" + x + ", " + y + ")");
     }
 
     override function onMouseButtonUp(x:Float, y:Float, button:Int, windowId:Int):Void {
         @:privateAccess __input.mouse.onButtonUp(x, y, button);
-        logDebug(2, "Mouse button " + button + " up at (" + x + ", " + y + ")");
+        log.info(LogCategory.INPUT, "Mouse button " + button + " up at (" + x + ", " + y + ")");
     }
 
     override function onMouseMotion(x:Float, y:Float, xrel:Float, yrel:Float, windowId:Int):Void {

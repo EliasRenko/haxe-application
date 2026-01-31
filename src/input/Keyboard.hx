@@ -6,7 +6,7 @@ class Keyboard {
 
     // Privates
     private var __checkControls:Vector<Bool>;
-    private var __checkCount:Int = 0;
+    public var __checkCount:Int = 0;
     private var __pressControls:Array<Int>;
     private var __pressCount:Int = 0;
 	private var __releaseControls:Array<Int>;
@@ -47,8 +47,6 @@ class Keyboard {
     }
 
     private function onKeyDown(key:UInt, repeat:Bool, mod:Int):Void {
-        trace("key down: " + Keycode.toString(key));
-        
         // Only register as pressed if not already down (not a repeat)
         if (!__checkControls[key]) {
             __checkControls[key] = true;

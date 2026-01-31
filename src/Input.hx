@@ -1,5 +1,6 @@
 package;
 
+import Log.LogCategory;
 import input.Keyboard;
 import input.Mouse;
 
@@ -12,10 +13,10 @@ class Input {
     // Privates
     private var __keyboard:Keyboard;
     private var __mouse:Mouse;
-    private var __parent:App;
+    private var __app:App;
 
-    public function new(parent:App) {
-        __parent = parent;
+    public function new(app:App) {
+        __app = app;
 
         __keyboard = new Keyboard();
         __mouse = new Mouse();
@@ -35,8 +36,10 @@ class Input {
     }
 
     public function postUpdate():Void {
-        __keyboard.postUpdate();
+        //__keyboard.postUpdate();
         __mouse.postUpdate();
+
+        __app.logDebug(LogCategory.INPUT, keyboard.__checkCount + " keys currently pressed");
     }
 
     // Getters and setters

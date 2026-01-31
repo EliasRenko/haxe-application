@@ -1,5 +1,6 @@
 package;
 
+import Log.LogCategory;
 import Entity;
 import Camera;
 import App;
@@ -32,17 +33,23 @@ class State {
         
         // Initialize camera for this state
         this.camera = new Camera();
-        // Set reasonable defaults for 3D perspective
-        camera.ortho = false;
+        resetCamera();
+        
+        trace("Created state '" + name + "' with ID " + id + " and camera");
+        app.log.debug(LogCategory.SYSTEM, "Created state '" + name + "' with ID " + id + " and camera");
+    }
+    
+    /**
+     * Reset camera to default values
+     */
+    public function resetCamera():Void {
+        camera.ortho = true;
         camera.x = 0.0;
         camera.y = 0.0;
         camera.z = 3.0; // Move camera back to see objects
         camera.pitch = 0.0;
         camera.yaw = 0.0;
         camera.roll = 0.0;
-        
-        trace("Created state '" + name + "' with ID " + id + " and camera");
-        app.log.debug(1, "Created state '" + name + "' with ID " + id + " and camera");
     }
     
     /**
@@ -69,7 +76,12 @@ class State {
         // Debug control: Toggle camera debug mode with 'C' key
         if (app.input.keyboard.released(Keycode.C)) {
             cameraDebug = !cameraDebug;
-            app.log.debug(1, "Camera debug mode: " + (cameraDebug ? "ON" : "OFF"));
+            app.log.debug(LogCategory.SYSTEM, "Camera debug mode: " + (cameraDebug ? "ON" : "OFF"));
+        }
+
+        if (app.input.keyboard.released(Keycode.R)) {
+            resetCamera();
+            app.log.debug(LogCategory.SYSTEM, "Camera reset to default position");
         }
 
         // If camera debug mode is active, allow camera movement with arrow keys
