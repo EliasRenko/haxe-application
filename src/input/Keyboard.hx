@@ -57,7 +57,6 @@ class Keyboard {
     }
 
     private function onKeyUp(key:UInt, repeat:Bool, mod:Int):Void {
-        trace("key up: " + Keycode.toString(key));
         __checkControls[key] = false;
 		__checkCount--;
 		__releaseControls.push(key);

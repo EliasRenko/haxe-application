@@ -86,9 +86,11 @@ class State {
 
         // If camera debug mode is active, allow camera movement with arrow keys
         if (cameraDebug) {
+            
             var moveSpeed:Float = 1000.0 * deltaTime;
             if (app.input.keyboard.check(Keycode.A)) {
                 camera.x -= moveSpeed;
+                //app.log.debug(LogCategory.SYSTEM, "DeltaTime: " + deltaTime);
             }
             if (app.input.keyboard.check(Keycode.D)) {
                 camera.x += moveSpeed;

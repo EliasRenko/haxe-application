@@ -36,10 +36,8 @@ class Input {
     }
 
     public function postUpdate():Void {
-        //__keyboard.postUpdate();
+        __keyboard.postUpdate();
         __mouse.postUpdate();
-
-        __app.logDebug(LogCategory.INPUT, keyboard.__checkCount + " keys currently pressed");
     }
 
     // Getters and setters
