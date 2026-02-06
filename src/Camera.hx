@@ -15,6 +15,11 @@ class Camera {
     // Values > 1.0 zoom in, values < 1.0 zoom out
     public var zoom:Float = 1.0;
     
+    // Zoom center point (in screen coordinates)
+    // Zoom will focus on this point. Default is null (uses screen center)
+    public var zoomCenterX:Null<Float> = null;
+    public var zoomCenterY:Null<Float> = null;
+    
     // 3D Rotation (in degrees for easier use)
     public var pitch(get, set):Float;  // X-axis rotation
     public var yaw(get, set):Float;    // Y-axis rotation  
@@ -48,14 +53,13 @@ class Camera {
         __matrix.appendTranslation(-x, -y, -z);
         
         if (ortho) {
-            // IMPORTANT: Orthographic projection with TOP-LEFT origin (0,0)
-            // This is the standard 2D coordinate system for UI and games
-            // DO NOT CHANGE - ensures (0,0) is at top-left, Y increases downward
-            // Apply zoom by scaling the view bounds
+            // Orthographic projection with configurable zoom center
+            // Zoom focuses on zoomCenter (default: screen center)
+            // This makes zoom feel natural and controllable
             var halfWidth = (width / zoom) * 0.5;
             var halfHeight = (height / zoom) * 0.5;
-            var centerX = width * 0.5;
-            var centerY = height * 0.5;
+            var centerX = zoomCenterX != null ? zoomCenterX : width * 0.5;
+            var centerY = zoomCenterY != null ? zoomCenterY : height * 0.5;
             
             var left = centerX - halfWidth;
             var right = centerX + halfWidth;
@@ -74,7 +78,6 @@ class Camera {
     }
 
     public function getMatrix() {
-        
         return __matrix;
     }
 

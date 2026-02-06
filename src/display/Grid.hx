@@ -20,7 +20,6 @@ class Grid extends Transform {
     public var subGridSize:Float = 25.0;
     public var gridColor:Array<Float> = [0.3, 0.3, 0.3]; // RGB
     public var backgroundColor:Array<Float> = [0.0, 0.0, 0.0]; // RGB
-    public var lineWidth:Float = 1.0;
     public var fadeDistance:Float = 2000.0;
     
     /**
@@ -64,23 +63,15 @@ class Grid extends Transform {
     override public function render(cameraMatrix:Matrix):Void {
         if (!visible) return;
         
-        // Update transformation matrix
-        updateTransform();
-        
         // Set uniforms for the grid shader
         uniforms.set("uGridSize", gridSize);
         uniforms.set("uSubGridSize", subGridSize);
         uniforms.set("uGridColor", gridColor);
         uniforms.set("uBackgroundColor", backgroundColor);
-        uniforms.set("uLineWidth", lineWidth);
         uniforms.set("uFadeDistance", fadeDistance);
         
-        // Create final matrix by combining object matrix with camera matrix
-        var finalMatrix = Matrix.copy(matrix);
-        finalMatrix.append(cameraMatrix);
-        
-        // Set the transform matrix
-        uniforms.set("uMatrix", finalMatrix.data);
+        // Call parent render - it will handle updateTransform and uMatrix
+        super.render(cameraMatrix);
     }
     
     /**

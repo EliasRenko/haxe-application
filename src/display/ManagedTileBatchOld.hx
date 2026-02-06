@@ -18,7 +18,7 @@ import display.Tile;
  * Provides the full TileBatch API for adding, removing, and updating tiles,
  * while using the primitive TileBatch for efficient rendering.
  */
-class ManagedTileBatch extends TileBatch {
+class ManagedTileBatchOld extends TileBatch {
     
     public static inline var MAX_TILES:Int = 1000; // Maximum tiles supported
 

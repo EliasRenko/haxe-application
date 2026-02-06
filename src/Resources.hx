@@ -53,7 +53,8 @@ private class __Resources {
             }
             return cast(_resource.data, String);
         }
-        return null;
+        //return null;
+        throw "Resource not found: " + fullPath;
     }
 
     public function getTexture(name:String):TextureData {
@@ -65,7 +66,8 @@ private class __Resources {
             }
             return cast(_resource.data, TextureData);
         }
-        return null;
+        //return null;
+        throw "Resource not found: " + fullPath;
     }
 
     public function loadText(path:String, cache:Bool = true):Promise<String> {
