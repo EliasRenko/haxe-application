@@ -30,6 +30,7 @@ class LineBatch extends DisplayObject {
         this.persistent = persistent;
         this.vertices = [];
         lineCount = 0;
+        __verticesToRender = 0;
         active = true;
     }
 
@@ -57,12 +58,25 @@ class LineBatch extends DisplayObject {
     /** Set uniforms and prepare for drawing */
     override public function render(cameraMatrix:Matrix):Void {
         if (!visible || !active) return;
-        if (lineCount == 0) return;
+        trace("LineBatch: === RENDER START ===");
+        trace("LineBatch: Lines: " + lineCount + ", Vertices: " + __verticesToRender);
+        trace("LineBatch: Mode: " + mode + " (GL_LINES=0x0001)");
+        trace("LineBatch: Visible: " + visible + ", Active: " + active);
+        trace("LineBatch: Program: " + programInfo.name + " (ID: " + programInfo.programId + ")");
+        trace("LineBatch: Shader compiled: " + programInfo.isCompiled);
+        
         // Set MVP matrix for line shader
         updateTransform();
         var finalMatrix = Matrix.copy(matrix);
         finalMatrix.append(cameraMatrix);
         uniforms.set("uMatrix", finalMatrix.data);
+        
+        trace("LineBatch: Calling super.render()...");
+        // Call parent to actually draw
+        super.render(cameraMatrix);
+        
+        trace("LineBatch: === RENDER END ===");
+        trace("LineBatch: Render complete");
     }
 
     override public function postRender():Void {
@@ -70,6 +84,8 @@ class LineBatch extends DisplayObject {
         if (!persistent) {
             lineCount = 0;
             vertices = [];
+            __verticesToRender = 0;
+            needsBufferUpdate = true;
         }
     }
 
@@ -77,6 +93,8 @@ class LineBatch extends DisplayObject {
     public function clear() {
         lineCount = 0;
         vertices = [];
+        __verticesToRender = 0;
+        needsBufferUpdate = true;
     }
 
     /** Set persistent mode (lines stay until cleared) */
