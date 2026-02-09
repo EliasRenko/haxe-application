@@ -34,6 +34,10 @@ class LineBatch extends DisplayObject {
         active = true;
     }
 
+    override function init(renderer:Renderer) {
+        super.init(renderer);
+    }
+
     /** Add a line to the batch (with color per vertex) */
     public function addLine(x0:Float, y0:Float, z0:Float, x1:Float, y1:Float, z1:Float, color0:Array<Float>, color1:Array<Float>) {
         if (lineCount >= MAX_LINES) return;
@@ -58,12 +62,6 @@ class LineBatch extends DisplayObject {
     /** Set uniforms and prepare for drawing */
     override public function render(cameraMatrix:Matrix):Void {
         if (!visible || !active) return;
-        trace("LineBatch: === RENDER START ===");
-        trace("LineBatch: Lines: " + lineCount + ", Vertices: " + __verticesToRender);
-        trace("LineBatch: Mode: " + mode + " (GL_LINES=0x0001)");
-        trace("LineBatch: Visible: " + visible + ", Active: " + active);
-        trace("LineBatch: Program: " + programInfo.name + " (ID: " + programInfo.programId + ")");
-        trace("LineBatch: Shader compiled: " + programInfo.isCompiled);
         
         // Set MVP matrix for line shader
         updateTransform();
@@ -71,12 +69,7 @@ class LineBatch extends DisplayObject {
         finalMatrix.append(cameraMatrix);
         uniforms.set("uMatrix", finalMatrix.data);
         
-        trace("LineBatch: Calling super.render()...");
-        // Call parent to actually draw
         super.render(cameraMatrix);
-        
-        trace("LineBatch: === RENDER END ===");
-        trace("LineBatch: Render complete");
     }
 
     override public function postRender():Void {
