@@ -44,8 +44,8 @@ private class __Resources {
     //     return __parent.exists(__resourceFolder + "/" + path);
 	// }
 
-    public function getText(name:String):String {
-        var fullPath = __resourceFolder + "/" + name;
+    public function getText(name:String, relative:Bool = true):String {
+        var fullPath = relative ? __resourceFolder + "/" + name : name;
         if (__resources.exists(fullPath)) {
             var _resource:Resource = __resources.get(fullPath);
             if (_resource == null) {
@@ -57,8 +57,8 @@ private class __Resources {
         throw "Resource not found: " + fullPath;
     }
 
-    public function getTexture(name:String):TextureData {
-        var fullPath = __resourceFolder + "/" + name;
+    public function getTexture(name:String, relative:Bool = true):TextureData {
+        var fullPath = relative ? __resourceFolder + "/" + name : name;
         if (__resources.exists(fullPath)) {
             var _resource:Resource = __resources.get(fullPath);
             if (_resource == null || _resource.type != 'texture') {
@@ -70,10 +70,9 @@ private class __Resources {
         throw "Resource not found: " + fullPath;
     }
 
-    public function loadText(path:String, cache:Bool = true):Promise<String> {
-        var fullPath = __resourceFolder + "/" + path;
+    public function loadText(path:String, relative:Bool = true, cache:Bool = true):Promise<String> {
+        var fullPath = relative ? __resourceFolder + "/" + path : path;
         return new Promise<String>((resolve, reject) -> {
-
             try {
                 var bytes = __parent.loadBytes(fullPath);
                 var data:String = bytes.toString();
@@ -85,9 +84,9 @@ private class __Resources {
         });
     }
 
-    public function loadShader(vertexPath:String, fragmentPath:String, cache:Bool = true):Promise<{vertex:String, fragment:String}> {
-        var fullVertexPath = __resourceFolder + "/" + vertexPath;
-        var fullFragmentPath = __resourceFolder + "/" + fragmentPath;
+    public function loadShader(vertexPath:String, fragmentPath:String, relative:Bool = true, cache:Bool = true):Promise<{vertex:String, fragment:String}> {
+        var fullVertexPath = relative ? __resourceFolder + "/" + vertexPath : vertexPath;
+        var fullFragmentPath = relative ? __resourceFolder + "/" + fragmentPath : fragmentPath;
         return new Promise<{vertex:String, fragment:String}>((resolve, reject) -> {
             try {
                 var vertexBytes = __parent.loadBytes(fullVertexPath);
@@ -105,21 +104,17 @@ private class __Resources {
         });
     }
 
-    public function loadTexture(path:String, cache:Bool = true):Promise<TextureData> {
-        var fullPath = __resourceFolder + "/" + path;
+    public function loadTexture(path:String, relative:Bool = true, cache:Bool = true):Promise<TextureData> {
+        var fullPath = relative ? __resourceFolder + "/" + path : path;
         return new Promise<TextureData>((resolve, reject) -> {
             try {
                 var bytes = __parent.loadBytes(fullPath);
                 // Parse TGA
                 var textureData = TGALoader.loadFromBytes(bytes);
-                
                 if (cache) {
                     __resources.set(fullPath, {type: 'texture', data: textureData, size: bytes.length});
                 }
-                
-                // trace("Loaded texture: " + fullPath + " (" + textureData.width + "x" + textureData.height + ")"); // Disabled - RESOURCES category
                 resolve(textureData);
-                
             } catch (e:Dynamic) {
                 reject("Failed to load texture: " + e);
             }
