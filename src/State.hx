@@ -95,10 +95,10 @@ class State {
             if (app.input.keyboard.check(Keycode.D)) {
                 camera.x += moveSpeed;
             }
-            if (app.input.keyboard.check(Keycode.W)) {
+            if (app.input.keyboard.check(Keycode.S)) {
                 camera.y += moveSpeed;
             }
-            if (app.input.keyboard.check(Keycode.S)) {
+            if (app.input.keyboard.check(Keycode.W)) {
                 camera.y -= moveSpeed;
             }
         }

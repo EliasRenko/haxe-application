@@ -1,0 +1,25 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "",
+    "expandedProjectPaths": [
+    ],
+    "fileStates": {
+        "C:/Users/Renko/Desktop/dev.tsx": {
+            "scaleInEditor": 1
+        }
+    },
+    "last.imagePath": "C:/Users/Renko/Desktop",
+    "map.height": 32,
+    "map.lastUsedFormat": "tmx",
+    "map.width": 32,
+    "openFiles": [
+    ],
+    "project": "",
+    "recentFiles": [
+        "C:/Users/Renko/Desktop/dev.tsx"
+    ],
+    "tileset.lastUsedFormat": "tsx"
+}
