@@ -142,6 +142,7 @@ class Entity {
         for (component in components) {
             component.cleanup();
         }
+        
         components = [];
         componentMap.clear();
         

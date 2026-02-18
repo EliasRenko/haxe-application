@@ -4,6 +4,7 @@ import Log.LogCategory;
 import Entity;
 import Camera;
 import App;
+import math.Matrix;
 
 /**
  * Base class for game states (worlds/scenes/levels)
@@ -138,6 +139,13 @@ class State {
             if (entity != null && entity.active && entity.visible) {
                 entity.render(renderer, viewProjectionMatrix);
             }
+        }
+    }
+
+    public function renderDisplayObject(renderer:Renderer, viewProjectionMatrix:Matrix, displayObject:DisplayObject):Void {
+        if (displayObject.visible) {
+            displayObject.render(viewProjectionMatrix);
+            renderer.renderDisplayObject(displayObject, viewProjectionMatrix);
         }
     }
     
