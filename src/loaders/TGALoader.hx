@@ -23,7 +23,7 @@ class TGALoader {
 	/**
 	 * Decompresses RLE-encoded TGA data
 	 */
-	private static function decompressRLE(input:BytesInput, width:Int, height:Int, bytesPerPixel:Int):Bytes {
+	private static function decompressRLE(input:BytesInput, width:Int, height:Int, bytesPerPixel:Int, source:String):Bytes {
 		var expectedSize = width * height * bytesPerPixel;
 		var output = new UInt8Array(expectedSize);
 		var outIndex = 0;
@@ -68,7 +68,7 @@ class TGALoader {
 		return result;
 	}
 
-	public static function loadFromBytes(bytes:Bytes):TextureData {
+	public static function loadFromBytes(bytes:Bytes, src:String = ""):TextureData {
 		if (bytes.length < TGA_HEADER_SIZE) {
 			throw "Invalid TGA file: too small";
 		}
@@ -174,9 +174,9 @@ class TGALoader {
 			trace("TGA: Decompressing RLE data...");
 			if (is1Bit) {
 				// For 1-bit RLE, we need special handling
-				rawData = decompressRLE(input, width, height, 1);
+				rawData = decompressRLE(input, width, height, 1, src);
 			} else {
-				rawData = decompressRLE(input, width, height, inputBytesPerPixel);
+				rawData = decompressRLE(input, width, height, inputBytesPerPixel, src);
 			}
 		} else {
 			var remainingBytes = bytes.length - input.position;

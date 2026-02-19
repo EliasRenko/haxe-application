@@ -24,8 +24,7 @@ private class __Resources {
     }
 
     public function cached(name:String):Bool {
-        var fullPath = __resourceFolder + "/" + name;
-        if (__resources.exists(fullPath)) {
+        if (__resources.exists(name)) {
             return true;
         }
         return false;
@@ -110,7 +109,7 @@ private class __Resources {
             try {
                 var bytes = __parent.loadBytes(fullPath);
                 // Parse TGA
-                var textureData = TGALoader.loadFromBytes(bytes);
+                var textureData = TGALoader.loadFromBytes(bytes, fullPath);
                 if (cache) {
                     __resources.set(fullPath, {type: 'texture', data: textureData, size: bytes.length});
                 }
