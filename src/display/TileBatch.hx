@@ -31,7 +31,7 @@ class TileBatch extends DisplayObject {
     // Maximum tile capacity (buffer allocated for this many tiles)
     private static inline var MAX_TILES:Int = 1000;
     
-    public var atlasTexture:Texture = null;
+    //public var atlasTexture:Texture = null;
     public var atlasRegions:Map<Int, AtlasRegion> = new Map(); // regionId -> AtlasRegion
     
     // Current tile data (set each frame)
@@ -47,7 +47,6 @@ class TileBatch extends DisplayObject {
      * @param texture Atlas texture for all tiles
      */
     public function new(programInfo:ProgramInfo, texture:Texture) {
-        this.atlasTexture = texture;
         
         // Start with empty vertices but pre-generate indices for MAX_TILES
         var emptyVertices = new Vertices([]);
@@ -113,16 +112,12 @@ class TileBatch extends DisplayObject {
         
         // Convert pixel coordinates to UV coordinates
         // No V-flipping needed since TGA loader now handles proper orientation
-        region.u1 = atlasX / atlasTexture.width;
-        region.v1 = atlasY / atlasTexture.height;
-        region.u2 = (atlasX + atlasWidth) / atlasTexture.width;
-        region.v2 = (atlasY + atlasHeight) / atlasTexture.height;
+        region.u1 = atlasX / textures[0].width;
+        region.v1 = atlasY / textures[0].height;
+        region.u2 = (atlasX + atlasWidth) / textures[0].width;
+        region.v2 = (atlasY + atlasHeight) / textures[0].height;
         
-        if (regionId <= 3) { // Only trace first 3 regions (button parts)
-            trace("TileBatch: defineRegion ID=" + regionId + " at (" + atlasX + "," + atlasY + "," + atlasWidth + "," + atlasHeight + ")");
-            trace("  Texture size: " + atlasTexture.width + "x" + atlasTexture.height);
-            trace("  UVs: (" + region.u1 + "," + region.v1 + ") to (" + region.u2 + "," + region.v2 + ")");
-        }
+        
         atlasRegions.set(regionId, region);
         
         return regionId;
@@ -140,10 +135,15 @@ class TileBatch extends DisplayObject {
             trace("TileBatch: Warning - Region ID " + tileData.regionId + " not found, using default UVs");
             // Use default full texture UVs as fallback
             region = new AtlasRegion();
-            region.u1 = 0.0;
-            region.v1 = 1.0;
-            region.u2 = 1.0;
-            region.v2 = 0.0;
+            // region.u1 = 0.0;
+            // region.v1 = 1.0;
+            // region.u2 = 1.0;
+            // region.v2 = 0.0;
+
+            region.u1 = -1.0;
+            region.v1 = -1.0;
+            region.u2 = -1.0;
+            region.v2 = -1.0;
         }
         
         // IMPORTANT: Flip V coordinates to compensate for Y-axis flip in Camera
@@ -232,7 +232,7 @@ class TileBatch extends DisplayObject {
      * Called BEFORE render to update vertex data
      */
     override public function updateBuffers(renderer:Renderer):Void {
-        if (!active || atlasTexture == null) return;
+        if (!active || textures[0] == null) return;
 
         //__verticesToRender = 0;
         //__indicesToRender = 0;
@@ -272,7 +272,7 @@ class TileBatch extends DisplayObject {
      * Just sets uniforms - vertex data already updated in updateBuffers()
      */
     override public function render(cameraMatrix:Matrix):Void {
-        if (!visible || !active || atlasTexture == null) {
+        if (!visible || !active || textures[0] == null) {
             return;
         }
         
