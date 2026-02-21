@@ -322,6 +322,11 @@ class TileBatch extends DisplayObject {
         for (key in atlasRegions.keys()) count++;
         return count;
     }
+
+    public function clearRegions():Void {
+        atlasRegions.clear();
+        __nextRegionId = 1;
+    }
 }
 
 /**
