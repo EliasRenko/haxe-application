@@ -118,11 +118,6 @@ class TileBatch extends DisplayObject {
         region.u2 = (atlasX + atlasWidth) / atlasTexture.width;
         region.v2 = (atlasY + atlasHeight) / atlasTexture.height;
         
-        if (regionId <= 3) { // Only trace first 3 regions (button parts)
-            trace("TileBatch: defineRegion ID=" + regionId + " at (" + atlasX + "," + atlasY + "," + atlasWidth + "," + atlasHeight + ")");
-            trace("  Texture size: " + atlasTexture.width + "x" + atlasTexture.height);
-            trace("  UVs: (" + region.u1 + "," + region.v1 + ") to (" + region.u2 + "," + region.v2 + ")");
-        }
         atlasRegions.set(regionId, region);
         
         return regionId;
@@ -137,13 +132,13 @@ class TileBatch extends DisplayObject {
         // Get UV coordinates from the atlas region
         var region = atlasRegions.get(tileData.regionId);
         if (region == null) {
-            trace("TileBatch: Warning - Region ID " + tileData.regionId + " not found, using default UVs");
+            //trace("TileBatch: Warning - Region ID " + tileData.regionId + " not found, using default UVs");
             // Use default full texture UVs as fallback
             region = new AtlasRegion();
-            region.u1 = 0.0;
-            region.v1 = 1.0;
-            region.u2 = 1.0;
-            region.v2 = 0.0;
+            region.u1 = -1.0;
+            region.v1 = -1.0;
+            region.u2 = -1.0;
+            region.v2 = -1.0;
         }
         
         // IMPORTANT: Flip V coordinates to compensate for Y-axis flip in Camera
@@ -321,6 +316,11 @@ class TileBatch extends DisplayObject {
         var count = 0;
         for (key in atlasRegions.keys()) count++;
         return count;
+    }
+
+    public function clearRegions():Void {
+       atlasRegions = new Map();
+        __nextRegionId = 1;
     }
 }
 
