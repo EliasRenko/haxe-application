@@ -135,10 +135,19 @@ class TileBatch extends DisplayObject {
             //trace("TileBatch: Warning - Region ID " + tileData.regionId + " not found, using default UVs");
             // Use default full texture UVs as fallback
             region = new AtlasRegion();
-            region.u1 = 0.0;
-            region.v1 = 1.0;
-            region.u2 = 1.0;
-            region.v2 = 0.0;
+            // region.u1 = 0.0;
+            // region.v1 = 1.0;
+            // region.u2 = 1.0;
+            // region.v2 = 0.0;
+
+            region.u1 = -1.0;
+            region.v1 = -1.0;
+            region.u2 = -1.0;
+            region.v2 = -1.0;
+            region.u1 = -1.0;
+            region.v1 = -1.0;
+            region.u2 = -1.0;
+            region.v2 = -1.0;
         }
         
         // IMPORTANT: Flip V coordinates to compensate for Y-axis flip in Camera
@@ -316,6 +325,11 @@ class TileBatch extends DisplayObject {
         var count = 0;
         for (key in atlasRegions.keys()) count++;
         return count;
+    }
+
+    public function clearRegions():Void {
+        atlasRegions.clear();
+        __nextRegionId = 1;
     }
 }
 
