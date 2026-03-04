@@ -1,0 +1,373 @@
+{
+  "tilesets": [
+    {
+      "tileSize": 32,
+      "texturePath": "C:\\Users\\efedorenko\\Documents\\projects\\csharp\\csharp-editor\\bin\\x64\\Debug\\res\\textures\\devTiles.tga",
+      "name": "dev"
+    },
+    {
+      "tileSize": 32,
+      "texturePath": "C:\\Users\\efedorenko\\Documents\\projects\\csharp\\csharp-editor\\bin\\x64\\Debug\\res\\textures\\devTiles_alt.tga",
+      "name": "alt"
+    },
+    {
+      "tileSize": 32,
+      "texturePath": "C:\\Users\\efedorenko\\Documents\\projects\\csharp\\csharp-editor\\bin\\x64\\Debug\\res\\textures\\techblocks.tga",
+      "name": "tech"
+    },
+    {
+      "tileSize": 32,
+      "texturePath": "C:\\Users\\efedorenko\\Documents\\projects\\csharp\\csharp-editor\\bin\\x64\\Debug\\res\\textures\\dungeon.tga",
+      "name": "dungeon"
+    },
+    {
+      "tileSize": 32,
+      "texturePath": "C:\\Users\\efedorenko\\Documents\\projects\\csharp\\csharp-editor\\bin\\x64\\Debug\\res\\textures\\devTiles_alt.tga",
+      "name": "dev_alt"
+    }
+  ],
+  "entityDefinitions": [
+    {
+      "width": 32,
+      "tilesetName": "dungeon",
+      "regionHeight": 32,
+      "regionWidth": 32,
+      "height": 32,
+      "name": "human",
+      "regionX": 32,
+      "regionY": 64
+    },
+    {
+      "width": 32,
+      "tilesetName": "alt",
+      "regionHeight": 32,
+      "regionWidth": 32,
+      "height": 32,
+      "name": "block",
+      "regionX": 0,
+      "regionY": 32
+    }
+  ],
+  "tileCount": 28,
+  "mapBounds": {
+    "gridWidth": 30,
+    "width": 960,
+    "x": 0,
+    "y": 0,
+    "height": 1024,
+    "gridHeight": 32
+  },
+  "currentTileset": "tech",
+  "layers": [
+    {
+      "entityCount": 15,
+      "visible": true,
+      "batches": [
+        {
+          "entities": [
+            {
+              "x": 543,
+              "y": 550,
+              "name": "block"
+            },
+            {
+              "x": 659,
+              "y": 546,
+              "name": "block"
+            },
+            {
+              "x": 424,
+              "y": 541,
+              "name": "block"
+            }
+          ],
+          "tilesetName": "alt",
+          "count": 3
+        },
+        {
+          "entities": [
+            {
+              "x": 655,
+              "y": 347,
+              "name": "human"
+            },
+            {
+              "x": 684,
+              "y": 421,
+              "name": "human"
+            },
+            {
+              "x": 699,
+              "y": 470,
+              "name": "human"
+            },
+            {
+              "x": 660,
+              "y": 463,
+              "name": "human"
+            },
+            {
+              "x": 543,
+              "y": 573,
+              "name": "human"
+            },
+            {
+              "x": 506,
+              "y": 448,
+              "name": "human"
+            },
+            {
+              "x": 668,
+              "y": 627,
+              "name": "human"
+            },
+            {
+              "x": 676,
+              "y": 562,
+              "name": "human"
+            },
+            {
+              "x": 420,
+              "y": 612,
+              "name": "human"
+            },
+            {
+              "x": 445,
+              "y": 564,
+              "name": "human"
+            },
+            {
+              "x": 513,
+              "y": 347,
+              "name": "human"
+            },
+            {
+              "x": 554,
+              "y": 347,
+              "name": "human"
+            }
+          ],
+          "tilesetName": "dungeon",
+          "count": 12
+        }
+      ],
+      "name": "Characters",
+      "type": "entity"
+    },
+    {
+      "visible": true,
+      "tileCount": 16,
+      "tilesetName": "dev",
+      "tiles": [
+        {
+          "gridX": 16,
+          "gridY": 11,
+          "x": 512,
+          "y": 352,
+          "region": 1
+        },
+        {
+          "gridX": 17,
+          "gridY": 11,
+          "x": 544,
+          "y": 352,
+          "region": 1
+        },
+        {
+          "gridX": 18,
+          "gridY": 11,
+          "x": 576,
+          "y": 352,
+          "region": 1
+        },
+        {
+          "gridX": 19,
+          "gridY": 11,
+          "x": 608,
+          "y": 352,
+          "region": 1
+        },
+        {
+          "gridX": 16,
+          "gridY": 12,
+          "x": 512,
+          "y": 384,
+          "region": 1
+        },
+        {
+          "gridX": 17,
+          "gridY": 12,
+          "x": 544,
+          "y": 384,
+          "region": 1
+        },
+        {
+          "gridX": 18,
+          "gridY": 12,
+          "x": 576,
+          "y": 384,
+          "region": 1
+        },
+        {
+          "gridX": 19,
+          "gridY": 12,
+          "x": 608,
+          "y": 384,
+          "region": 1
+        },
+        {
+          "gridX": 16,
+          "gridY": 13,
+          "x": 512,
+          "y": 416,
+          "region": 7
+        },
+        {
+          "gridX": 17,
+          "gridY": 13,
+          "x": 544,
+          "y": 416,
+          "region": 7
+        },
+        {
+          "gridX": 18,
+          "gridY": 13,
+          "x": 576,
+          "y": 416,
+          "region": 7
+        },
+        {
+          "gridX": 19,
+          "gridY": 13,
+          "x": 608,
+          "y": 416,
+          "region": 7
+        },
+        {
+          "gridX": 17,
+          "gridY": 14,
+          "x": 544,
+          "y": 448,
+          "region": 7
+        },
+        {
+          "gridX": 16,
+          "gridY": 14,
+          "x": 512,
+          "y": 448,
+          "region": 7
+        },
+        {
+          "gridX": 19,
+          "gridY": 14,
+          "x": 608,
+          "y": 448,
+          "region": 1
+        },
+        {
+          "gridX": 18,
+          "gridY": 14,
+          "x": 576,
+          "y": 448,
+          "region": 1
+        }
+      ],
+      "name": "Layer_dev",
+      "type": "tilemap"
+    },
+    {
+      "visible": true,
+      "tileCount": 12,
+      "tilesetName": "tech",
+      "tiles": [
+        {
+          "gridX": 20,
+          "gridY": 11,
+          "x": 640,
+          "y": 352,
+          "region": 30
+        },
+        {
+          "gridX": 20,
+          "gridY": 12,
+          "x": 640,
+          "y": 384,
+          "region": 30
+        },
+        {
+          "gridX": 20,
+          "gridY": 13,
+          "x": 640,
+          "y": 416,
+          "region": 30
+        },
+        {
+          "gridX": 20,
+          "gridY": 14,
+          "x": 640,
+          "y": 448,
+          "region": 30
+        },
+        {
+          "gridX": 21,
+          "gridY": 14,
+          "x": 672,
+          "y": 448,
+          "region": 30
+        },
+        {
+          "gridX": 21,
+          "gridY": 13,
+          "x": 672,
+          "y": 416,
+          "region": 30
+        },
+        {
+          "gridX": 21,
+          "gridY": 12,
+          "x": 672,
+          "y": 384,
+          "region": 30
+        },
+        {
+          "gridX": 21,
+          "gridY": 11,
+          "x": 672,
+          "y": 352,
+          "region": 30
+        },
+        {
+          "gridX": 19,
+          "gridY": 11,
+          "x": 608,
+          "y": 352,
+          "region": 30
+        },
+        {
+          "gridX": 19,
+          "gridY": 12,
+          "x": 608,
+          "y": 384,
+          "region": 30
+        },
+        {
+          "gridX": 19,
+          "gridY": 13,
+          "x": 608,
+          "y": 416,
+          "region": 30
+        },
+        {
+          "gridX": 19,
+          "gridY": 14,
+          "x": 608,
+          "y": 448,
+          "region": 30
+        }
+      ],
+      "name": "techblocks",
+      "type": "tilemap"
+    }
+  ],
+  "version": "1.3"
+}

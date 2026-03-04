@@ -10,6 +10,15 @@ fonts/gohu11.json
 fonts/gohu14.json
 fonts/nokia.json
 
+# Map data
+maps/new.json
+
+# Map textures
+textures/devTiles.tga
+textures/devTiles_alt.tga
+textures/techblocks.tga
+textures/dungeon.tga
+
 # Textures
 textures/dev1.tga
 textures/dev_tiles.tga

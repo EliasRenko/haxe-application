@@ -1,2 +1,3 @@
-build/build-native.hxml
+build/build-runner.hxml
+#build/build-native.hxml
 #build/build-android.hxml
