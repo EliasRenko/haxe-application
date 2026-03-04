@@ -3,6 +3,8 @@ package states;
 import haxe.Json;
 import display.ManagedTileBatch;
 import entity.DisplayEntity;
+import entity.EntityRegistry;
+import entity.EntityClasses;
 
 /**
  * RunnerState - Loads and renders an editor-exported map (new.json).
@@ -49,6 +51,11 @@ class RunnerState extends State {
     // -------------------------------------------------------------------------
 
     private function loadMap(path:String):Void {
+
+        // Ensure all self-registering entity classes have fired their static
+        // initializers before we start parsing entity layers.
+        EntityClasses.init();
+        trace("EntityRegistry: registered classes → " + EntityRegistry.getRegistered());
 
         // -- 1. Load JSON text -------------------------------------------------
         var jsonText:String = null;
@@ -229,7 +236,7 @@ class RunnerState extends State {
                     continue;
                 }
 
-                // Define the region once per entity type (pixel coords from def)
+                // Define the atlas region once per entity type
                 if (!eRegionCache.exists(entityName)) {
                     var rId = tileBatch.defineRegion(
                         Std.int(def.regionX), Std.int(def.regionY),
@@ -237,8 +244,27 @@ class RunnerState extends State {
                     eRegionCache.set(entityName, rId);
                 }
 
+                // Stamp the resolved regionId onto inst so factories can use
+                // it without needing a separate lookup.
                 var regionId = eRegionCache.get(entityName);
-                tileBatch.addTile(inst.x, inst.y, Std.int(def.width), Std.int(def.height), regionId);
+                Reflect.setField(inst, "regionId", regionId);
+
+                // If the definition carries a "class" name and a factory is
+                // registered, delegate everything (tile creation included) to
+                // the factory.  Otherwise fall back to a plain visual tile.
+                var className:String = cast Reflect.field(def, "class");
+                if (className != null && EntityRegistry.has(className)) {
+                    var ent = EntityRegistry.create(className, tileBatch, inst, def);
+                    if (ent != null) {
+                        addEntity(ent);
+                        trace("RunnerState: spawned '" + className + "' at ("
+                              + inst.x + "," + inst.y + ")");
+                    }
+                } else {
+                    // No registered class — just place a static visual tile.
+                    var regionId = eRegionCache.get(entityName);
+                    tileBatch.addTile(inst.x, inst.y, Std.int(def.width), Std.int(def.height), regionId);
+                }
             }
         }
 

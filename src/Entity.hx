@@ -19,8 +19,8 @@ class Entity {
     public var hitbox:Rect; // Collision hitbox
     
     // Component system
-    private var components:Array<Component> = [];
-    private var componentMap:Map<String, Component> = new Map();
+    //private var components:Array<Component> = [];
+    //private var componentMap:Map<String, Component> = new Map();
     
     // Private entity counter for auto-generating IDs
     private static var __nextId:Int = 0;
@@ -33,64 +33,64 @@ class Entity {
     /**
      * Add a component to this entity
      */
-    public function addComponent<T:Component>(component:T):T {
-        var className = Type.getClassName(Type.getClass(component));
+    // public function addComponent<T:Component>(component:T):T {
+    //     var className = Type.getClassName(Type.getClass(component));
         
-        if (componentMap.exists(className)) {
-            trace("Warning: Entity '" + id + "' already has component " + className);
-            return cast componentMap.get(className);
-        }
+    //     if (componentMap.exists(className)) {
+    //         trace("Warning: Entity '" + id + "' already has component " + className);
+    //         return cast componentMap.get(className);
+    //     }
         
-        components.push(component);
-        componentMap.set(className, component);
-        component.onAdded(this);
+    //     components.push(component);
+    //     componentMap.set(className, component);
+    //     component.onAdded(this);
         
-        trace("Added component " + className + " to entity '" + id + "'");
-        return component;
-    }
+    //     trace("Added component " + className + " to entity '" + id + "'");
+    //     return component;
+    // }
     
-    /**
-     * Remove a component from this entity
-     */
-    public function removeComponent<T:Component>(componentClass:Class<T>):Bool {
-        var className = Type.getClassName(componentClass);
-        var component = componentMap.get(className);
+    // /**
+    //  * Remove a component from this entity
+    //  */
+    // public function removeComponent<T:Component>(componentClass:Class<T>):Bool {
+    //     var className = Type.getClassName(componentClass);
+    //     var component = componentMap.get(className);
         
-        if (component == null) {
-            return false;
-        }
+    //     if (component == null) {
+    //         return false;
+    //     }
         
-        components.remove(component);
-        componentMap.remove(className);
-        component.onRemoved();
-        component.cleanup();
+    //     components.remove(component);
+    //     componentMap.remove(className);
+    //     component.onRemoved();
+    //     component.cleanup();
         
-        trace("Removed component " + className + " from entity '" + id + "'");
-        return true;
-    }
+    //     trace("Removed component " + className + " from entity '" + id + "'");
+    //     return true;
+    // }
     
-    /**
-     * Get a component by its class type
-     */
-    public function getComponent<T:Component>(componentClass:Class<T>):T {
-        var className = Type.getClassName(componentClass);
-        return cast componentMap.get(className);
-    }
+    // /**
+    //  * Get a component by its class type
+    //  */
+    // public function getComponent<T:Component>(componentClass:Class<T>):T {
+    //     var className = Type.getClassName(componentClass);
+    //     return cast componentMap.get(className);
+    // }
     
-    /**
-     * Check if entity has a specific component
-     */
-    public function hasComponent<T:Component>(componentClass:Class<T>):Bool {
-        var className = Type.getClassName(componentClass);
-        return componentMap.exists(className);
-    }
+    // /**
+    //  * Check if entity has a specific component
+    //  */
+    // public function hasComponent<T:Component>(componentClass:Class<T>):Bool {
+    //     var className = Type.getClassName(componentClass);
+    //     return componentMap.exists(className);
+    // }
     
-    /**
-     * Get all components of this entity
-     */
-    public function getComponents():Array<Component> {
-        return components.copy();
-    }
+    // /**
+    //  * Get all components of this entity
+    //  */
+    // public function getComponents():Array<Component> {
+    //     return components.copy();
+    // }
     
     /**
      * Called every frame to update entity logic
@@ -100,11 +100,11 @@ class Entity {
         if (!active) return;
         
         // Update all components
-        for (component in components) {
-            if (component.enabled) {
-                component.update(deltaTime);
-            }
-        }
+        // for (component in components) {
+        //     if (component.enabled) {
+        //         component.update(deltaTime);
+        //     }
+        // }
     }
     
     /**
@@ -114,11 +114,11 @@ class Entity {
         if (!active) return;
         
         // Late update all components
-        for (component in components) {
-            if (component.enabled) {
-                component.lateUpdate(deltaTime);
-            }
-        }
+        // for (component in components) {
+        //     if (component.enabled) {
+        //         component.lateUpdate(deltaTime);
+        //     }
+        // }
     }
     
     /**
@@ -139,12 +139,12 @@ class Entity {
     public function cleanup(renderer:Renderer):Void {
 
         // Clean up all components
-        for (component in components) {
-            component.cleanup();
-        }
+        // for (component in components) {
+        //     component.cleanup();
+        // }
         
-        components = [];
-        componentMap.clear();
+        // components = [];
+        // componentMap.clear();
         
         // Remove from state if attached
         if (state != null) {
@@ -154,11 +154,11 @@ class Entity {
         trace("Entity '" + id + "' cleaned up");
     }
     
-    /**
-     * Get debug info about this entity
-     */
-    public function getDebugInfo():String {
-        var componentInfo = components.length > 0 ? ', Components: ${components.length}' : '';
-        return 'Entity "${id}" - Active: ${active}, Visible: ${visible}${componentInfo}';
-    }
+    // /**
+    //  * Get debug info about this entity
+    //  */
+    // public function getDebugInfo():String {
+    //     var componentInfo = components.length > 0 ? ', Components: ${components.length}' : '';
+    //     return 'Entity "${id}" - Active: ${active}, Visible: ${visible}${componentInfo}';
+    // }
 }

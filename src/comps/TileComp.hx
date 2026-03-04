@@ -1,21 +1,21 @@
 package comps;
 
 import Component;
-import display.TileBatch;
+import display.ManagedTileBatch;
 
 /**
- * Component that represents a tile within a TileBatch
+ * Component that represents a tile within a ManagedTileBatch
  * Provides an interface to modify the tile without direct DisplayObject access
  */
 class TileComp extends Component {
-    public var tileBatch:TileBatch;
+    public var tileBatch:ManagedTileBatch;
     public var tileId:Int;
     public var x:Float;
     public var y:Float;
     public var width:Float;
     public var height:Float;
     
-    public function new(tileBatch:TileBatch, tileId:Int, x:Float, y:Float, width:Float, height:Float) {
+    public function new(tileBatch:ManagedTileBatch, tileId:Int, x:Float, y:Float, width:Float, height:Float) {
         super();
         this.tileBatch = tileBatch;
         this.tileId = tileId;

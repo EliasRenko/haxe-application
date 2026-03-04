@@ -216,18 +216,18 @@ class State {
         return result;
     }
     
-    /**
-     * Get all entities that have a specific component
-     */
-    public function getEntitiesWithComponent<T:Component>(componentClass:Class<T>):Array<Entity> {
-        var result:Array<Entity> = [];
-        for (entity in entities) {
-            if (entity.hasComponent(componentClass)) {
-                result.push(entity);
-            }
-        }
-        return result;
-    }
+    // /**
+    //  * Get all entities that have a specific component
+    //  */
+    // public function getEntitiesWithComponent<T:Component>(componentClass:Class<T>):Array<Entity> {
+    //     var result:Array<Entity> = [];
+    //     for (entity in entities) {
+    //         if (entity.hasComponent(componentClass)) {
+    //             result.push(entity);
+    //         }
+    //     }
+    //     return result;
+    // }
     
     /**
      * Clear all entities from this state

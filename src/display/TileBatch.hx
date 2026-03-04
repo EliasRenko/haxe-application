@@ -126,67 +126,74 @@ class TileBatch extends DisplayObject {
     /**
      * Generate vertex data for a single tile
      */
-    private function generateTileVertices(tileData:{x:Float, y:Float, width:Float, height:Float, regionId:Int, visible:Bool}):Void {
-        //var vertices = [];
-        
-        // Get UV coordinates from the atlas region
-        var region = atlasRegions.get(tileData.regionId);
-        if (region == null) {
-            //trace("TileBatch: Warning - Region ID " + tileData.regionId + " not found, using default UVs");
-            // Use default full texture UVs as fallback
-            region = new AtlasRegion();
-            // region.u1 = 0.0;
-            // region.v1 = 1.0;
-            // region.u2 = 1.0;
-            // region.v2 = 0.0;
+    private function generateTileVertices(tile:Tile):Void {
 
-            region.u1 = -1.0;
-            region.v1 = -1.0;
-            region.u2 = -1.0;
-            region.v2 = -1.0;
-            region.u1 = -1.0;
-            region.v1 = -1.0;
-            region.u2 = -1.0;
-            region.v2 = -1.0;
+        // Get UV coordinates from the atlas region
+        var region = atlasRegions.get(tile.regionId);
+        if (region == null) {
+            region = new AtlasRegion();
+            region.u1 = -1.0; region.v1 = -1.0;
+            region.u2 = -1.0; region.v2 = -1.0;
         }
-        
-        // IMPORTANT: Flip V coordinates to compensate for Y-axis flip in Camera
-        // The Camera now has (0,0) at top-left with Y increasing downward
-        // So we need to flip the texture V coordinates to render correctly
-        // DO NOT CHANGE - this ensures tiles render with correct orientation
-        var v1 = region.v2;  // Swap V coordinates
-        var v2 = region.v1;  // Swap V coordinates
-        
-        // Create quad vertices: top-left, top-right, bottom-right, bottom-left
-        // Format: [x, y, z, u, v] per vertex
-        
+
+        // Flip V to compensate for Y-axis orientation — DO NOT CHANGE
+        var uv1 = region.v2;
+        var uv2 = region.v1;
+
+        var x  = tile.x + tile.offsetX;
+        var y  = tile.y + tile.offsetY;
+        var hw = tile.width  * 0.5;
+        var hh = tile.height * 0.5;
+
+        // Tile centre in world space
+        var cx = x + hw;
+        var cy = y + hh;
+
+        // Pre-compute rotation (only do trig when the tile is actually rotated)
+        var cosA = 1.0;
+        var sinA = 0.0;
+        if (tile.rotation != 0.0) {
+            var rad = tile.rotation * Math.PI / 180.0;
+            cosA = Math.cos(rad);
+            sinA = Math.sin(rad);
+        }
+
+        // Rotate each corner's local offset and translate to world space.
+        // Local offsets (x, y) relative to centre:
+        //   top-left     (-hw, +hh)
+        //   top-right    (+hw, +hh)
+        //   bottom-right (+hw, -hh)
+        //   bottom-left  (-hw, -hh)
+        // Rotation formula:  rx = lx*cos - ly*sin + cx
+        //                    ry = lx*sin + ly*cos + cy
+
         // Top-left
-        vertices.push(tileData.x);
-        vertices.push(tileData.y + tileData.height);
+        vertices.push(-hw * cosA - hh * sinA + cx);
+        vertices.push(-hw * sinA + hh * cosA + cy);
         vertices.push(0.0);
         vertices.push(region.u1);
-        vertices.push(v1);  // Flipped V
-        
+        vertices.push(uv1);
+
         // Top-right
-        vertices.push(tileData.x + tileData.width);
-        vertices.push(tileData.y + tileData.height);
+        vertices.push( hw * cosA - hh * sinA + cx);
+        vertices.push( hw * sinA + hh * cosA + cy);
         vertices.push(0.0);
         vertices.push(region.u2);
-        vertices.push(v1);  // Flipped V
-        
+        vertices.push(uv1);
+
         // Bottom-right
-        vertices.push(tileData.x + tileData.width);
-        vertices.push(tileData.y);
+        vertices.push( hw * cosA + hh * sinA + cx);
+        vertices.push( hw * sinA - hh * cosA + cy);
         vertices.push(0.0);
         vertices.push(region.u2);
-        vertices.push(v2);  // Flipped V
-        
+        vertices.push(uv2);
+
         // Bottom-left
-        vertices.push(tileData.x);
-        vertices.push(tileData.y);
+        vertices.push(-hw * cosA + hh * sinA + cx);
+        vertices.push(-hw * sinA - hh * cosA + cy);
         vertices.push(0.0);
         vertices.push(region.u1);
-        vertices.push(v2);  // Flipped V
+        vertices.push(uv2);
     }
 
     /**
@@ -217,16 +224,7 @@ class TileBatch extends DisplayObject {
     // }
     
     public function buildTile(tile:Tile):Void {
-        
-        generateTileVertices({
-            x: tile.x + tile.offsetX,
-            y: tile.y + tile.offsetY,
-            width: tile.width,
-            height: tile.height,
-            regionId: tile.regionId,
-            visible: tile.visible
-        });        
-
+        generateTileVertices(tile);
         __verticesToRender += 4;
         __indicesToRender += 6;
     }

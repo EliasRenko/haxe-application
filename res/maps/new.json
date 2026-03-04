@@ -28,6 +28,7 @@
   ],
   "entityDefinitions": [
     {
+      "class": "RotatableEntity",
       "width": 32,
       "tilesetName": "dungeon",
       "regionHeight": 32,
