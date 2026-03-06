@@ -38,6 +38,11 @@ class ParticleEmitter {
     /** Optional gravity applied to vy every second (world units/sec²). */
     public var gravity:Float = 0.0;
 
+    /** Emission bounds. When > 0, spawn positions are randomised within
+        [x, x+boundsWidth] × [y, y+boundsHeight] on every emit() call. */
+    public var boundsWidth:Float  = 0.0;
+    public var boundsHeight:Float = 0.0;
+
     private var pool:Pool<ParticleData>;
 
     // -------------------------------------------------------------------------
@@ -76,8 +81,12 @@ class ParticleEmitter {
         var p = pool.get();
         if (p == null) return; // pool exhausted — silent drop
 
-        p.tile.x        = x;
-        p.tile.y        = y;
+        // Scatter spawn position within bounds (if set)
+        var spawnX = x + (boundsWidth  > 0 ? Math.random() * boundsWidth  : 0.0);
+        var spawnY = y + (boundsHeight > 0 ? Math.random() * boundsHeight : 0.0);
+
+        p.tile.x        = spawnX;
+        p.tile.y        = spawnY;
         p.tile.width    = width;
         p.tile.height   = height;
         p.tile.regionId = regionId;

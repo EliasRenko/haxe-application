@@ -10,7 +10,8 @@ import entity.DisplayEntity;
  * Test bed for the ParticleEmitter + TileBatch pipeline.
  *
  * Controls:
- *   LMB  (hold)  — continuous burst at mouse cursor position
+ *   LMB  (hold)  — continuous burst at mouse cursor position (point)
+ *   RMB  (hold)  — continuous burst spread over a 150×150 area around cursor
  *   SPACE (tap)  — emit a burst at the screen centre
  *   SPACE (hold) — continuous burst every EMIT_INTERVAL seconds
  *   G            — toggle gravity
@@ -23,14 +24,19 @@ class ParticleState extends State {
     // Minimum time between continuous bursts while SPACE is held (seconds)
     private static inline var EMIT_INTERVAL:Float = 0.05;
 
-    // SDL left mouse button index
-    private static inline var MOUSE_LEFT:Int = 1;
+    // SDL mouse button indices
+    private static inline var MOUSE_LEFT:Int  = 1;
+    private static inline var MOUSE_RIGHT:Int = 3;
+
+    // Bounds-emit area size (world units)
+    private static inline var BOUNDS_SIZE:Float = 150.0;
 
     private var emitter:ParticleEmitter;
     private var particleRegion:Int;
-    private var emitCooldown:Float     = 0.0;
+    private var emitCooldown:Float      = 0.0;
     private var mouseEmitCooldown:Float = 0.0;
-    private var gravityEnabled:Bool    = true;
+    private var rmbEmitCooldown:Float   = 0.0;
+    private var gravityEnabled:Bool     = true;
 
     public function new(app:App) {
         super("Particles", app);
@@ -83,11 +89,23 @@ class ParticleState extends State {
         var cx = app.window.size.x * 0.5;
         var cy = app.window.size.y * 0.5;
 
-        // Continuous burst at mouse cursor while LMB is held
+        // Continuous burst at mouse cursor while LMB is held (point)
         mouseEmitCooldown -= dt;
         if (app.input.mouse.check(MOUSE_LEFT) && mouseEmitCooldown <= 0.0) {
             mouseEmitCooldown = EMIT_INTERVAL;
+            emitter.boundsWidth  = 0.0;
+            emitter.boundsHeight = 0.0;
             emitBurst(app.input.mouse.x, app.input.mouse.y);
+        }
+
+        // Continuous burst spread across a bounded area while RMB is held
+        rmbEmitCooldown -= dt;
+        if (app.input.mouse.check(MOUSE_RIGHT) && rmbEmitCooldown <= 0.0) {
+            rmbEmitCooldown = EMIT_INTERVAL;
+            emitter.boundsWidth  = BOUNDS_SIZE;
+            emitter.boundsHeight = BOUNDS_SIZE;
+            emitBurst(app.input.mouse.x - BOUNDS_SIZE * 0.5,
+                      app.input.mouse.y - BOUNDS_SIZE * 0.5);
         }
 
         // One burst on tap
