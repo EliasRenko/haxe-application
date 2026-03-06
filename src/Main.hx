@@ -14,7 +14,7 @@ class Main {
             return;
         }
 
-        app.addState(new states.RunnerState(app));
+        app.addState(new states.ParticleState(app));
         app.run();
     }
 }
