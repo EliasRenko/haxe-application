@@ -1,7 +1,6 @@
 package;
 
 import Log.LogCategory;
-import Log.LogPriority;
 
 class App extends Runtime {
     

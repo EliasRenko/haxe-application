@@ -117,12 +117,39 @@ class TileBatch extends DisplayObject {
         region.u2 = (atlasX + atlasWidth) / textures[0].width;
         region.v2 = (atlasY + atlasHeight) / textures[0].height;
         
-        
         atlasRegions.set(regionId, region);
         
         return regionId;
     }
     
+    /**
+     * Update an existing atlas region's pixel coordinates and recompute its UV values.
+     * Use this instead of defineRegion when you want to change the region without
+     * allocating a new region ID (avoids orphan accumulation and tile.regionId churn).
+     * @param regionId  The existing region ID returned by a previous defineRegion call.
+     * @param atlasX    New atlas X coordinate in pixels.
+     * @param atlasY    New atlas Y coordinate in pixels.
+     * @param atlasWidth  New atlas width in pixels.
+     * @param atlasHeight New atlas height in pixels.
+     * @return True if the region was found and updated, false if regionId is unknown.
+     */
+    public function updateRegion(regionId:Int, atlasX:Int, atlasY:Int, atlasWidth:Int, atlasHeight:Int):Bool {
+        var region = atlasRegions.get(regionId);
+        if (region == null) return false;
+
+        region.x = atlasX;
+        region.y = atlasY;
+        region.width = atlasWidth;
+        region.height = atlasHeight;
+
+        region.u1 = atlasX / textures[0].width;
+        region.v1 = atlasY / textures[0].height;
+        region.u2 = (atlasX + atlasWidth) / textures[0].width;
+        region.v2 = (atlasY + atlasHeight) / textures[0].height;
+
+        return true;
+    }
+
     /**
      * Generate vertex data for a single tile
      */
