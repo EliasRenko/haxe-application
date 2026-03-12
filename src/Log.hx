@@ -69,35 +69,36 @@ private class __Log {
     }
     
     public function trace(category:Int, message:String):Void {
-        __app.logTrace(category, getLogPrefix(category, message));
+        __app.logTrace(category, message);
     }
 
     public function verbose(category:Int, message:String):Void {
-        __app.logVerbose(category, getLogPrefix(category, message));
+        __app.logVerbose(category, message);
     }
     
     public function debug(category:Int, message:String):Void {
-        __app.logDebug(category, getLogPrefix(category, message));
+        __app.logDebug(category, message);
     }
     
     public function info(category:Int, message:String):Void {
-        __app.logInfo(category, getLogPrefix(category, message));
+        __app.logInfo(category, message);
     }
     
     public function warn(category:Int, message:String):Void {
-        __app.logWarn(category, getLogPrefix(category, message));
+        __app.logWarn(category, message);
     }
     
     public function error(category:Int, message:String):Void {
-        __app.logError(category, getLogPrefix(category, message));
+        __app.logError(category, message);
     }
     
     public function critical(category:Int, message:String):Void {
-        __app.logCritical(category, getLogPrefix(category, message));
+        __app.logCritical(category, message);
     }
 
     // Privates
 
+    // TODO: UNUSED
     private function getLogPrefix(category:Int, message:String):String {
         return "[" + getCategoryName(category) + "] " + message;
     }
