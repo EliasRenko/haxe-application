@@ -308,7 +308,7 @@ class App extends Runtime {
             // STEP 2: Render framebuffer to screen with post-processing
             __renderer.unbindFramebuffer();
             __renderer.clearScreen(); // Clear the screen framebuffer
-            //GL.glClearColor(0.0, 1.0, 0.1, 1.0); // Very dark background for 3D focus
+            
             __renderer.renderToScreen();
         } else {
             // Direct rendering (no post-processing)
@@ -372,49 +372,42 @@ class App extends Runtime {
     }
 
     public function updateFrame(deltaTime:Float):Void {
-        // Update input system
-        if (__input != null) {
-            __input.update();
-        }
+        __input.update();
         
-        // Update current state if one is active
-        if (currentState != null && currentState.active) {
+        if (currentState != null) {
             currentState.update(deltaTime);
         }
         
-        // Post-update input (clear pressed/released states)
-        if (__input != null) {
-            __input.postUpdate();
-        }
+        __input.postUpdate();
     }
 
-    public function renderFrame():Void {
-        if (__renderer != null) {
-            __renderer.render();
-            if (__renderer.usePostProcessing) {
-                // STEP 1: Render scene to framebuffer
-                __renderer.bindFramebuffer();
-                __renderer.clearScreen();
-                __renderer.initializeRenderState();
+    // public function renderFrame():Void {
+    //     if (__renderer != null) {
+    //         __renderer.render();
+    //         if (__renderer.usePostProcessing) {
+    //             // STEP 1: Render scene to framebuffer
+    //             __renderer.bindFramebuffer();
+    //             __renderer.clearScreen();
+    //             __renderer.initializeRenderState();
                 
-                if (currentState != null && currentState.active) {
-                    currentState.render(__renderer);
-                }
+    //             if (currentState != null) {
+    //                 currentState.render(__renderer);
+    //             }
                 
-                // STEP 2: Render framebuffer to screen with post-processing
-                __renderer.unbindFramebuffer();
-                __renderer.clearScreen();
-                __renderer.renderToScreen();
-            } else {
-                __renderer.clearScreen();
-                __renderer.initializeRenderState();
+    //             // STEP 2: Render framebuffer to screen with post-processing
+    //             __renderer.unbindFramebuffer();
+    //             __renderer.clearScreen();
+    //             __renderer.renderToScreen();
+    //         } else {
+    //             __renderer.clearScreen();
+    //             __renderer.initializeRenderState();
                 
-                if (currentState != null && currentState.active) {
-                    currentState.render(__renderer);
-                }
-            }
-        }
-    }
+    //             if (currentState != null) {
+    //                 currentState.render(__renderer);
+    //             }
+    //         }
+    //     }
+    // }
 
     public function swapBuffers():Void {
         SDL.swapWindow(__window.ptr);
