@@ -33,7 +33,7 @@ class App extends Runtime {
         __log = new Log(this #if debug , true #end);
         __resources = new Resources(this);
         __input = new Input(this);
-        __renderer = new Renderer(this, 640, 480);
+        __renderer = new Renderer(this);
 
         __log.debug(LogCategory.APP, "App initialized in debug mode");
 
@@ -51,8 +51,7 @@ class App extends Runtime {
 
     override function release():Void {
 
-        var text = "Bye, SDL_SaveFile!";
-        var success = saveBytes("output.txt", text);
+        var success = saveBytes("output.txt", __log.logHistory);
 
         // Release current state
         if (currentState != null) {
@@ -360,8 +359,7 @@ class App extends Runtime {
 
     // Window event handlers
     override function onWindowResized(windowId:Int, width:Int, height:Int):Void {
-        renderer.setViewport(width, height);
-        renderer.framebuffer.resize(width, height);
+        renderer.resize(width, height);
 
         for (state in states) {
             state.onWindowResized(width, height);

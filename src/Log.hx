@@ -30,9 +30,11 @@ private class __Log {
     
     // Publics
     public var active:Bool = true;
+    public var logHistory(get, null):String;
 
     // Privates
     private var __app:App;
+    private var __logHistory:String = "";
     
     public function new(app:App, ?debugMode:Bool = false) {
         __app = app;
@@ -53,7 +55,6 @@ private class __Log {
     }
     
     public function init():Void {
-    
     }
 
     public function release():Void {
@@ -70,39 +71,40 @@ private class __Log {
     
     public function trace(category:Int, message:String):Void {
         __app.logTrace(category, message);
+        __logHistory += "[TRACE] [" + getCategoryName(category) + "] " + message + "\n";
     }
 
     public function verbose(category:Int, message:String):Void {
         __app.logVerbose(category, message);
+        __logHistory += "[VERBOSE] [" + getCategoryName(category) + "] " + message + "\n";
     }
     
     public function debug(category:Int, message:String):Void {
         __app.logDebug(category, message);
+        __logHistory += "[DEBUG] [" + getCategoryName(category) + "] " + message + "\n";
     }
     
     public function info(category:Int, message:String):Void {
         __app.logInfo(category, message);
+        __logHistory += "[INFO] [" + getCategoryName(category) + "] " + message + "\n";
     }
     
     public function warn(category:Int, message:String):Void {
         __app.logWarn(category, message);
+        __logHistory += "[WARN] [" + getCategoryName(category) + "] " + message + "\n";
     }
     
     public function error(category:Int, message:String):Void {
         __app.logError(category, message);
+        __logHistory += "[ERROR] [" + getCategoryName(category) + "] " + message + "\n";
     }
     
     public function critical(category:Int, message:String):Void {
         __app.logCritical(category, message);
+        __logHistory += "[CRITICAL] [" + getCategoryName(category) + "] " + message + "\n";
     }
 
     // Privates
-
-    // TODO: UNUSED
-    private function getLogPrefix(category:Int, message:String):String {
-        return "[" + getCategoryName(category) + "] " + message;
-    }
-    
     private function getCategoryName(category:Int):String {
         switch (category) {
             case LogCategory.APP: return "App";
@@ -118,6 +120,11 @@ private class __Log {
             default: return "Unknown";
         }
     }
+
+    // Getters and setters
+	private function get_logHistory():String {
+		return __logHistory;
+	}
 }
 
 typedef Log = __Log;
