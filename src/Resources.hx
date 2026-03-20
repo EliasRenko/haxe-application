@@ -52,7 +52,7 @@ private class __Resources {
             }
             return cast(_resource.data, String);
         }
-        //return null;
+
         throw "Resource not found: " + fullPath;
     }
 
@@ -65,7 +65,7 @@ private class __Resources {
             }
             return cast(_resource.data, TextureData);
         }
-        //return null;
+        
         throw "Resource not found: " + fullPath;
     }
 
@@ -121,7 +121,6 @@ private class __Resources {
     }
     
     public function release():Void {
-        // trace("Cleaning up resources..."); // Disabled - RESOURCES category
         var count = 0;
         for (key in __resources.keys()) {
             var resource = __resources.get(key);

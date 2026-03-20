@@ -18,8 +18,8 @@ class App extends Runtime {
     private var __input:Input;
     private var __resources:Resources;
     private var __renderer:Renderer;
+    private var __log:Log;
 
-    // Timing variables for deltaTime calculation
     private var __lastTime:Float = 0.0;
     private var __currentTime:Float = 0.0;
 
@@ -50,10 +50,6 @@ class App extends Runtime {
     }
 
     override function release():Void {
-
-        var success = saveBytes("output.txt", __log.logHistory);
-
-        // Release current state
         if (currentState != null) {
             currentState.release();
         }
@@ -65,81 +61,15 @@ class App extends Runtime {
         states = [];
         currentState = null;
 
-        // Release renderer
-        if (__renderer != null) {
-            __renderer.release();
-            __renderer = null;
-        }
+        __input.release();
+        __renderer.release();
+        __resources.release();
 
-        // Release resources
-        if (__resources != null) {
-            __resources.release();
-            __resources = null;
-        }
+        var success = saveBytes("output.txt", __log.logHistory);
 
-        // Release input
-        if (__input != null) {
-            __input.release();
-            __input = null;
-        }
+        __log.release();
 
         super.release();
-    }
-
-    public function preload() {
-        resources.loadText("preload.txt") .then(function(source:String) {
-            var files:Array<Promise<Dynamic>> = new Array<Promise<Dynamic>>();
-            var lines:Array<String> = source.split("\n");
-            var regex:EReg = ~/[^\s]+/;
-
-            for (line in lines) {
-                // Skip empty lines and comments
-                line = StringTools.trim(line);
-                if (line.length == 0 || line.charAt(0) == "#") {
-                    continue;
-                }
-                
-                if (regex.match(line)) {
-                    var path:String = regex.matched(0);
-                    var ext = haxe.io.Path.extension(path);
-                    switch (ext) {
-                        case "tga": {
-                            files.push(__resources.loadTexture(path));
-                        }
-                        case "vert" | "frag" | "json": {
-                            files.push(__resources.loadText(path));
-                        }
-                        default: {
-                            throw 'Unsupported resource type: ' + ext + ' for file: ' + path;
-                        }
-                    }
-                }
-            }
-            
-            // Wait for all assets to load
-            Promise.all(files)
-                .then(function(results:Array<Dynamic>) {
-                    __log.info(LogCategory.APP,"Successfully preloaded " + results.length + " assets");
-
-                    // // Add both states but start with the TilemapFast state for visual demo
-                    // __log.engineInfo("Setting up states...");
-                    // var logTestState = new states.LogTestState(this);
-                    // addState(logTestState);
-                    
-                    // // Add and activate TilemapFastTestState for immediate visual feedback
-                    // var tilemapFastState = new states.TilemapFastTestState(this);
-                    // addState(tilemapFastState);
-                    
-                    // // Activate the TilemapFastTestState to start rendering
-                    // switchToState(tilemapFastState);
-                })
-                .onError(function(error:String) {
-                    __log.error(LogCategory.APP,"Failed to preload some assets: " + error);
-                });
-        })
-        .onError(function(error:String) {
-            __log.error(LogCategory.APP,"Failed to load preload.txt: " + error);
-        });
     }
 
     /**
@@ -265,7 +195,6 @@ class App extends Runtime {
     }
 
     override function update():Void {
-        
         // Calculate actual deltaTime based on elapsed time
         __currentTime = SDL.getTicks() / 1000.0; // Convert milliseconds to seconds
         var deltaTime:Float = __currentTime - __lastTime;
@@ -381,37 +310,53 @@ class App extends Runtime {
         __input.postUpdate();
     }
 
-    // public function renderFrame():Void {
-    //     if (__renderer != null) {
-    //         __renderer.render();
-    //         if (__renderer.usePostProcessing) {
-    //             // STEP 1: Render scene to framebuffer
-    //             __renderer.bindFramebuffer();
-    //             __renderer.clearScreen();
-    //             __renderer.initializeRenderState();
-                
-    //             if (currentState != null) {
-    //                 currentState.render(__renderer);
-    //             }
-                
-    //             // STEP 2: Render framebuffer to screen with post-processing
-    //             __renderer.unbindFramebuffer();
-    //             __renderer.clearScreen();
-    //             __renderer.renderToScreen();
-    //         } else {
-    //             __renderer.clearScreen();
-    //             __renderer.initializeRenderState();
-                
-    //             if (currentState != null) {
-    //                 currentState.render(__renderer);
-    //             }
-    //         }
-    //     }
-    // }
-
     public function swapBuffers():Void {
         SDL.swapWindow(__window.ptr);
     }
+
+    private function preload():Void {
+		resources.loadText("preload.txt").then(function(source:String) {
+			var files:Array<Promise<Dynamic>> = new Array<Promise<Dynamic>>();
+			var lines:Array<String> = source.split("\n");
+			var regex:EReg = ~/[^\s]+/;
+
+			for (line in lines) {
+				// Skip empty lines and comments
+				line = StringTools.trim(line);
+				if (line.length == 0 || line.charAt(0) == "#") {
+					continue;
+				}
+
+				if (regex.match(line)) {
+					var path:String = regex.matched(0);
+					var ext = haxe.io.Path.extension(path);
+					switch (ext) {
+						case "tga":
+							{
+								files.push(__resources.loadTexture(path));
+							}
+						case "vert" | "frag" | "json":
+							{
+								files.push(__resources.loadText(path));
+							}
+						default:
+							{
+								throw 'Unsupported resource type: ' + ext + ' for file: ' + path;
+							}
+					}
+				}
+			}
+
+			Promise.all(files).then(function(results:Array<Dynamic>) {
+				__log.info(LogCategory.APP, "Successfully preloaded " + results.length + " assets");
+			}).onError(function(error:String) {
+				__log.error(LogCategory.APP, "Failed to preload some assets: " + error);
+			});
+
+		}).onError(function(error:String) {
+			__log.error(LogCategory.APP, "Failed to load preload.txt: " + error);
+		});
+	}
 
     // Getters and setters
     public function get_input():Input {

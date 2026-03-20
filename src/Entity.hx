@@ -3,7 +3,6 @@ package;
 import State;
 import math.Matrix;
 import utils.Rect;
-import Component;
 
 class Entity {
     
