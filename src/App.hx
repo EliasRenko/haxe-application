@@ -1,11 +1,12 @@
 package;
 
 import Log.LogCategory;
+import ds.SlotArray;
 
 class App extends Runtime {
     
     // State Management
-    public var states:Array<State> = [];
+    public var states:SlotArray<State> = new SlotArray<State>();
     public var currentState:State = null;
 
     // Publics
@@ -27,7 +28,7 @@ class App extends Runtime {
         super();
     }
 
-    override function init():Bool {
+    override function init():Void {
         super.init();
 
         __log = new Log(this #if debug , true #end);
@@ -45,8 +46,6 @@ class App extends Runtime {
         // Initialize post-processing framebuffer
         __renderer.initializePostProcessing();
         __renderer.usePostProcessing = true; // Enable post-processing by default
-
-        return true;
     }
 
     override function release():Void {
@@ -58,7 +57,7 @@ class App extends Runtime {
             state.clearEntities(__renderer);
         }
 
-        states = [];
+        states = null;
         currentState = null;
 
         __input.release();
@@ -75,49 +74,49 @@ class App extends Runtime {
     /**
      * Add a state to the states array
      */
-    public function addState(state:State):State {
+    public function addState(state:State):Int {
         if (state == null) {
             __log.warn(LogCategory.APP,"Warning: Attempted to add null state");
-            return null;
+            return -1;
         }
         
-        states.push(state);
-        __log.info(LogCategory.APP,"Added state '" + state.name + "' to app (total states: " + states.length + ")");
+        var id = states.add(state);
+        __log.info(LogCategory.APP,"Added state '" + state.name + "' to app (total states: " + states.count + ")");
         
         // If no current state, make this the current one
         if (currentState == null) {
             switchToState(state);
         }
         
-        return state;
+        return id;
     }
     
     /**
      * Remove a state from the states array
      */
-    public function removeState(state:State):Bool {
+    public function removeState(id:Int):Bool {
+        var state = states.get(id);
         if (state == null) return false;
         
-        var removed = states.remove(state);
-        if (removed) {
-            __log.info(LogCategory.APP, "Removed state '" + state.name + "' from app");
+        states.remove(id);
+        __log.info(LogCategory.APP, "Removed state '" + state.name + "' from app");
+        
+        // If this was the current state, release it
+        if (currentState == state) {
+            currentState.release();
+            currentState = null;
             
-            // If this was the current state, release it
-            if (currentState == state) {
-                currentState.release();
-                currentState = null;
-                
-                // Switch to first available state if any
-                if (states.length > 0) {
-                    switchToState(states[0]);
-                }
+            // Switch to first available state if any
+            if (states.count > 0) {
+                var firstState:State = null;
+                for (s in states) { firstState = s; break; }
+                if (firstState != null) switchToState(firstState);
             }
-            
-            // Clean up the state
-            state.clearEntities(__renderer);
         }
         
-        return removed;
+        // Clean up the state
+        state.clearEntities(__renderer);
+        return true;
     }
     
     /**
@@ -126,7 +125,8 @@ class App extends Runtime {
     public function removeStateByName(name:String):Bool {
         for (state in states) {
             if (state.name == name) {
-                return removeState(state);
+                var id = states.indexOf(state);
+                if (id >= 0) return removeState(id);
             }
         }
         return false;
