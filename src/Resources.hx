@@ -1,7 +1,5 @@
 package;
 
-import sys.FileSystem;
-
 import Promise;
 import loaders.TGALoader;
 import data.TextureData;
@@ -13,69 +11,59 @@ typedef Resource = {
 }
 
 private class __Resources {
+    // Publics
+    public var count(get, null):Int;
+    public var preDefinedPath(get, set):String;
+
     // Privates
     private var __resources:Map<String, Resource> = new Map<String, Resource>();
     private var __parent:App;
-    private var __resourceFolder:String;
+    private var __preDefinedPath:String;
 
-    public function new(app:App, resourceFolder:String = "res") {
+    public function new(app:App, preDefinedPath:String = "res") {
         this.__parent = app;
-        this.__resourceFolder = resourceFolder;
+        this.__preDefinedPath = preDefinedPath;
     }
 
     public function cached(name:String):Bool {
         if (__resources.exists(name)) {
             return true;
         }
+
         return false;
     }
 
-    // public function exists(path:String):Bool {
-    //     var fullPath = __resourceFolder + "/" + path;
-    //     try {
-    //         return FileSystem.exists(fullPath);
-    //     } catch (e:Dynamic) {
-    //         return false;
-    //     }
-    // }
-
-	// public function exists(path:String):Bool {
-    //     return __parent.exists(__resourceFolder + "/" + path);
-	// }
-
-    public function getText(name:String, relative:Bool = true):String {
-        var fullPath = relative ? __resourceFolder + "/" + name : name;
-        if (__resources.exists(fullPath)) {
-            var _resource:Resource = __resources.get(fullPath);
+    public function getText(name:String):String {
+        if (__resources.exists(name)) {
+            var _resource:Resource = __resources.get(name);
             if (_resource == null) {
                 return null;
             }
             return cast(_resource.data, String);
         }
 
-        throw "Resource not found: " + fullPath;
+        throw "Resource not found: " + name;
     }
 
-    public function getTexture(name:String, relative:Bool = true):TextureData {
-        var fullPath = relative ? __resourceFolder + "/" + name : name;
-        if (__resources.exists(fullPath)) {
-            var _resource:Resource = __resources.get(fullPath);
+    public function getTexture(name:String):TextureData {
+        if (__resources.exists(name)) {
+            var _resource:Resource = __resources.get(name);
             if (_resource == null || _resource.type != 'texture') {
                 return null;
             }
             return cast(_resource.data, TextureData);
         }
         
-        throw "Resource not found: " + fullPath;
+        throw "Resource not found: " + name;
     }
 
     public function loadText(path:String, relative:Bool = true, cache:Bool = true):Promise<String> {
-        var fullPath = relative ? __resourceFolder + "/" + path : path;
+        var fullPath = relative ? __preDefinedPath + "/" + path : path;
         return new Promise<String>((resolve, reject) -> {
             try {
                 var bytes = __parent.loadBytes(fullPath);
                 var data:String = bytes.toString();
-                if (cache) __resources.set(fullPath, {type: 'text', data: data, size: bytes.length});
+                if (cache) __resources.set(path, {type: 'text', data: data, size: bytes.length});
                 resolve(data);
             } catch (e:Dynamic) {
                 reject("Failed to load text file: " + fullPath + " - " + e);
@@ -84,8 +72,8 @@ private class __Resources {
     }
 
     public function loadShader(vertexPath:String, fragmentPath:String, relative:Bool = true, cache:Bool = true):Promise<{vertex:String, fragment:String}> {
-        var fullVertexPath = relative ? __resourceFolder + "/" + vertexPath : vertexPath;
-        var fullFragmentPath = relative ? __resourceFolder + "/" + fragmentPath : fragmentPath;
+        var fullVertexPath = relative ? __preDefinedPath + "/" + vertexPath : vertexPath;
+        var fullFragmentPath = relative ? __preDefinedPath + "/" + fragmentPath : fragmentPath;
         return new Promise<{vertex:String, fragment:String}>((resolve, reject) -> {
             try {
                 var vertexBytes = __parent.loadBytes(fullVertexPath);
@@ -93,8 +81,8 @@ private class __Resources {
                 var vertex = vertexBytes.toString();
                 var fragment = fragmentBytes.toString();
                 if (cache) {
-                    __resources.set(fullVertexPath, {type: 'text', data: vertex, size: vertexBytes.length});
-                    __resources.set(fullFragmentPath, {type: 'text', data: fragment, size: fragmentBytes.length});
+                    __resources.set(vertexPath, {type: 'text', data: vertex, size: vertexBytes.length});
+                    __resources.set(fragmentPath, {type: 'text', data: fragment, size: fragmentBytes.length});
                 }
                 resolve({vertex: vertex, fragment: fragment});
             } catch (e:Dynamic) {
@@ -104,14 +92,14 @@ private class __Resources {
     }
 
     public function loadTexture(path:String, relative:Bool = true, cache:Bool = true):Promise<TextureData> {
-        var fullPath = relative ? __resourceFolder + "/" + path : path;
+        var fullPath = relative ? __preDefinedPath + "/" + path : path;
         return new Promise<TextureData>((resolve, reject) -> {
             try {
                 var bytes = __parent.loadBytes(fullPath);
                 // Parse TGA
                 var textureData = TGALoader.loadFromBytes(bytes, fullPath);
                 if (cache) {
-                    __resources.set(fullPath, {type: 'texture', data: textureData, size: bytes.length});
+                    __resources.set(path, {type: 'texture', data: textureData, size: bytes.length});
                 }
                 resolve(textureData);
             } catch (e:Dynamic) {
@@ -119,8 +107,8 @@ private class __Resources {
             }
         });
     }
-    
-    public function release():Void {
+
+    public function clear():Void {
         var count = 0;
         for (key in __resources.keys()) {
             var resource = __resources.get(key);
@@ -133,11 +121,50 @@ private class __Resources {
                         textureData.dispose();
                     }
                 }
-                // For text resources, data is just a String reference, no special cleanup needed
-                // Future: Add specific cleanup for other resource types
             }
         }
+
         __resources.clear();
+    }
+    
+    public function release():Void {
+        clear();
+        __preDefinedPath = null;
+    }
+
+    public function remove(name:String, relative:Bool = true):Bool {
+        var fullPath = relative ? __preDefinedPath + "/" + name : name;
+        if (__resources.exists(fullPath)) {
+            var resource = __resources.get(fullPath);
+            if (resource != null) {
+                // Dispose texture data if it's a texture
+                if (resource.type == 'texture') {
+                    var textureData:TextureData = cast(resource.data, TextureData);
+                    if (textureData != null) {
+                        textureData.dispose();
+                    }
+                }
+
+                __resources.remove(fullPath);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Getters/Setters
+    public function get_count():Int {
+        return Lambda.count(__resources);
+    }
+
+    public function get_preDefinedPath():String {
+        return __preDefinedPath;
+    }
+
+    public function set_preDefinedPath(value:String):String {
+        __preDefinedPath = value;
+        //release(); // Clear all cached resources when changing the base path
+        return __preDefinedPath;
     }
 }
 
