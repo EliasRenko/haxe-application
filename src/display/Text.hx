@@ -2,6 +2,13 @@ package display;
 
 import display.BitmapFont;
 
+/** Horizontal alignment of a Text label relative to its (x, y) origin. */
+enum TextAlign {
+    Left;    // x is the left edge of the text (default)
+    Center;  // x is the horizontal centre of the text
+    Right;   // x is the right edge of the text
+}
+
 /**
  * Text - A text string instance that uses a shared BitmapFont for rendering
  * 
@@ -22,6 +29,8 @@ class Text {
     public var width:Float = 0;
     public var height:Float = 0;
     public var visible:Bool = true;
+    /** Horizontal alignment relative to the (x, y) origin. Default is Left. */
+    public var align:TextAlign = Left;
 
     private var _x:Float = 0;
     private var _y:Float = 0;
@@ -71,8 +80,15 @@ class Text {
         }
         charTiles = [];
         
+        // Apply horizontal alignment offset
+        var alignOffsetX:Float = switch (align) {
+            case Center: -font.measureTextWidth(textString) * 0.5;
+            case Right:  -font.measureTextWidth(textString);
+            case Left:   0.0;
+        };
+
         // Create tiles for each character
-        var cursorX:Float = _x;
+        var cursorX:Float = _x + alignOffsetX;
         var cursorY:Float = _y;
         var maxWidth:Float = 0;  // Track maximum line width
         var currentLineWidth:Float = 0;  // Track current line width
