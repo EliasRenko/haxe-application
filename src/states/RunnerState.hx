@@ -53,7 +53,7 @@ class RunnerState extends State {
         super.init();
 
         trace("RunnerState: init – loading project + map");
-        loadMap("maps/TestProject.json", "maps/default.json");
+        loadMap("TestProject.json", "maps/default.json");
     }
 
     // -------------------------------------------------------------------------
@@ -70,7 +70,7 @@ class RunnerState extends State {
         // -- 1. Load and parse the project file --------------------------------
         var projectText:String = null;
         try {
-            projectText = app.resources.getText(projectPath);
+            projectText = app.loadBytes(projectPath).toString();
         } catch (e:Dynamic) {
             trace("RunnerState: cannot load project '" + projectPath + "': " + e);
             return;
@@ -124,6 +124,7 @@ class RunnerState extends State {
 
         // Prime the lighting system with the map boundaries.
         lightingSystem.setBounds(mapX, mapY, mapWidth, mapHeight);
+        
 
         // -- 4. Create one ManagedTileBatch per tileset ------------------------
         var textureWidths:Map<String, Int> = new Map();
@@ -201,7 +202,7 @@ class RunnerState extends State {
 
         // Place a warm-white test light at the centre of the map.
         // Radius is half the shorter map dimension so it covers a meaningful area.
-        var lightRadius = Math.min(mapWidth, mapHeight) * 0.5;
+        var lightRadius = Math.min(mapWidth, mapHeight) * 1;
         testLight = lightingSystem.addLight(
             renderer, lightProgramInfo,
             mapX + mapWidth  * 0.5,
