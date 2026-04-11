@@ -5,6 +5,9 @@ import display.ManagedTileBatch;
 import entity.DisplayEntity;
 import entity.EntityRegistry;
 import entity.EntityClasses;
+import lighting.LightingSystem;
+import lighting.LightSource;
+import display.DarkOverlay;
 
 /**
  * RunnerState - Loads and renders a map exported by the editor.
@@ -26,6 +29,15 @@ class RunnerState extends State {
 
     // One ManagedTileBatch per tileset name
     private var tileBatches:Map<String, ManagedTileBatch> = new Map();
+
+    // Lighting
+    private var lightingSystem:LightingSystem = new LightingSystem();
+    private var testLight:LightSource = null;
+
+    // Dark ambient overlay rendered between tiles and lights.
+    // Change ambientDarkness (0–1) at any time to adjust world visibility.
+    public var ambientDarkness:Float = 0.85;
+    private var _darkOverlay:DarkOverlay = null;
 
     // Region caches so we call defineRegion() only once per unique tile/entity
     // tileRegionCache  : tilesetName -> (1-based tile index -> regionId)
@@ -110,6 +122,9 @@ class RunnerState extends State {
         camera.x = mapX;
         camera.y = mapY;
 
+        // Prime the lighting system with the map boundaries.
+        lightingSystem.setBounds(mapX, mapY, mapWidth, mapHeight);
+
         // -- 4. Create one ManagedTileBatch per tileset ------------------------
         var textureWidths:Map<String, Int> = new Map();
 
@@ -155,6 +170,8 @@ class RunnerState extends State {
         }
 
         // -- 5. Process layers -------------------------------------------------
+        // tileSize is captured here so processTilemapLayer can pass it on to the
+        // lighting system; the closure over `tileSize` is intentional.
         for (layer in (mapData.layers : Array<Dynamic>)) {
             if (!(layer.visible : Bool)) continue;
 
@@ -165,6 +182,32 @@ class RunnerState extends State {
                 default:        trace("RunnerState: unknown layer type '" + layerType + "'");
             }
         }
+
+        // -- 6. Build lighting geometry and add a test light -----------------
+        lightingSystem.build();
+
+        // Dark overlay sits between the tile batches and the light meshes so
+        // that additive light polygons punch through the darkness.
+        var lineVertShader = app.resources.getText("shaders/line.vert");
+        var lineFragShader = app.resources.getText("shaders/line.frag");
+        var overlayProgram = renderer.createProgramInfo("line", lineVertShader, lineFragShader);
+        _darkOverlay = new DarkOverlay(overlayProgram, ambientDarkness);
+        _darkOverlay.init(renderer);
+        addEntity(new DisplayEntity(_darkOverlay, "dark_overlay"));
+
+        var lightVertShader  = app.resources.getText("shaders/light.vert");
+        var lightFragShader  = app.resources.getText("shaders/light.frag");
+        var lightProgramInfo = renderer.createProgramInfo("light", lightVertShader, lightFragShader);
+
+        // Place a warm-white test light at the centre of the map.
+        // Radius is half the shorter map dimension so it covers a meaningful area.
+        var lightRadius = Math.min(mapWidth, mapHeight) * 0.5;
+        testLight = lightingSystem.addLight(
+            renderer, lightProgramInfo,
+            mapX + mapWidth  * 0.5,
+            mapY + mapHeight * 0.5,
+            lightRadius);
+        addEntity(new DisplayEntity(testLight.mesh, "light_0"));
 
         trace("RunnerState: map loaded");
     }
@@ -200,6 +243,7 @@ class RunnerState extends State {
         if (tilesPerRow <= 0) tilesPerRow = 1;
 
         var regionCache = tileRegionCache.get(tsName);
+        var half:Float          = tileSize * 0.5;
         var tiles:Array<Dynamic> = cast layer.tiles;
 
         for (tile in tiles) {
@@ -224,6 +268,9 @@ class RunnerState extends State {
 
             var regionId = regionCache.get(regionIndex);
             batch.addTile(pixelX, pixelY, tileSize, tileSize, regionId);
+
+            // Register this tile as a light occluder (centre + half-size).
+            lightingSystem.addTile(pixelX + half, pixelY + half, half);
         }
 
         trace("RunnerState: tilemap layer '" + cast(layer.name, String)
@@ -318,5 +365,26 @@ class RunnerState extends State {
 
     override public function update(deltaTime:Float):Void {
         super.update(deltaTime);
+
+        // On left-click, move the test light to the clicked world position.
+        var mouse = app.input.mouse;
+        if (testLight != null && mouse.check(1)) {
+            // Unproject: screen pixel → world space (ortho, no rotation).
+            testLight.x = camera.x + mouse.x / camera.zoom;
+            testLight.y = camera.y + mouse.y / camera.zoom;
+        }
+
+        // Rebuild the dark overlay to cover the current camera viewport.
+        if (_darkOverlay != null) {
+            _darkOverlay.ambientDarkness = ambientDarkness;
+            var size = app.window.size;
+            _darkOverlay.rebuild(
+                camera.x,
+                camera.y,
+                camera.x + size.x / camera.zoom,
+                camera.y + size.y / camera.zoom);
+        }
+
+        lightingSystem.update();
     }
 }

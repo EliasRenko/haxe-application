@@ -11,7 +11,8 @@ fonts/gohu14.json
 fonts/nokia.json
 
 # Map data
-maps/new.json
+maps/TestProject.json
+maps/default.json
 
 # Map textures
 textures/devTiles.tga
@@ -44,3 +45,5 @@ shaders/line.vert
 shaders/line.frag
 shaders/grid.vert
 shaders/grid.frag
+shaders/light.vert
+shaders/light.frag
