@@ -1,5 +1,6 @@
 package;
 
+import states.RunnerState;
 #if dll
 import Editor;
 #end
@@ -9,12 +10,9 @@ class Main {
         
         // Normal executable mode
         var app = new App();
-        if (!app.init()) {
-            trace("Failed to initialize application");
-            return;
-        }
+        app.init();
 
-        app.addState(new states.ParticleState(app));
+        app.addState(new RunnerState(app));
         app.run();
     }
 }

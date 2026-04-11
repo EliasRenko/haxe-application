@@ -7,17 +7,20 @@ import entity.EntityRegistry;
 import entity.EntityClasses;
 
 /**
- * RunnerState - Loads and renders an editor-exported map (new.json).
+ * RunnerState - Loads and renders a map exported by the editor.
  *
  * Flow:
- *  1. Parse the JSON map: tilesets, entity definitions, layers.
- *  2. For each referenced tileset create one ManagedTileBatch backed by its
+ *  1. Load the project file (TestProject.json) to extract tileset definitions
+ *     and entity definitions.
+ *  2. Load the level file (e.g. default.json) for map bounds and layer data.
+ *  3. For each referenced tileset create one ManagedTileBatch backed by its
  *     texture.  If the texture file is missing a fallback is used so the rest
  *     of the map still renders.
- *  3. Tilemap layers  → define atlas regions from 1-based tile indices,
- *     then addTile() for every tile in the layer.
- *  4. Entity layers   → look up each entity's pixel region from its definition,
- *     define the region once per entity type, then addTile() per instance.
+ *  4. Tilemap layers  → tiles use gridX/gridY; convert to pixel coords via
+ *     tileSize, define atlas regions from 1-based tile indices, then addTile().
+ *  5. Entity layers   → entity instances use normalized x/y (0–1); convert to
+ *     pixel coords via mapBounds width/height, look up the entity definition
+ *     from the project file, define the region once, then addTile() per instance.
  */
 class RunnerState extends State {
 
@@ -37,68 +40,87 @@ class RunnerState extends State {
     override public function init():Void {
         super.init();
 
-        // Position the camera to roughly centre on the map content
-        // (tiles are placed around x=[512,704], y=[352,448] in world space)
-        camera.x = 380.0;
-        camera.y = 260.0;
-
-        trace("RunnerState: init – loading map");
-        loadMap("maps/new.json");
+        trace("RunnerState: init – loading project + map");
+        loadMap("maps/TestProject.json", "maps/default.json");
     }
 
     // -------------------------------------------------------------------------
     //  Map loading entry point
     // -------------------------------------------------------------------------
 
-    private function loadMap(path:String):Void {
+    private function loadMap(projectPath:String, levelPath:String):Void {
 
         // Ensure all self-registering entity classes have fired their static
         // initializers before we start parsing entity layers.
         EntityClasses.init();
         trace("EntityRegistry: registered classes → " + EntityRegistry.getRegistered());
 
-        // -- 1. Load JSON text -------------------------------------------------
-        var jsonText:String = null;
+        // -- 1. Load and parse the project file --------------------------------
+        var projectText:String = null;
         try {
-            jsonText = app.resources.getText(path);
+            projectText = app.resources.getText(projectPath);
         } catch (e:Dynamic) {
-            trace("RunnerState: cannot load map '" + path + "': " + e);
+            trace("RunnerState: cannot load project '" + projectPath + "': " + e);
             return;
         }
+        var projectData:Dynamic = Json.parse(projectText);
+        var project:Dynamic     = projectData.project;
 
-        var mapData:Dynamic = Json.parse(jsonText);
+        // -- 2. Load and parse the level file ----------------------------------
+        var levelText:String = null;
+        try {
+            levelText = app.resources.getText(levelPath);
+        } catch (e:Dynamic) {
+            trace("RunnerState: cannot load level '" + levelPath + "': " + e);
+            return;
+        }
+        var levelData:Dynamic = Json.parse(levelText);
+        var mapData:Dynamic   = levelData.map;
+
         var renderer = app.renderer;
 
         // Shared shader program for all tile batches
-        var vertShader = app.resources.getText("shaders/textured.vert");
-        var fragShader = app.resources.getText("shaders/textured.frag");
-        var programInfo = renderer.createProgramInfo("textured", vertShader, fragShader);
+        var vertShader   = app.resources.getText("shaders/textured.vert");
+        var fragShader   = app.resources.getText("shaders/textured.frag");
+        var programInfo  = renderer.createProgramInfo("textured", vertShader, fragShader);
 
-        // -- 2. Build lookup maps from the JSON --------------------------------
+        // -- 3. Build lookup maps from the project file ------------------------
 
-        // entity definitions: name -> Dynamic { regionX, regionY, regionWidth, regionHeight, width, height }
+        // entity definitions: name -> Dynamic { regionX, regionY, regionWidth, regionHeight, width, height, tilesetName }
         var entityDefs:Map<String, Dynamic> = new Map();
-        for (def in (mapData.entityDefinitions : Array<Dynamic>)) {
+        for (def in (project.entityDefinitions : Array<Dynamic>)) {
             entityDefs.set(cast def.name, def);
         }
 
-        // tileset defs: name -> Dynamic { tileSize, texturePath }
+        // tileset defs: name -> Dynamic { texturePath, name }
         var tilesetDefs:Map<String, Dynamic> = new Map();
-        for (ts in (mapData.tilesets : Array<Dynamic>)) {
+        for (ts in (project.tilesets : Array<Dynamic>)) {
             tilesetDefs.set(cast ts.name, ts);
         }
 
-        // -- 3. Create one ManagedTileBatch per tileset ------------------------
+        // Map bounds: origin offset + size + tile size
+        var bounds:Dynamic  = mapData.mapBounds;
+        var mapX:Float      = bounds.x;
+        var mapY:Float      = bounds.y;
+        var mapWidth:Float  = bounds.width;
+        var mapHeight:Float = bounds.height;
+        var tileSize:Int    = bounds.tileSizeX;
+
+        // Align camera to the map's world-space origin
+        camera.x = mapX;
+        camera.y = mapY;
+
+        // -- 4. Create one ManagedTileBatch per tileset ------------------------
         var textureWidths:Map<String, Int> = new Map();
 
-        for (ts in (mapData.tilesets : Array<Dynamic>)) {
+        for (ts in (project.tilesets : Array<Dynamic>)) {
             var tsName:String = cast ts.name;
 
-            // Extract the bare filename from the absolute Windows path stored
-            // by the editor, e.g. "C:\...\res\textures\devTiles.tga" → "devTiles.tga"
-            var rawPath:String  = cast ts.texturePath;
-            var normalized      = StringTools.replace(rawPath, "\\", "/");
-            var filename        = haxe.io.Path.withoutDirectory(normalized);
+            // texturePath is the bare relative path stored by the editor,
+            // e.g. "textures/devTiles.tga" – extract just the filename.
+            var rawPath:String = cast ts.texturePath;
+            var normalized     = StringTools.replace(rawPath, "\\", "/");
+            var filename       = haxe.io.Path.withoutDirectory(normalized);
 
             // Try the exact filename first, fall back to dev_tiles.tga
             var textureData:data.TextureData = null;
@@ -132,19 +154,19 @@ class RunnerState extends State {
                   + "  texture " + texture.width + "×" + texture.height);
         }
 
-        // -- 4. Process layers -------------------------------------------------
+        // -- 5. Process layers -------------------------------------------------
         for (layer in (mapData.layers : Array<Dynamic>)) {
             if (!(layer.visible : Bool)) continue;
 
             var layerType:String = cast layer.type;
             switch (layerType) {
-                case "tilemap": processTilemapLayer(layer, tilesetDefs, textureWidths);
-                case "entity":  processEntityLayer(layer, entityDefs);
+                case "tilemap": processTilemapLayer(layer, tilesetDefs, textureWidths, tileSize, mapX, mapY);
+                case "entity":  processEntityLayer(layer, entityDefs, mapX, mapY, mapWidth, mapHeight);
                 default:        trace("RunnerState: unknown layer type '" + layerType + "'");
             }
         }
 
-        //trace("RunnerState: map loaded – " + tileBatches.keys() + " tileset batch(es) active");
+        trace("RunnerState: map loaded");
     }
 
     // -------------------------------------------------------------------------
@@ -152,14 +174,17 @@ class RunnerState extends State {
     // -------------------------------------------------------------------------
 
     /**
-     * Tilemap layer tiles store a 1-based index into the tileset grid.
-     * We convert it to pixel coordinates: col/row × tileSize, then define
-     * (or reuse) an atlas region and add the tile to the batch.
+     * Tilemap layer tiles store a 1-based region index and a gridX/gridY
+     * position.  We convert grid coords to pixel coords via tileSize (from
+     * mapBounds), then define (or reuse) an atlas region and add the tile.
      */
     private function processTilemapLayer(
             layer:Dynamic,
             tilesetDefs:Map<String, Dynamic>,
-            textureWidths:Map<String, Int>):Void {
+            textureWidths:Map<String, Int>,
+            tileSize:Int,
+            mapX:Float,
+            mapY:Float):Void {
 
         var tsName:String = cast layer.tilesetName;
         var batch = tileBatches.get(tsName);
@@ -168,10 +193,6 @@ class RunnerState extends State {
                   + "' referenced in layer '" + cast(layer.name, String) + "'");
             return;
         }
-
-        // Tile size for this tileset
-        var tsDef   = tilesetDefs.get(tsName);
-        var tileSize:Int = (tsDef != null) ? Std.int(tsDef.tileSize) : 32;
 
         // How many tiles fit in one row of the texture atlas
         var texW        = textureWidths.exists(tsName) ? textureWidths.get(tsName) : 128;
@@ -184,7 +205,7 @@ class RunnerState extends State {
         for (tile in tiles) {
             var regionIndex:Int = Std.int(tile.region); // 1-based tile index
 
-            // Define the region the first time we encounter this index
+            // Define the atlas region the first time we encounter this index
             if (!regionCache.exists(regionIndex)) {
                 var idx  = regionIndex - 1;             // convert to 0-based
                 if (idx < 0) idx = 0;
@@ -196,8 +217,13 @@ class RunnerState extends State {
                 regionCache.set(regionIndex, rId);
             }
 
+            // gridX/gridY are tile-grid coordinates; convert to pixel coords
+            // and offset by the map's world-space origin.
+            var pixelX:Float = mapX + Std.int(tile.gridX) * tileSize;
+            var pixelY:Float = mapY + Std.int(tile.gridY) * tileSize;
+
             var regionId = regionCache.get(regionIndex);
-            batch.addTile(tile.x, tile.y, tileSize, tileSize, regionId);
+            batch.addTile(pixelX, pixelY, tileSize, tileSize, regionId);
         }
 
         trace("RunnerState: tilemap layer '" + cast(layer.name, String)
@@ -209,23 +235,22 @@ class RunnerState extends State {
     // -------------------------------------------------------------------------
 
     /**
-     * Entity layers contain one or more batches, each associated with a
-     * tileset.  Each instance references a named entity definition that holds
-     * the exact pixel region inside the tileset texture.
+     * Entity layers contain instances whose x/y are normalized (0–1) relative
+     * to the map bounds.  The tileset to use is stored on the entity definition
+     * in the project file (def.tilesetName).  We denormalize positions using
+     * the supplied mapWidth/mapHeight before placing each tile.
      */
-    private function processEntityLayer(layer:Dynamic, entityDefs:Map<String, Dynamic>):Void {
+    private function processEntityLayer(
+            layer:Dynamic,
+            entityDefs:Map<String, Dynamic>,
+            mapX:Float,
+            mapY:Float,
+            mapWidth:Float,
+            mapHeight:Float):Void {
 
         var batches:Array<Dynamic> = cast layer.batches;
 
         for (batchData in batches) {
-            var tsName:String  = cast batchData.tilesetName;
-            var tileBatch = tileBatches.get(tsName);
-            if (tileBatch == null) {
-                trace("RunnerState: no batch for entity tileset '" + tsName + "'");
-                continue;
-            }
-
-            var eRegionCache = entityRegionCache.get(tsName);
             var instances:Array<Dynamic> = cast batchData.entities;
 
             for (inst in instances) {
@@ -236,6 +261,17 @@ class RunnerState extends State {
                     continue;
                 }
 
+                // The tileset for this entity is declared in its project definition
+                var tsName:String = cast def.tilesetName;
+                var tileBatch = tileBatches.get(tsName);
+                if (tileBatch == null) {
+                    trace("RunnerState: no batch for entity tileset '" + tsName
+                          + "' (entity '" + entityName + "')");
+                    continue;
+                }
+
+                var eRegionCache = entityRegionCache.get(tsName);
+
                 // Define the atlas region once per entity type
                 if (!eRegionCache.exists(entityName)) {
                     var rId = tileBatch.defineRegion(
@@ -244,10 +280,20 @@ class RunnerState extends State {
                     eRegionCache.set(entityName, rId);
                 }
 
-                // Stamp the resolved regionId onto inst so factories can use
-                // it without needing a separate lookup.
+                // Denormalize position: inst.x/y is the position of the entity's
+                // logical pivot point in normalized [0,1] map space.  Subtract the
+                // definition's pivot (e.g. 0.5/0.5 = centre) scaled to pixel size
+                // to convert from pivot-point to top-left corner.
+                var defPivotX:Float = (def.pivotX != null) ? def.pivotX : 0.0;
+                var defPivotY:Float = (def.pivotY != null) ? def.pivotY : 0.0;
+                var pixelX:Float = mapX + inst.x * mapWidth  - defPivotX * Std.int(def.width);
+                var pixelY:Float = mapY + inst.y * mapHeight - defPivotY * Std.int(def.height);
+
+                // Stamp resolved values onto inst so factories can use them
                 var regionId = eRegionCache.get(entityName);
                 Reflect.setField(inst, "regionId", regionId);
+                Reflect.setField(inst, "pixelX", pixelX);
+                Reflect.setField(inst, "pixelY", pixelY);
 
                 // If the definition carries a "class" name and a factory is
                 // registered, delegate everything (tile creation included) to
@@ -258,12 +304,11 @@ class RunnerState extends State {
                     if (ent != null) {
                         addEntity(ent);
                         trace("RunnerState: spawned '" + className + "' at ("
-                              + inst.x + "," + inst.y + ")");
+                              + pixelX + "," + pixelY + ")");
                     }
                 } else {
                     // No registered class — just place a static visual tile.
-                    var regionId = eRegionCache.get(entityName);
-                    tileBatch.addTile(inst.x, inst.y, Std.int(def.width), Std.int(def.height), regionId);
+                    tileBatch.addTile(pixelX, pixelY, Std.int(def.width), Std.int(def.height), regionId);
                 }
             }
         }
