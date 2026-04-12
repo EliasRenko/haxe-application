@@ -35,8 +35,9 @@ class LightMesh extends DisplayObject {
     public var colorB:Float     = 0.7;
     public var colorA:Float     = 0.85;
 
-    public function new(programInfo:ProgramInfo) {
-        super(programInfo, new Vertices([]));
+    public function new(renderer:Renderer, programInfo:ProgramInfo) {
+        super(renderer, programInfo, new Vertices([]));
+
         mode = GL.TRIANGLES;
         // Additive blend: GL_SRC_ALPHA=770, GL_ONE=1
         blendFactors = { source: GL.SRC_ALPHA, destination: 1 };

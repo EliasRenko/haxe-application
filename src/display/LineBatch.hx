@@ -22,20 +22,15 @@ class LineBatch extends DisplayObject {
      * @param programInfo Shader program for rendering
      * @param persistent If true, lines persist until cleared
      */
-    public function new(programInfo:ProgramInfo, persistent:Bool = false) {
+    public function new(renderer:Renderer, programInfo:ProgramInfo, persistent:Bool = false) {
         // Preallocate empty vertices array
         var emptyVertices = new Vertices([]);
-        super(programInfo, emptyVertices, null); // No indices, GL_LINES
+        super(renderer, programInfo, emptyVertices, null); // No indices, GL_LINES
         mode = 0x0001; // GL.LINES
         this.persistent = persistent;
         this.vertices = [];
         lineCount = 0;
         __verticesToRender = 0;
-        active = true;
-    }
-
-    override function init(renderer:Renderer) {
-        super.init(renderer);
     }
 
     /** Add a line to the batch (with color per vertex) */

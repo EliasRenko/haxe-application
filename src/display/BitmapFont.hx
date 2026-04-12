@@ -22,8 +22,8 @@ class BitmapFont extends ManagedTileBatch {
      * @param texture Font texture atlas
      * @param fontData Font data loaded by FontLoader
      */
-    public function new(programInfo:ProgramInfo, texture:Texture, fontData:FontData) {
-        super(programInfo, texture);
+    public function new(renderer:Renderer, programInfo:ProgramInfo, texture:Texture, fontData:FontData) {
+        super(renderer, programInfo, texture);
         this.fontData = fontData;
         
         trace("BitmapFont: Created font '" + fontData.name + "' size=" + fontData.size);

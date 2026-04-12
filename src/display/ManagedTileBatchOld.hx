@@ -31,8 +31,8 @@ class ManagedTileBatchOld extends TileBatch {
      * @param programInfo Shader program for rendering
      * @param texture Atlas texture for all tiles
      */
-    public function new(programInfo:ProgramInfo, texture:Texture) {
-        super(programInfo, texture);
+    public function new(renderer:Renderer, programInfo:ProgramInfo, texture:Texture) {
+        super(renderer, programInfo, texture);
     }
     
     /**
