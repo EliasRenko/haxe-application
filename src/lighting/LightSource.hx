@@ -63,12 +63,13 @@ class LightSource {
      * update().  `programInfo` must use the `light.vert / light.frag` shaders.
      */
     public function init(renderer:Renderer, programInfo:ProgramInfo):Void {
-        mesh = new LightMesh(renderer, programInfo);
+        mesh = new LightMesh(programInfo);
         mesh.lightRadius = radius;
         mesh.colorR = colorR;
         mesh.colorG = colorG;
         mesh.colorB = colorB;
         mesh.colorA = colorA;
+        mesh.init(renderer);
     }
 
     /**

@@ -155,8 +155,9 @@ class RunnerState extends State {
             var texture = renderer.uploadTexture(textureData);
             textureWidths.set(tsName, texture.width);
 
-            var batch = new ManagedTileBatch(renderer, programInfo, texture);
+            var batch = new ManagedTileBatch(programInfo, texture);
             batch.debugName = "tileset_" + tsName;
+            batch.init(renderer);
 
             tileBatches.set(tsName, batch);
             tileRegionCache.set(tsName, new Map());
@@ -191,7 +192,8 @@ class RunnerState extends State {
         var lineVertShader = app.resources.getText("shaders/line.vert");
         var lineFragShader = app.resources.getText("shaders/line.frag");
         var overlayProgram = renderer.createProgramInfo("line", lineVertShader, lineFragShader);
-        _darkOverlay = new DarkOverlay(renderer, overlayProgram, ambientDarkness);
+        _darkOverlay = new DarkOverlay(overlayProgram, ambientDarkness);
+        _darkOverlay.init(renderer);
         addEntity(new DisplayEntity(_darkOverlay, "dark_overlay"));
 
         var lightVertShader  = app.resources.getText("shaders/light.vert");

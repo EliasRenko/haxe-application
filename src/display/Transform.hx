@@ -16,9 +16,9 @@ class Transform extends DisplayObject {
 	public var scaleX:Float = 1;
 	public var scaleY:Float = 1;
 
-	public function new(renderer:Renderer, programInfo:ProgramInfo, vertices:Vertices, indices:Indices) {
+	public function new(programInfo:ProgramInfo, vertices:Vertices, indices:Indices) {
 
-        super(renderer, programInfo, vertices, indices);
+        super(programInfo, vertices, indices);
     }
 
     override public function updateTransform():Void {

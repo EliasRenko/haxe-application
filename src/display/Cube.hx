@@ -11,7 +11,7 @@ class Cube extends DisplayObject {
     public var autoRotate:Bool = true;
     public var rotationSpeed:Float = 1.0;
     
-    public function new(renderer:Renderer, programInfo:ProgramInfo, ?size:Float = 1.0) {
+    public function new(programInfo:ProgramInfo, ?size:Float = 1.0) {
         var halfSize = size / 2.0;
         
         // Create cube vertices (position + color)
@@ -70,7 +70,7 @@ class Cube extends DisplayObject {
             20, 23, 22,  22, 21, 20
         ]);
         
-        super(renderer, programInfo, cubeVertices, cubeIndices);
+        super(programInfo, cubeVertices, cubeIndices);
         
         // Set up cube-specific properties
         mode = GL.TRIANGLES;

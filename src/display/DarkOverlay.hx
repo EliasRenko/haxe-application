@@ -21,8 +21,8 @@ class DarkOverlay extends DisplayObject {
     /** Darkness of the ambient layer.  0 = fully transparent, 1 = pitch black. */
     public var ambientDarkness:Float;
 
-    public function new(renderer:Renderer, programInfo:ProgramInfo, ambientDarkness:Float = 0.85) {
-        super(renderer, programInfo, new Vertices([]));
+    public function new(programInfo:ProgramInfo, ambientDarkness:Float = 0.85) {
+        super(programInfo, new Vertices([]));
         this.ambientDarkness = ambientDarkness;
         mode       = GL.TRIANGLES;
         blendFactors = { source: GL.SRC_ALPHA, destination: GL.ONE_MINUS_SRC_ALPHA };
