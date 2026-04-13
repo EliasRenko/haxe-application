@@ -9,6 +9,7 @@ import Renderer;
 import math.Matrix;
 import Texture;
 
+@:shader("textured")
 class Image extends Transform {
 	
 	// Publics
@@ -25,7 +26,7 @@ class Image extends Transform {
 	private var __originX:Float = 0;
 	private var __originY:Float = 0;
 
-	public function new(programInfo:ProgramInfo, texture:Texture) {
+	public function new(renderer:Renderer, texture:Texture) {
 		// Use texture dimensions directly
 		var w = texture.width;
 		var h = texture.height;
@@ -46,7 +47,7 @@ class Image extends Transform {
 
 		var indices:Indices = [0, 1, 2, 0, 2, 3]; // Two triangles to make a quad
 
-		super(programInfo, vertices, indices);
+		super(renderer, vertices, indices);
 
 		// Set OpenGL properties
 		mode = GL.TRIANGLES;

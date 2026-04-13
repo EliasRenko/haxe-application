@@ -61,8 +61,7 @@ class ParticleState extends State {
         var texture = renderer.uploadTexture(texData);
 
         // -- TileBatch --------------------------------------------------------
-        var batch = new TileBatch(program, texture);
-        batch.init(renderer);
+        var batch = new TileBatch(renderer, program, texture);
 
         // Define a 16×16 particle region from the top-left of the atlas.
         // Tweak the pixel coordinates if you want a different sprite.

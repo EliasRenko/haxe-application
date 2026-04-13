@@ -1,7 +1,6 @@
 package lighting;
 
 import DisplayObject;
-import ProgramInfo;
 import Renderer;
 import data.Vertices;
 import GL;
@@ -25,6 +24,7 @@ import lighting.Visibility.Point;
  * accumulate brightness.  Use SRC_ALPHA / ONE_MINUS_SRC_ALPHA instead if
  * you want a transparency-style overlay.
  */
+@:shader("light")
 class LightMesh extends DisplayObject {
 
     public var lightX:Float     = 0.0;
@@ -35,8 +35,8 @@ class LightMesh extends DisplayObject {
     public var colorB:Float     = 0.7;
     public var colorA:Float     = 0.85;
 
-    public function new(programInfo:ProgramInfo) {
-        super(programInfo, new Vertices([]));
+    public function new(renderer:Renderer) {
+        super(renderer, new Vertices([]));
         mode = GL.TRIANGLES;
         // Additive blend: GL_SRC_ALPHA=770, GL_ONE=1
         blendFactors = { source: GL.SRC_ALPHA, destination: 1 };

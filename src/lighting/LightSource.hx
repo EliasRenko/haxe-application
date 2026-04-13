@@ -1,6 +1,5 @@
 package lighting;
 
-import ProgramInfo;
 import Renderer;
 
 /**
@@ -62,14 +61,13 @@ class LightSource {
      * Initialise the GPU-side mesh.  Must be called once before the first
      * update().  `programInfo` must use the `light.vert / light.frag` shaders.
      */
-    public function init(renderer:Renderer, programInfo:ProgramInfo):Void {
-        mesh = new LightMesh(programInfo);
+    public function init(renderer:Renderer):Void {
+        mesh = new LightMesh(renderer);
         mesh.lightRadius = radius;
         mesh.colorR = colorR;
         mesh.colorG = colorG;
         mesh.colorB = colorB;
         mesh.colorA = colorA;
-        mesh.init(renderer);
     }
 
     /**

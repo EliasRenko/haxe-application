@@ -1,6 +1,5 @@
 package lighting;
 
-import ProgramInfo;
 import Renderer;
 import App;
 import entity.DisplayEntity;
@@ -135,12 +134,12 @@ class LightingSystem {
      * @param radius       Falloff radius in world units.
      * @param r/g/b/a      Light colour and opacity.
      */
-    public function addLight(renderer:Renderer, programInfo:ProgramInfo,
+    public function addLight(renderer:Renderer,
                              x:Float, y:Float, radius:Float = 200.0,
                              r:Float = 1.0, g:Float = 0.9,
                              b:Float = 0.7, a:Float = 0.85):LightSource {
         var light = new LightSource(x, y, radius, r, g, b, a);
-        light.init(renderer, programInfo);
+        light.init(renderer);
         light.loadOccluders(_cachedSegs, _bx, _by, _bw, _bh);
         _lights.push(light);
         return light;

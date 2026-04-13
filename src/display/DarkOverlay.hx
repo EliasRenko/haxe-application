@@ -1,7 +1,7 @@
 package display;
 
 import DisplayObject;
-import ProgramInfo;
+import Renderer;
 import data.Vertices;
 import GL;
 import math.Matrix;
@@ -16,13 +16,14 @@ import math.Matrix;
  *
  * Call rebuild() every frame with the current world-space viewport bounds.
  */
+@:shader("line")
 class DarkOverlay extends DisplayObject {
 
     /** Darkness of the ambient layer.  0 = fully transparent, 1 = pitch black. */
     public var ambientDarkness:Float;
 
-    public function new(programInfo:ProgramInfo, ambientDarkness:Float = 0.85) {
-        super(programInfo, new Vertices([]));
+    public function new(renderer:Renderer, ambientDarkness:Float = 0.85) {
+        super(renderer, new Vertices([]));
         this.ambientDarkness = ambientDarkness;
         mode       = GL.TRIANGLES;
         blendFactors = { source: GL.SRC_ALPHA, destination: GL.ONE_MINUS_SRC_ALPHA };

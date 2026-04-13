@@ -1,7 +1,6 @@
 package display;
 
 import DisplayObject;
-import ProgramInfo;
 import Renderer;
 import math.Matrix;
 import data.Vertices;
@@ -10,6 +9,7 @@ import data.Vertices;
  * LineBatch - Batches colored lines for efficient OpenGL debug drawing
  * Inherits from DisplayObject, uses renderer for buffer management
  */
+@:shader("line")
 class LineBatch extends DisplayObject {
     public static inline var MAX_LINES:Int = 2048; // Preallocate for up to 2048 lines (4096 vertices)
     public static inline var VERTEX_SIZE:Int = 7; // x, y, z, r, g, b, a
@@ -22,20 +22,15 @@ class LineBatch extends DisplayObject {
      * @param programInfo Shader program for rendering
      * @param persistent If true, lines persist until cleared
      */
-    public function new(programInfo:ProgramInfo, persistent:Bool = false) {
+    public function new(renderer:Renderer, persistent:Bool = false) {
         // Preallocate empty vertices array
         var emptyVertices = new Vertices([]);
-        super(programInfo, emptyVertices, null); // No indices, GL_LINES
+        super(renderer, emptyVertices, null); // No indices, GL_LINES
         mode = 0x0001; // GL.LINES
         this.persistent = persistent;
         this.vertices = [];
         lineCount = 0;
         __verticesToRender = 0;
-        active = true;
-    }
-
-    override function init(renderer:Renderer) {
-        super.init(renderer);
     }
 
     /** Add a line to the batch (with color per vertex) */

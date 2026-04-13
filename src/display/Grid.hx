@@ -13,6 +13,7 @@ import math.Matrix;
  * Creates a visual grid overlay useful for debugging, level editing, or visual reference.
  * The grid uses shader-based rendering to create infinite grid lines with distance-based fading.
  */
+@:shader("grid")
 class Grid extends Transform {
     
     // Grid properties
@@ -27,7 +28,7 @@ class Grid extends Transform {
      * @param programInfo Shader program (should use grid.vert and grid.frag)
      * @param size Size of the grid quad (should be large enough to cover visible area)
      */
-    public function new(programInfo:ProgramInfo, size:Float = 10000.0) {
+    public function new(renderer:Renderer, size:Float = 10000.0) {
         var halfSize = size / 2.0;
         
         // Create a large quad to render the grid on
@@ -45,7 +46,7 @@ class Grid extends Transform {
         
         var indices:Indices = [0, 1, 2, 0, 2, 3]; // Two triangles to make a quad
         
-        super(programInfo, vertices, indices);
+        super(renderer, vertices, indices);
         
         // Set OpenGL properties
         mode = GL.TRIANGLES;

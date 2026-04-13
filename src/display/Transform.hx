@@ -2,6 +2,7 @@ package display;
 
 import data.Indices;
 import data.Vertices;
+import Renderer;
 
 class Transform extends DisplayObject {
 
@@ -16,9 +17,9 @@ class Transform extends DisplayObject {
 	public var scaleX:Float = 1;
 	public var scaleY:Float = 1;
 
-	public function new(programInfo:ProgramInfo, vertices:Vertices, indices:Indices) {
+	public function new(renderer:Renderer, vertices:Vertices, indices:Indices) {
 
-        super(programInfo, vertices, indices);
+        super(renderer, vertices, indices);
     }
 
     override public function updateTransform():Void {

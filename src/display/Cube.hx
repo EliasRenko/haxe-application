@@ -2,16 +2,16 @@ package display;
 
 import GL;
 import DisplayObject;
-import ProgramInfo;
 import Renderer;
 import math.Matrix;
 
+@:shader("simple")
 class Cube extends DisplayObject {
     
     public var autoRotate:Bool = true;
     public var rotationSpeed:Float = 1.0;
     
-    public function new(programInfo:ProgramInfo, ?size:Float = 1.0) {
+    public function new(renderer:Renderer, ?size:Float = 1.0) {
         var halfSize = size / 2.0;
         
         // Create cube vertices (position + color)
@@ -70,7 +70,7 @@ class Cube extends DisplayObject {
             20, 23, 22,  22, 21, 20
         ]);
         
-        super(programInfo, cubeVertices, cubeIndices);
+        super(renderer, cubeVertices, cubeIndices);
         
         // Set up cube-specific properties
         mode = GL.TRIANGLES;

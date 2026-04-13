@@ -155,9 +155,8 @@ class RunnerState extends State {
             var texture = renderer.uploadTexture(textureData);
             textureWidths.set(tsName, texture.width);
 
-            var batch = new ManagedTileBatch(programInfo, texture);
+            var batch = new ManagedTileBatch(renderer, programInfo, texture);
             batch.debugName = "tileset_" + tsName;
-            batch.init(renderer);
 
             tileBatches.set(tsName, batch);
             tileRegionCache.set(tsName, new Map());
@@ -189,22 +188,23 @@ class RunnerState extends State {
 
         // Dark overlay sits between the tile batches and the light meshes so
         // that additive light polygons punch through the darkness.
+        // Pre-register the "line" shader so DarkOverlay's constructor finds it cached.
         var lineVertShader = app.resources.getText("shaders/line.vert");
         var lineFragShader = app.resources.getText("shaders/line.frag");
-        var overlayProgram = renderer.createProgramInfo("line", lineVertShader, lineFragShader);
-        _darkOverlay = new DarkOverlay(overlayProgram, ambientDarkness);
-        _darkOverlay.init(renderer);
+        renderer.createProgramInfo("line", lineVertShader, lineFragShader);
+        _darkOverlay = new DarkOverlay(renderer, ambientDarkness);
         addEntity(new DisplayEntity(_darkOverlay, "dark_overlay"));
 
-        var lightVertShader  = app.resources.getText("shaders/light.vert");
-        var lightFragShader  = app.resources.getText("shaders/light.frag");
-        var lightProgramInfo = renderer.createProgramInfo("light", lightVertShader, lightFragShader);
+        // Pre-register the "light" shader so LightMesh's constructor finds it cached.
+        var lightVertShader = app.resources.getText("shaders/light.vert");
+        var lightFragShader = app.resources.getText("shaders/light.frag");
+        renderer.createProgramInfo("light", lightVertShader, lightFragShader);
 
         // Place a warm-white test light at the centre of the map.
         // Radius is half the shorter map dimension so it covers a meaningful area.
         var lightRadius = Math.min(mapWidth, mapHeight) * 1;
         testLight = lightingSystem.addLight(
-            renderer, lightProgramInfo,
+            renderer,
             mapX + mapWidth  * 0.5,
             mapY + mapHeight * 0.5,
             lightRadius);
