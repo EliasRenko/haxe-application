@@ -1,6 +1,7 @@
 package display;
 
 import DisplayObject;
+import ProgramInfo;
 import Renderer;
 import data.Vertices;
 import GL;
@@ -23,7 +24,10 @@ class DarkOverlay extends DisplayObject {
     public var ambientDarkness:Float;
 
     public function new(renderer:Renderer, ambientDarkness:Float = 0.85) {
-        super(renderer, new Vertices([]));
+        // Retrieve the pre-registered "line" shader from the renderer's cache
+        // (RunnerState calls renderer.createProgramInfo("line", ...) before this)
+        var programInfo:ProgramInfo = renderer.getProgramInfo("line");
+        super(programInfo, new Vertices([]));
         this.ambientDarkness = ambientDarkness;
         mode       = GL.TRIANGLES;
         blendFactors = { source: GL.SRC_ALPHA, destination: GL.ONE_MINUS_SRC_ALPHA };

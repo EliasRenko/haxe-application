@@ -1,6 +1,7 @@
 package;
 
 import states.RunnerState;
+import states.TestMixerState;
 #if dll
 import Editor;
 #end
@@ -12,7 +13,7 @@ class Main {
         var app = new App();
         app.init();
 
-        app.addState(new RunnerState(app));
+        app.addState(new TestMixerState(app));
         app.run();
     }
 }

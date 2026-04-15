@@ -1,6 +1,7 @@
 package lighting;
 
 import DisplayObject;
+import ProgramInfo;
 import Renderer;
 import data.Vertices;
 import GL;
@@ -36,7 +37,10 @@ class LightMesh extends DisplayObject {
     public var colorA:Float     = 0.85;
 
     public function new(renderer:Renderer) {
-        super(renderer, new Vertices([]));
+        // Retrieve the pre-registered "light" shader from the renderer's cache
+        // (RunnerState calls renderer.createProgramInfo("light", ...) before this)
+        var programInfo:ProgramInfo = renderer.getProgramInfo("light");
+        super(programInfo, new Vertices([]));
         mode = GL.TRIANGLES;
         // Additive blend: GL_SRC_ALPHA=770, GL_ONE=1
         blendFactors = { source: GL.SRC_ALPHA, destination: 1 };
