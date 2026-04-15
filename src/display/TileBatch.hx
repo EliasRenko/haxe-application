@@ -52,8 +52,10 @@ class TileBatch extends DisplayObject {
         var emptyVertices = new Vertices([]);
         var indices = generateIndices(MAX_TILES);
         
-        // Pass programInfo directly — DisplayObject constructor requires it as first arg
-        super(programInfo, emptyVertices, indices);
+        // TileBatch has no @:shader metadata, so we pass renderer to super and
+        // override programInfo manually after — the caller chooses the shader.
+        super(renderer, emptyVertices, indices);
+        this.programInfo = programInfo;
         
         // Set OpenGL properties
         mode = GL.TRIANGLES;
