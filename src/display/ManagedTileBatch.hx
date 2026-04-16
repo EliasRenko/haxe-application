@@ -23,10 +23,10 @@ class ManagedTileBatch extends TileBatch {
     
     /**
      * Create a new ManagedTileBatch
-     * @param programInfo Shader program for rendering
+     * @param programInfo Shader program for rendering (optional when subclass uses @:shader)
      * @param texture Atlas texture for all tiles
      */
-    public function new(renderer:Renderer, programInfo:ProgramInfo, texture:Texture) {
+    public function new(renderer:Renderer, ?programInfo:ProgramInfo, texture:Texture) {
         super(renderer, programInfo, texture);
     }
     

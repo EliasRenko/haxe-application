@@ -5,6 +5,7 @@
 --macro Sys.command("cmd", ["/c", "copy ..\\haxe-native\\src\\glad.c bin\\debug\\src\\glad.c"])
 --macro Sys.command("cmd", ["/c", "copy ..\\haxe-native\\lib\\SDL3.dll bin\\debug\\SDL3.dll"])
 --macro Sys.command("cmd", ["/c", "copy ..\\haxe-native\\lib\\SDL3_mixer.dll bin\\debug\\SDL3_mixer.dll"])
+--macro Sys.command("cmd", ["/c", "copy ..\\haxe-native\\lib\\OpenAL32.dll bin\\debug\\OpenAL32.dll"])
 --macro Sys.command("cmd", ["/c", ".\\bat\\copy-files.bat", "res", ".\\bin\\debug\\res"])
 
 -cp src 

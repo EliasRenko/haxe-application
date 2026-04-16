@@ -147,7 +147,7 @@ class Canvas extends Entity {
     }
     
     private function get_leftClick():Bool {
-        return parentState.app.input.mouse.released(0);
+        return parentState.app.input.mouse.released(1);
     }
 
      private function get_markedControl():Control {
@@ -176,24 +176,19 @@ class Canvas extends Entity {
 private class RootContainer extends Container<Control> {
 
     public function new(width:Float, height:Float) {
-
         super(width, height, 0, 0);
-
         __type = "canvas";
     }
 
     override function init() {
-
         super.init();
     }
 
     public function addControl(control:Control):Control {
-        
         return __addControl(control);
     }
 
     public function removeControl(control:Control):Void {
-        
         return __removeControl(control);
     }
 }

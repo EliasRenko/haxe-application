@@ -10,7 +10,12 @@ import display.ManagedTileBatch;
  * 
  * Extends TileBatch to batch multiple Text instances using the same font.
  * Handles font atlas regions and character metrics.
+ *
+ * Uses @:shader("mono") so the renderer auto-resolves the ProgramInfo.
+ * The owning state must pre-register the mono shader before constructing
+ * any BitmapFont instance.
  */
+@:shader("text")
 class BitmapFont extends ManagedTileBatch {
     
     public var fontData:FontData;
@@ -18,12 +23,15 @@ class BitmapFont extends ManagedTileBatch {
     
     /**
      * Create a new BitmapFont
-     * @param programInfo Shader program (use mono shader for 1bpp fonts)
+     * @param renderer Renderer instance
      * @param texture Font texture atlas
      * @param fontData Font data loaded by FontLoader
+     *
+     * The "mono" ProgramInfo is resolved automatically via @:shader("mono").
+     * Pre-register it in the state with renderer.createProgramInfo("mono", ...).
      */
-    public function new(renderer:Renderer, programInfo:ProgramInfo, texture:Texture, fontData:FontData) {
-        super(renderer, programInfo, texture);
+    public function new(renderer:Renderer, texture:Texture, fontData:FontData) {
+        super(renderer, null, texture);
         this.fontData = fontData;
         
         trace("BitmapFont: Created font '" + fontData.name + "' size=" + fontData.size);

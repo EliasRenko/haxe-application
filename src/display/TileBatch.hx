@@ -1,6 +1,5 @@
 package display;
 
-import cpp.Float32;
 import cpp.UInt32;
 import GL;
 import DisplayObject;
@@ -52,10 +51,11 @@ class TileBatch extends DisplayObject {
         var emptyVertices = new Vertices([]);
         var indices = generateIndices(MAX_TILES);
         
-        // TileBatch has no @:shader metadata, so we pass renderer to super and
-        // override programInfo manually after — the caller chooses the shader.
+        // Call super first so @:shader metadata (if present on a subclass) can
+        // auto-resolve programInfo via getShaderName(). Only override with the
+        // explicitly passed programInfo when one is provided.
         super(renderer, emptyVertices, indices);
-        this.programInfo = programInfo;
+        if (programInfo != null) this.programInfo = programInfo;
         
         // Set OpenGL properties
         mode = GL.TRIANGLES;

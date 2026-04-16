@@ -4,6 +4,7 @@
 
 # UI
 textures/gui.json
+textures/gui_debug.tga
 
 # Fonts
 fonts/gohu11.json
