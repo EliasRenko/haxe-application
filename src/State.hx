@@ -13,7 +13,7 @@ import math.Matrix;
 class State {
     
     // State properties
-    public var active:Bool = true;
+    public var active:Bool = false;
     public var app(get, null):App;
     public var camera:Camera;
     public var entities:Array<Entity> = [];
@@ -245,12 +245,24 @@ class State {
     }
     
     public function init():Void {
-        active = true;
+        // Called once when the state is added to the app.
     }
-    
+
     public function release():Void {
+        // Called once when the state is destroyed.
         trace("State '" + name + "' released");
+    }
+
+    public function onActivate():Void {
+        // Called each time this state becomes the current state.
+        active = true;
+        trace("State '" + name + "' activated");
+    }
+
+    public function onDeactivate():Void {
+        // Called each time another state becomes the current state.
         active = false;
+        trace("State '" + name + "' deactivated");
     }
 
     public function onWindowResized(width:Int, height:Int):Void {

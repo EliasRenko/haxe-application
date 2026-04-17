@@ -6,12 +6,10 @@ import haxe.ds.List;
 
 class Container<T:Control> extends Control {
 
-    // ** Publics.
-
+    // Publics
     public var controls(get, null):List<T>;
 
-    // ** Privates.
-
+    // Privates
     private var __controls:List<T> = new List<T>();
 
     public function new(width:Float, height:Float, x:Float, y:Float) {
@@ -27,7 +25,9 @@ class Container<T:Control> extends Control {
         super.init();
 
         for (control in __controls) {
-            __initControl(control);
+            if (!control.active) {
+                __initControl(control);
+            }
         }
     }
 
@@ -38,44 +38,33 @@ class Container<T:Control> extends Control {
     }
 
     private function __addControl(control:T):T {
-        
         if (control.active) return control;
 
         if (____canvas != null) {
-			
 			__initControl(control);
 		}
 
         __controls.add(control);
-
         control.dispatchEvent(control, ADDED);
 
         return control;
     }
 
     private function __removeControl(control:T):Void {
-
         control.dispatchEvent(control, REMOVED);
-
         control.release();
-
 		__controls.remove(control);
     }
 
     private function __clear():Void {
-        
         for (control in __controls) {
-
             __removeControl(control);
         }
 	}
 
     override function update():Void {
-
         for (control in __controls) {
-
             if (control.hitTest()) {
-
                 control.update();
 
                 return;
@@ -86,11 +75,8 @@ class Container<T:Control> extends Control {
     }
 
     public function resize(width:Float, height:Float):Void {
-        
         this.width = width;
         this.height = height;
-
-        
     }
 
     override function onMouseEnter():Void {

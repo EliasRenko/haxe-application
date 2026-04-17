@@ -49,11 +49,8 @@ class App extends Runtime {
     }
 
     override function release():Void {
-        if (currentState != null) {
-            currentState.release();
-        }
-
         for (state in states) {
+            state.release();
             state.clearEntities(__renderer);
         }
 
@@ -81,6 +78,7 @@ class App extends Runtime {
         }
         
         var id = states.add(state);
+        state.init();
         __log.info(LogCategory.APP,"Added state '" + state.name + "' to app (total states: " + states.count + ")");
         
         // If no current state, make this the current one
@@ -101,9 +99,9 @@ class App extends Runtime {
         states.remove(id);
         __log.info(LogCategory.APP, "Removed state '" + state.name + "' from app");
         
-        // If this was the current state, release it
+        // Deactivate if it was the current state
         if (currentState == state) {
-            currentState.release();
+            currentState.onDeactivate();
             currentState = null;
             
             // Switch to first available state if any
@@ -114,7 +112,8 @@ class App extends Runtime {
             }
         }
         
-        // Clean up the state
+        // Destroy the state
+        state.release();
         state.clearEntities(__renderer);
         return true;
     }
@@ -155,14 +154,14 @@ class App extends Runtime {
             return false;
         }
         
-        // Release current state
+        // Deactivate current state (do NOT release it)
         if (currentState != null) {
-            currentState.release();
+            currentState.onDeactivate();
         }
         
-        // Switch to new state
+        // Activate new state (do NOT re-init it)
         currentState = state;
-        currentState.init();
+        currentState.onActivate();
 
         __log.info(LogCategory.APP, "Switched to state '" + state.name + "'");
 

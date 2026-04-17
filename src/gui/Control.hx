@@ -2,73 +2,45 @@ package gui;
 
 import EventDispacher;
 import utils.Rect;
-import gui.ControlEvent;
 import gui.ControlEventType;
 
 class Control extends EventDispacher<Control> {
 
     // ** Publics.
-
     public var active(get, null):Bool;
-
     public var canvas(get, null):Canvas;
-
     public var height(get, set):Float;
-
     public var parent(get, null):Control;
-
     public var type(get, null):String;
-
     public var visible(get, set):Bool;
-
     public var width(get, set):Float;
-
     public var x(get, set):Float;
-
     public var y(get, set):Float;
-
     public var z(get, set):Float;
 
     // ** Privates.
-
     private var __active:Bool = false;
-
     private var __focused:Bool = false;
-
     private var __height:Float;
-
     private var __hitbox:Rect;
-
     private var __hover:Bool = false;
-
     private var __type:String = "";
-
     private var __visible:Bool = true;
-
     private var __width:Float;
-
     private var __x:Float;
-
     private var __y:Float;
-
     private var __z:Float;
 
     // ** Privates with access.
-
     public var ____canvas:Canvas;
-
     @:noCompletion private var ____offsetX:Float = 0;
-	
     @:noCompletion private var ____offsetY:Float = 0;
-    
     @:noCompletion private var ____parent:Control;
 
     public function new(x:Float, y:Float) {
-
         super();
 
         __x = x;
-
         __y = y;
     }
 
@@ -107,53 +79,43 @@ class Control extends EventDispacher<Control> {
     public function update():Void {
         
         if (__hover) {
-
             onMouseHover();
         }
         else {
-
-            onMouseEnter();
+            onMouseEnter(); // TODO: This is called every frame when the mouse is outside the control, needs to be fixed.
         }
 
         if (____canvas.leftClick) {
-             
             onMouseLeftClick();
 
             if (!__focused) {
-
                 onFocusGain();
             }
         }
     }
 
     public function onMouseLeftClick():Void {
-
         dispatchEvent(this, LEFT_CLICK);
     }
 
     public function onMouseHover():Void {
-        
         dispatchEvent(this, ON_HOVER);
     }
 
     public function onMouseEnter():Void {
-        
         __hover = true;
-
         ____canvas.markedControl = this;
 
         dispatchEvent(this, ON_MOUSE_ENTER);
     }
 
     public function onMouseLeave():Void {
-        
         __hover = false;
 
         dispatchEvent(this, ON_MOUSE_LEAVE);
     }
 
     public function onSizeChange():Void {
-        
         dispatchEvent(this, ON_SIZE_CHANGE);
     }
 
@@ -162,12 +124,10 @@ class Control extends EventDispacher<Control> {
     }
 
     public function onLocationChange():Void {
-        
         dispatchEvent(this, ON_LOCATION_CHANGE);
     }
 
     public function onVisibilityChange():Void {
-        
         dispatchEvent(this, ON_VISIBILITY_CHANGE);
     }
 
@@ -225,7 +185,7 @@ class Control extends EventDispacher<Control> {
 
     private function get_canvas():Canvas {
         
-        return canvas;
+        return ____canvas;
     }
 
     private function get_height():Float {

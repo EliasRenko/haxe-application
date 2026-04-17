@@ -16,7 +16,7 @@ class Main {
         var app = new App();
         app.init();
 
-        //app.addState(new MenuState(app));
+        app.addState(new MenuState(app));
         app.addState(new GUITestState(app));
         app.run();
     }

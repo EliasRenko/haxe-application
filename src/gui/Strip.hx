@@ -15,9 +15,6 @@ class Strip extends Container<Control> {
     }
 
     override function init():Void {
-
-        //__initGraphics();
-
         __threeSlice.iterate(function (tile) {
 
             //tile.parent = ____canvas.tilemap;

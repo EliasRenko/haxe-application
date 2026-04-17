@@ -8,14 +8,12 @@ class Window extends Container<Control> {
     public static inline var DEFAULT_TILE_WIDTH:Int = 28;
     public static inline var DEFAULT_TILE_HEIGHT:Int = 28;
 
-    // ** Privates.
-
+    // Privates
     private var __strip:WindowStrip;
     private var __panel:WindowPanel;
 
-    public function new(text:String, width:Float, heigth:Float, x:Float, y:Float) {
-        
-        super(width, heigth, x, y);
+    public function new(text:String, width:Float, height:Float, x:Float, y:Float) {
+        super(width, height, x, y);
 
         __strip = new WindowStrip(text, width);
         __strip.stamp_close.addListener(__onCloseClickEvent, LEFT_CLICK);
@@ -35,27 +33,22 @@ class Window extends Container<Control> {
     }
 
     public function addControl(control:Control):Control {
-
         return __panel.addControl(control);
     }
 
     public function removeControl(control:Control):Void {
-        
         __panel.removeControl(control);
     }
     
     public function clear():Void {
-        
         __panel.clear();
     }
 
     private function __onCloseClickEvent(control:Control, type:UInt):Void {
-
         visible = visible ? false : true;
     }
 
     private function __onFoldClickEvent(control:Control, type:UInt):Void {
-
         __panel.visible = __panel.visible ? false : true;
     }
 }
@@ -65,7 +58,7 @@ private class WindowStrip extends Strip {
     public static inline var DEFAULT_TILE_WIDTH:Int = 28;
     public static inline var DEFAULT_TILE_HEIGHT:Int = 28;
 
-    // ** Publics.
+    // Publics
 
     public var label:Label;
     public var stamp_close:Stamp;

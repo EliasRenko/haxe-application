@@ -143,7 +143,7 @@ class ManagedTileBatch extends TileBatch {
     override public function updateBuffers(renderer:Renderer):Void {
         // Build all tiles into the vertices/indices arrays
         for (tile in tiles) {
-            buildTile(tile);
+            if (tile.visible) buildTile(tile);
         }
         
         // Call base class updateBuffers to upload to GPU

@@ -4,6 +4,7 @@ import display.Text;
 
 class Label extends Control {
 
+
     public var text(get, set):String;
 
     // ** Privates.
@@ -19,6 +20,7 @@ class Label extends Control {
         super.init();
 
         __bitmapText.font = ____canvas.font;
+        __bitmapText.updateTiles();
         __width = __bitmapText.width;
         __height = __bitmapText.height;
     }

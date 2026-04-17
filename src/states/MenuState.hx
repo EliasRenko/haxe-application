@@ -1,31 +1,36 @@
 package states;
 
 import display.BitmapFont;
-import display.Text;
+import display.ManagedTileBatch;
 import entity.DisplayEntity;
+import gui.Canvas;
+import gui.Control;
+import gui.ControlEventType;
+import gui.Label;
+import gui.List as GUIList;
 import loaders.FontLoader;
 
 /**
  * MenuState - Main menu screen
  *
- * Displays a bottom-left aligned menu inspired by classic FPS games.
+ * Displays a bottom-left aligned menu using the GUI List component.
  *
  * Controls:
  *   UP / DOWN  — navigate menu items
  *   ENTER      — confirm selection
  *   ESCAPE     — quit
+ *   Mouse      — click any item to select it
  */
 class MenuState extends State {
 
     private static final ITEMS:Array<String> = ["NEW GAME", "LOAD GAME", "GUI TEST", "QUIT"];
 
-    // Layout
     private static inline var MARGIN_LEFT:Float   = 60.0;
     private static inline var MARGIN_BOTTOM:Float = 140.0;
-    private static inline var ITEM_SPACING:Float  = 28.0;
 
-    private var font:BitmapFont;
-    private var menuTexts:Array<Text> = [];
+    private var canvas:Canvas;
+    private var menuList:GUIList<Label>;
+    private var menuLabels:Array<Label> = [];
     private var selectedIndex:Int = 0;
 
     public function new(app:App) {
@@ -35,34 +40,69 @@ class MenuState extends State {
     override public function init():Void {
         super.init();
 
+        camera.ortho = true;
+
         var renderer = app.renderer;
 
-        // Font setup — pre-register "mono" so BitmapFont's @:shader("mono") resolves it
-        var fontData  = FontLoader.load(app.resources.getText("fonts/nokia.json"));
-        var texData   = app.resources.getTexture("textures/nokia.tga");
-        var texture   = renderer.uploadTexture(texData);
+        renderer.createProgramInfo("textured",
+            app.resources.getText("shaders/textured.vert"),
+            app.resources.getText("shaders/textured.frag"));
 
-        var vert = app.resources.getText("shaders/mono.vert");
-        var frag = app.resources.getText("shaders/text.frag");
-        renderer.createProgramInfo("text", vert, frag);
+        renderer.createProgramInfo("text",
+            app.resources.getText("shaders/mono.vert"),
+            app.resources.getText("shaders/text.frag"));
 
-        font = new BitmapFont(renderer, texture, fontData);
+        var guiTexture = renderer.uploadTexture(
+            app.resources.getTexture("textures/gui_debug.tga"));
 
-        // Position items bottom-left
-        var baseY:Float = app.WINDOW_HEIGHT - MARGIN_BOTTOM - (ITEMS.length - 1) * ITEM_SPACING;
+        var uiTileBatch = new ManagedTileBatch(
+            renderer, renderer.getProgramInfo("textured"), guiTexture);
 
-        for (i in 0...ITEMS.length) {
-            var t = new Text(font, ITEMS[i], MARGIN_LEFT, baseY + i * ITEM_SPACING);
-            menuTexts.push(t);
-        }
+        var font = new BitmapFont(renderer,
+            renderer.uploadTexture(app.resources.getTexture("textures/nokia.tga")),
+            FontLoader.load(app.resources.getText("fonts/nokia.json")));
 
-        // Wrap the shared font batch in a DisplayEntity so State.render() picks it up
-        addEntity(new DisplayEntity(font, "menu_font_batch"));
+        addEntity(new DisplayEntity(uiTileBatch, "gui_tiles"));
+        addEntity(new DisplayEntity(font, "menu_font"));
 
-        updateHighlight();
+        var ws = app.window.size;
+        canvas = new Canvas(this, ws.x, ws.y);
+        canvas.initializeGraphics(uiTileBatch, font);
+        canvas.importSets(app.resources.getText("textures/gui.json"));
+        addEntity(canvas);
+
+        _buildMenu();
 
         trace("MenuState: initialized");
     }
+
+    // -------------------------------------------------------------------------
+    //  UI setup
+    // -------------------------------------------------------------------------
+
+    private function _buildMenu():Void {
+        menuLabels = [];
+        selectedIndex = 0;
+
+        var listY = app.WINDOW_HEIGHT - MARGIN_BOTTOM - (ITEMS.length - 1) * 28.0;
+
+        menuList = new GUIList<Label>(200, MARGIN_LEFT, listY);
+        menuList.addListener(_onItemClick, ON_ITEM_CLICK);
+
+        for (item in ITEMS) {
+            var label = new Label(item, 0, 0);
+            menuLabels.push(label);
+            menuList.addControl(label);
+        }
+
+        canvas.addControl(menuList);
+
+        updateHighlight();
+    }
+
+    // -------------------------------------------------------------------------
+    //  Update
+    // -------------------------------------------------------------------------
 
     override public function update(deltaTime:Float):Void {
         super.update(deltaTime);
@@ -84,27 +124,35 @@ class MenuState extends State {
             onSelect(selectedIndex);
         }
         if (app.input.keyboard.released(Keycode.ESCAPE)) {
-            onSelect(ITEMS.length - 1); // Quit
+            onSelect(ITEMS.length - 1);
         }
     }
 
-    override public function release():Void {
-        for (t in menuTexts) {
-            t.dispose();
-        }
-        menuTexts = [];
-        super.release();
+    override public function onWindowResized(width:Int, height:Int):Void {
+        super.onWindowResized(width, height);
+        if (canvas != null) canvas.resize(width, height);
     }
 
     // -------------------------------------------------------------------------
     //  Helpers
     // -------------------------------------------------------------------------
 
-    /** Prefix the selected item with "> " and others with "  " for visual feedback. */
     private function updateHighlight():Void {
-        for (i in 0...menuTexts.length) {
-            var prefix = (i == selectedIndex) ? "> " : "  ";
-            menuTexts[i].setText(prefix + ITEMS[i]);
+        for (i in 0...menuLabels.length) {
+            menuLabels[i].text = (i == selectedIndex ? "> " : "  ") + ITEMS[i];
+        }
+    }
+
+    private function _onItemClick(control:Control, type:UInt):Void {
+        var i = 0;
+        for (listItem in menuList.controls) {
+            if (listItem == control) {
+                selectedIndex = i;
+                updateHighlight();
+                onSelect(i);
+                return;
+            }
+            i++;
         }
     }
 
