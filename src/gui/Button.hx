@@ -80,6 +80,12 @@ class Button extends Control {
 
     // Getters and setters
 
+    override function set_visible(value:Bool):Bool {
+        __threeSlice.iterate(function(tile) tile.visible = value);
+        __bitmapText.visible = value;
+        return super.set_visible(value);
+    }
+
     private function get_text():String {
         return __bitmapText.text;
     }

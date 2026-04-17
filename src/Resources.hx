@@ -163,7 +163,6 @@ private class __Resources {
 
     public function set_preDefinedPath(value:String):String {
         __preDefinedPath = value;
-        //release(); // Clear all cached resources when changing the base path
         return __preDefinedPath;
     }
 }

@@ -57,12 +57,11 @@ class App extends Runtime {
         states = null;
         currentState = null;
 
+        saveBytes("output.txt", __log.logHistory);
+
         __input.release();
-        __renderer.release();
         __resources.release();
-
-        var success = saveBytes("output.txt", __log.logHistory);
-
+        __renderer.release();
         __log.release();
 
         super.release();

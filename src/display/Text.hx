@@ -28,7 +28,8 @@ class Text {
     public var y(get, set):Float;
     public var width:Float = 0;
     public var height:Float = 0;
-    public var visible:Bool = true;
+    public var visible(get, set):Bool;
+    private var __visible:Bool = true;
     /** Horizontal alignment relative to the (x, y) origin. Default is Left. */
     public var align:TextAlign = Left;
 
@@ -137,7 +138,12 @@ class Text {
                 fontChar.height,
                 regionId
             );
-            
+
+            if (!__visible) {
+                var tile = font.getTile(tileId);
+                if (tile != null) tile.visible = false;
+            }
+
             charTiles.push(tileId);
             
             // Advance cursor
@@ -211,24 +217,23 @@ class Text {
     }
 
     public function set_visible(value:Bool):Bool {
-        visible = value;
-        
-        // Update visibility of all character tiles
-        for (tileId in charTiles) {
-            var tile = font.getTile(tileId);
-            if (tile != null) {
-                tile.visible = value;
-            }
-        }
-        
-        // Mark buffers as dirty to update rendering
-        font.needsBufferUpdate = true;
+        __visible = value;
 
-        return visible;
+        if (font != null) {
+            for (tileId in charTiles) {
+                var tile = font.getTile(tileId);
+                if (tile != null) {
+                    tile.visible = value;
+                }
+            }
+            font.needsBufferUpdate = true;
+        }
+
+        return __visible;
     }
 
     public function get_visible():Bool {
-        return visible;
+        return __visible;
     }
 
     public function set_x(value:Float):Float {

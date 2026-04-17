@@ -1,12 +1,11 @@
 # Copy resources (using --macro to ensure execution)
---macro Sys.command("cmd", ["/c", ".\\bat\\copy-files.bat", ".\\include", ".\\bin\\android\\include"])
---macro Sys.command("cmd", ["/c", ".\\bat\\copy-files.bat", ".\\lib", ".\\bin\\android\\lib"])
+--macro Sys.command("cmd", ["/c", ".\\bat\\copy-files.bat", "..\\haxe-native\\include", ".\\bin\\android\\include"])
+--macro Sys.command("cmd", ["/c", ".\\bat\\copy-files.bat", "..\\haxe-native\\lib", ".\\bin\\android\\lib"])
 --macro Sys.command("cmd", ["/c", ".\\bat\\copy-files.bat", ".\\res", ".\\bin\\android\\res"])
 --macro Sys.command("cmd", ["/c", "if not exist bin\\android\\src mkdir bin\\android\\src"])
---macro Sys.command("cmd", ["/c", "copy src\\glad.c bin\\android\\src\\glad.c"])
---macro Sys.command("cmd", ["/c", "copy lib\\SDL3.dll bin\\android\\SDL3.dll"])
+--macro Sys.command("cmd", ["/c", "copy ..\\haxe-native\\src\\glad.c bin\\android\\src\\glad.c"])
+--macro Sys.command("cmd", ["/c", "copy ..\\haxe-native\\lib\\SDL3.dll bin\\android\\lib\\SDL3.dll"])
 --macro include('hxcpp.android')
---macro addAndroidManifest('res/android/AndroidManifest.xml')
 
 -cp src 
 -cp test
@@ -25,6 +24,7 @@
 
 -lib hxcpp-debug-server
 -lib hxcpp
+-lib haxe-native
 
 -debug 
 -dce std

@@ -67,6 +67,11 @@ class Checkbox extends Control {
 
     // Getters and setters.
 
+    override function set_visible(value:Bool):Bool {
+        __graphic.visible = value;
+        return super.set_visible(value);
+    }
+
     private function get_value():Bool {
         return __value;
     }

@@ -3,11 +3,14 @@ package states;
 import display.BitmapFont;
 import display.ManagedTileBatch;
 import entity.DisplayEntity;
+import gui.Button;
 import gui.Canvas;
+import gui.Checkbox;
 import gui.Control;
 import gui.ControlEventType;
 import gui.Label;
 import gui.List as GUIList;
+import gui.Window;
 import loaders.FontLoader;
 
 /**
@@ -23,7 +26,7 @@ import loaders.FontLoader;
  */
 class MenuState extends State {
 
-    private static final ITEMS:Array<String> = ["NEW GAME", "LOAD GAME", "GUI TEST", "QUIT"];
+    private static final ITEMS:Array<String> = ["New game", "Load game", "Options", "GUI Test", "Quit"];
 
     private static inline var MARGIN_LEFT:Float   = 60.0;
     private static inline var MARGIN_BOTTOM:Float = 140.0;
@@ -32,6 +35,7 @@ class MenuState extends State {
     private var menuList:GUIList<Label>;
     private var menuLabels:Array<Label> = [];
     private var selectedIndex:Int = 0;
+    private var optionsWindow:MenuOptionsWindow;
 
     public function new(app:App) {
         super("Menu", app);
@@ -80,6 +84,34 @@ class MenuState extends State {
     //  UI setup
     // -------------------------------------------------------------------------
 
+    private function _initOptionsWindow():Void {
+        var ws = app.window.size;
+        var ox = Math.round((ws.x - MenuOptionsWindow.WIDTH)  / 2);
+        var oy = Math.round((ws.y - MenuOptionsWindow.HEIGHT) / 2);
+        optionsWindow = new MenuOptionsWindow(ox, oy);
+        canvas.addControl(optionsWindow);
+
+        // Graphics
+        optionsWindow.addControl(new Label("Graphics", 8, 8));
+        var cbFullscreen = new Checkbox(false, 8, 28);
+        optionsWindow.addControl(cbFullscreen);
+        optionsWindow.addControl(new Label("Fullscreen", 44, 36));
+        var cbVsync = new Checkbox(false, 8, 56);
+        optionsWindow.addControl(cbVsync);
+        optionsWindow.addControl(new Label("VSync", 44, 64));
+
+        // Audio
+        optionsWindow.addControl(new Label("Audio", 8, 92));
+        var cbMute = new Checkbox(false, 8, 112);
+        optionsWindow.addControl(cbMute);
+        optionsWindow.addControl(new Label("Mute audio", 44, 120));
+
+        // Close button
+        var btnClose = new Button("Close", 80, 70, 148);
+        btnClose.addListener(_onOptionsClose, LEFT_CLICK);
+        optionsWindow.addControl(btnClose);
+    }
+
     private function _buildMenu():Void {
         menuLabels = [];
         selectedIndex = 0;
@@ -96,8 +128,6 @@ class MenuState extends State {
         }
 
         canvas.addControl(menuList);
-
-        updateHighlight();
     }
 
     // -------------------------------------------------------------------------
@@ -114,10 +144,6 @@ class MenuState extends State {
         }
         if (app.input.keyboard.released(Keycode.DOWN)) {
             selectedIndex = (selectedIndex + 1) % ITEMS.length;
-        }
-
-        if (selectedIndex != prevIndex) {
-            updateHighlight();
         }
 
         if (app.input.keyboard.released(Keycode.RETURN)) {
@@ -137,23 +163,20 @@ class MenuState extends State {
     //  Helpers
     // -------------------------------------------------------------------------
 
-    private function updateHighlight():Void {
-        for (i in 0...menuLabels.length) {
-            menuLabels[i].text = (i == selectedIndex ? "> " : "  ") + ITEMS[i];
-        }
-    }
-
     private function _onItemClick(control:Control, type:UInt):Void {
         var i = 0;
         for (listItem in menuList.controls) {
             if (listItem == control) {
                 selectedIndex = i;
-                updateHighlight();
                 onSelect(i);
                 return;
             }
             i++;
         }
+    }
+
+    private function _onOptionsClose(control:Control, type:UInt):Void {
+        if (optionsWindow != null) optionsWindow.visible = false;
     }
 
     private function onSelect(index:Int):Void {
@@ -163,10 +186,26 @@ class MenuState extends State {
             case 1:
                 trace("MenuState: Load Game");
             case 2:
-                app.switchToStateByName("GUITest");
+                if (optionsWindow == null) {
+                    _initOptionsWindow();
+                } else {
+                    optionsWindow.visible = !optionsWindow.visible;
+                }
             case 3:
+                app.switchToStateByName("GUITest");
+            case 4:
                 trace("MenuState: Quit");
                 @:privateAccess app.__active = false;
         }
+    }
+}
+
+private class MenuOptionsWindow extends Window {
+
+    public static inline var WIDTH:Float  = 220.0;
+    public static inline var HEIGHT:Float = 208.0;
+
+    public function new(x:Float, y:Float) {
+        super("Options", WIDTH, HEIGHT, x, y);
     }
 }
