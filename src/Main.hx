@@ -3,7 +3,6 @@ package;
 import states.GUITestState;
 import states.MenuState;
 import states.RunnerState;
-import states.TestMixerState;
 import states.TestOpenALState;
 #if dll
 import Editor;
@@ -11,7 +10,6 @@ import Editor;
 
 class Main {
     public static function main() {
-        
         // Normal executable mode
         var app = new App();
         app.init();
