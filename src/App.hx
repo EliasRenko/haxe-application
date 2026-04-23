@@ -41,7 +41,7 @@ class App extends Runtime {
         preload();
 
         // Initialize timing
-        __lastTime = SDL.getTicks() / 1000.0;
+        __lastTime = getTicks() / 1000.0;
         
         // Initialize post-processing framebuffer
         __renderer.initializePostProcessing();
@@ -194,7 +194,7 @@ class App extends Runtime {
 
     override function update():Void {
         // Calculate actual deltaTime based on elapsed time
-        __currentTime = SDL.getTicks() / 1000.0; // Convert milliseconds to seconds
+        __currentTime = getTicks() / 1000.0; // Convert milliseconds to seconds
         var deltaTime:Float = __currentTime - __lastTime;
         __lastTime = __currentTime;
         
@@ -250,22 +250,22 @@ class App extends Runtime {
 
     // Keyboard event handlers
     override function onKeyDown(keycode:Int, scancode:Int, repeat:Bool, mod:Int, windowId:Int):Void {
-        #if use_scancodes
-        @:privateAccess __input.keyboard.onKeyDown(scancode, repeat, mod);
-        log.info(LogCategory.INPUT, "Key down: " + scancode);
-        #else
+        #if use_keycode
         @:privateAccess __input.keyboard.onKeyDown(keycode, repeat, mod);
         log.info(LogCategory.INPUT, "Key down: " + keycode);
+        #else
+        @:privateAccess __input.keyboard.onKeyDown(scancode, repeat, mod);
+        log.info(LogCategory.INPUT, "Key down: " + scancode);
         #end
     }
 
     override function onKeyUp(keycode:Int, scancode:Int, repeat:Bool, mod:Int, windowId:Int):Void {
-        #if use_scancodes
-        @:privateAccess __input.keyboard.onKeyUp(scancode, repeat, mod);
-        log.info(LogCategory.INPUT, "Key up: " + scancode);
-        #else
+        #if use_keycode
         @:privateAccess __input.keyboard.onKeyUp(keycode, repeat, mod);
         log.info(LogCategory.INPUT, "Key up: " + keycode);
+        #else
+        @:privateAccess __input.keyboard.onKeyUp(scancode, repeat, mod);
+        log.info(LogCategory.INPUT, "Key up: " + scancode);
         #end
     }
 
@@ -308,9 +308,7 @@ class App extends Runtime {
         __input.postUpdate();
     }
 
-    public function swapBuffers():Void {
-        SDL.swapWindow(__window.ptr);
-    }
+
 
     private function preload():Void {
 		resources.loadText("preload.txt").then(function(source:String) {

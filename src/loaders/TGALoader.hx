@@ -342,6 +342,10 @@ class TGALoader {
         }
 
         // --- Save to file ---
+		#if js
+		// In web environment, trigger a download
+		#else
         sys.io.File.saveBytes(filename, buf.getBytes());
+		#end
     }
 }

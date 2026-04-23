@@ -1,7 +1,6 @@
 package;
 
-@:enum
-abstract LogPriority(Int) from Int to Int {
+enum abstract LogPriority(Int) from Int to Int {
     var INVALID = -1;
     var TRACE = 0;
     var VERBOSE = 1;
@@ -12,8 +11,7 @@ abstract LogPriority(Int) from Int to Int {
     var CRITICAL = 6;
 }
 
-@:enum
-abstract LogCategory(Int) from Int to Int {
+enum abstract LogCategory(Int) from Int to Int {
     var APP = 0;          // SDL_LOG_CATEGORY_APPLICATION
     var ASSERT = 2;       // SDL_LOG_CATEGORY_ASSERT
     var SYSTEM = 3;       // SDL_LOG_CATEGORY_SYSTEM

@@ -29,6 +29,3 @@
 
 -debug
 -dce std
-
-# Add entity field to COG Components class
---macro cog.Macros.add_data("entity", "Main.EntityECS")

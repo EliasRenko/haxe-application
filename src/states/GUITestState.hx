@@ -173,16 +173,16 @@ class GUITestState extends State {
     override public function update(deltaTime:Float):Void {
         super.update(deltaTime);
 
-        if (app.input.keyboard.released(Keycode.ESCAPE)) {
+        if (app.input.keyboard.released(Scancode.ESCAPE)) {
             app.switchToStateByName("Menu");
         }
 
-        if (app.input.keyboard.released(Keycode.E)) {
+        if (app.input.keyboard.released(Scancode.E)) {
             _index = (_index + 1) % NAMES.length;
             _showComponent(_index);
         }
 
-        if (app.input.keyboard.released(Keycode.Q)) {
+        if (app.input.keyboard.released(Scancode.Q)) {
             _index = (_index - 1 + NAMES.length) % NAMES.length;
             _showComponent(_index);
         }

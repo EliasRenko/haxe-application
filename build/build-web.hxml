@@ -1,0 +1,18 @@
+# Copy resources (using --macro to ensure execution)
+--macro Sys.command("cmd", ["/c", ".\\bat\\copy-files.bat", "res", ".\\bin\\web\\res"])
+
+-cp src 
+-main Main
+--js bin/web/app.js
+
+#// Framework exclusive flags
+#-D no_audio
+#-D no_joystick
+#-D no_gamepad
+#-D no_haptic
+
+#-lib hxcpp-debug-server
+-lib haxe-native
+
+-debug
+-dce std

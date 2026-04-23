@@ -147,7 +147,7 @@ class Canvas extends Entity {
     }
     
     private function get_leftClick():Bool {
-        return parentState.app.input.mouse.released(1);
+        return parentState.app.input.mouse.released(0);
     }
 
      private function get_markedControl():Control {

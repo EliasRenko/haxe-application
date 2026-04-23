@@ -28,16 +28,16 @@ class Mouse {
 
     }
 
-    public function check(control:Int):Bool{
-		return control < 0 ? __checkCount > 0 : __checkControls[control];
+    public function check(control:MouseControl):Bool{
+		return (control : Int) < 0 ? __checkCount > 0 : __checkControls[control];
 	}
 	
-	public function pressed(control:Int):Bool {
-		return control < 0 ? __pressCount > 0 : __pressControls.indexOf(control) >= 0;
+	public function pressed(control:MouseControl):Bool {
+		return (control : Int) < 0 ? __pressCount > 0 : __pressControls.indexOf(control) >= 0;
 	}
 	
-	public function released(control:Int):Bool {
-		return control < 0 ? __releaseCount > 0 : __releaseControls.indexOf(control) >= 0;
+	public function released(control:MouseControl):Bool {
+		return (control : Int) < 0 ? __releaseCount > 0 : __releaseControls.indexOf(control) >= 0;
 	}
 
     private function __indexOf(vector:Array<Int>, index:Int):Int {

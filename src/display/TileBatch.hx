@@ -1,6 +1,5 @@
 package display;
 
-import cpp.UInt32;
 import GL;
 import DisplayObject;
 import ProgramInfo;
@@ -10,6 +9,12 @@ import math.Matrix;
 import data.Vertices;
 import data.Indices;
 import display.Tile;
+
+#if js
+typedef UIntData = UInt;
+#else
+typedef UIntData = cpp.UInt32;
+#end
 
 /**
  * TileBatch - Primitive orphaning renderer
@@ -77,10 +82,10 @@ class TileBatch extends DisplayObject {
      * Indices never change, so we generate them once
      */
     private function generateIndices(tileCount:Int):Indices {
-        var indices:Array<UInt32> = [];
+        var indices:Array<UIntData> = [];
         
         for (i in 0...tileCount) {
-            var vertexIndex:UInt32 = i * 4;
+            var vertexIndex:UIntData = i * 4;
             
             // Triangle 1
             indices.push(vertexIndex + 0);  // Top-left

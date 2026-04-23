@@ -1,6 +1,6 @@
 package input;
 
-@:enum abstract Control(Int) from Int to Int {
+enum abstract Control(Int) from Int to Int {
 	var A = 0;
 	var B = 1;
 	var X = 2;
