@@ -1,0 +1,1131 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Editor</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --viewport-bg:  #2D2D30;
+            --map-bg:       #1E1E1E;
+            --window-bg:    #2D2D2D;
+            --panel-bg:     #252526;
+            --input-bg:     #3C3C3C;
+            --text:         #D4D4D4;
+            --muted:        #858585;
+            --accent:       #0E639C;
+            --accent-hover: #1177BB;
+            --border:       #3F3F46;
+            --selection:    #0E99FF;
+            --font:         'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            --fs:           12px;
+        }
+
+        body {
+            font-family: var(--font);
+            font-size: var(--fs);
+            color: var(--text);
+            background: var(--window-bg);
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* SCROLLBARS */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--panel-bg); }
+        ::-webkit-scrollbar-thumb { background: #4A4A4F; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6A6A6F; }
+
+        /* MENU BAR */
+        .menubar {
+            background: var(--window-bg);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: stretch;
+            height: 24px; flex-shrink: 0;
+            user-select: none; position: relative; z-index: 200;
+        }
+        .mb-item {
+            padding: 0 10px; display: flex; align-items: center;
+            cursor: default; position: relative; font-size: 12px;
+        }
+        .mb-item:hover, .mb-item.open { background: var(--accent); color: #fff; }
+        .mb-dropdown {
+            display: none; position: absolute; top: 100%; left: 0;
+            background: var(--panel-bg); border: 1px solid var(--border);
+            min-width: 190px; z-index: 300;
+            box-shadow: 3px 3px 10px rgba(0,0,0,.55); padding: 3px 0;
+        }
+        .mb-item.open .mb-dropdown { display: block; }
+        .dd-item {
+            padding: 5px 30px 5px 12px; cursor: default;
+            display: flex; justify-content: space-between;
+            white-space: nowrap; gap: 20px;
+        }
+        .dd-item:hover { background: var(--accent); color: #fff; }
+        .dd-item:hover .dd-key { color: rgba(255,255,255,.65); }
+        .dd-key { color: var(--muted); font-size: 11px; }
+        .dd-sep { height: 1px; background: var(--border); margin: 3px 0; }
+
+        /* TOOLBAR */
+        .toolbar {
+            background: var(--window-bg); border-bottom: 1px solid var(--border);
+            display: flex; align-items: center;
+            height: 28px; padding: 0 4px; gap: 1px; flex-shrink: 0;
+        }
+        .tb-btn {
+            width: 24px; height: 24px; background: transparent;
+            border: 1px solid transparent; border-radius: 2px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text); padding: 0;
+        }
+        .tb-btn:hover { background: rgba(255,255,255,.1); border-color: var(--border); }
+        .tb-btn:active { background: rgba(255,255,255,.16); }
+        .tb-btn svg { width: 15px; height: 15px; }
+        .tb-sep { width: 1px; height: 18px; background: var(--border); margin: 0 3px; }
+
+        /* ═══ DOCK MANAGER ═══ */
+
+        .dock-workspace {
+            flex: 1; display: flex; flex-direction: column;
+            min-height: 0; position: relative;
+        }
+        .dock-main {
+            flex: 1; display: flex; min-height: 0; position: relative;
+        }
+        .dock-slot {
+            display: flex; flex-direction: column;
+            min-width: 0; min-height: 0; position: relative;
+            background: var(--panel-bg);
+        }
+        .dock-slot.dock-slot-empty { display: none; }
+        .dock-slot-left  { width: 220px; border-right: 1px solid var(--border); flex-shrink: 0; }
+        .dock-slot-right { width: 230px; border-left:  1px solid var(--border); flex-shrink: 0; }
+        .dock-slot-center { flex: 1; background: var(--viewport-bg); }
+        .dock-slot-bottom { border-top: 1px solid var(--border); background: var(--panel-bg); height: 155px; }
+
+        /* Slot drop highlight */
+        .dock-slot.drop-target::after {
+            content: ''; position: absolute; inset: 0;
+            background: rgba(14,99,156,.25); border: 2px solid var(--accent);
+            pointer-events: none; z-index: 500;
+        }
+
+        /* DOCK PANEL (wrapper inside a slot) */
+        .dock-panel { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+
+        .dp-tabbar {
+            display: flex; align-items: stretch; background: var(--window-bg);
+            border-bottom: 1px solid var(--border); height: 26px; flex-shrink: 0;
+            overflow-x: auto; overflow-y: hidden; user-select: none;
+        }
+        .dp-tabbar::-webkit-scrollbar { height: 0; }
+        .dp-tab {
+            display: flex; align-items: center;
+            padding: 0 8px 0 10px; cursor: default;
+            border-right: 1px solid var(--border); font-size: 12px;
+            background: var(--window-bg); color: var(--muted);
+            gap: 5px; white-space: nowrap; flex-shrink: 0;
+        }
+        .dp-tab.active { background: var(--panel-bg); color: var(--text); border-top: 2px solid var(--accent); }
+        .dp-tab:hover:not(.active) { color: var(--text); background: rgba(255,255,255,.04); }
+        .dp-tab-title { cursor: grab; flex: 1; }
+        .dp-tab-title:active { cursor: grabbing; }
+        .dp-tab-close {
+            width: 14px; height: 14px; display: flex; align-items: center; justify-content: center;
+            border-radius: 3px; font-size: 10px; color: var(--muted); cursor: pointer; line-height: 1;
+        }
+        .dp-tab-close:hover { background: rgba(255,255,255,.15); color: var(--text); }
+
+        .dp-content-wrap { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; position: relative; }
+        .dp-content { display: none; flex: 1; flex-direction: column; min-height: 0; overflow: hidden; }
+        .dp-content.active { display: flex; }
+
+        /* SLOT RESIZERS */
+        .slot-resizer { position: absolute; z-index: 10; background: transparent; }
+        .slot-resizer.ew { top: 0; bottom: 0; width: 5px; cursor: ew-resize; }
+        .slot-resizer.ns { left: 0; right: 0; height: 5px; cursor: ns-resize; }
+        .dock-slot-left  .slot-resizer.ew { right: -3px; }
+        .dock-slot-right .slot-resizer.ew { left: -3px; }
+        .dock-slot-bottom .slot-resizer.ns { top: -3px; }
+        .slot-resizer:hover, .slot-resizer.dragging { background: var(--accent); opacity: .7; }
+
+        /* FLOATING PANELS */
+        .float-panel {
+            position: fixed; background: var(--panel-bg);
+            border: 1px solid var(--border);
+            box-shadow: 4px 6px 20px rgba(0,0,0,.6);
+            border-radius: 3px; display: flex; flex-direction: column;
+            min-width: 160px; min-height: 100px; z-index: 1000; overflow: hidden;
+        }
+        .float-titlebar {
+            height: 26px; background: var(--window-bg);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center;
+            padding: 0 6px 0 10px; gap: 6px;
+            cursor: grab; flex-shrink: 0; user-select: none;
+        }
+        .float-titlebar:active { cursor: grabbing; }
+        .float-title {
+            flex: 1; font-size: 11px; font-weight: 600; color: var(--muted);
+            text-transform: uppercase; letter-spacing: .5px; pointer-events: none;
+        }
+        .float-close {
+            width: 16px; height: 16px; display: flex; align-items: center; justify-content: center;
+            border-radius: 3px; font-size: 11px; cursor: pointer; color: var(--muted);
+        }
+        .float-close:hover { background: #C0392B; color: #fff; }
+        .float-dock-btn {
+            width: 16px; height: 16px; display: flex; align-items: center; justify-content: center;
+            border-radius: 3px; font-size: 10px; cursor: pointer; color: var(--muted);
+        }
+        .float-dock-btn:hover { background: rgba(255,255,255,.15); color: var(--text); }
+        .float-body { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+        .float-resize {
+            position: absolute; right: 0; bottom: 0;
+            width: 14px; height: 14px; cursor: nwse-resize; opacity: .4; z-index: 5;
+        }
+        .float-resize:hover { opacity: 1; }
+        .float-resize::after {
+            content: ''; position: absolute; right: 3px; bottom: 3px;
+            width: 7px; height: 7px;
+            border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted);
+        }
+
+        /* DROP ZONE OVERLAY */
+        .dz-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 900; }
+        .dz-overlay.active { pointer-events: all; }
+        .dz-zone {
+            position: absolute; background: rgba(14,99,156,.18);
+            border: 2px solid transparent;
+            transition: background .1s, border-color .1s;
+            display: flex; align-items: center; justify-content: center; pointer-events: all;
+        }
+        .dz-zone.hot { background: rgba(14,99,156,.45); border-color: var(--accent); }
+        .dz-zone-label {
+            font-size: 11px; color: rgba(255,255,255,.7);
+            font-weight: 600; letter-spacing: .5px;
+            text-transform: uppercase; pointer-events: none;
+        }
+        .drag-ghost {
+            position: fixed; background: var(--panel-bg);
+            border: 1px solid var(--accent); opacity: .7;
+            pointer-events: none; z-index: 950;
+            font-size: 12px; color: var(--text);
+            padding: 4px 10px; border-radius: 2px; white-space: nowrap;
+        }
+
+        /* PROPERTY GRID */
+        .prop-grid { width: 100%; border-collapse: collapse; }
+        .prop-grid tr { border-bottom: 1px solid var(--border); height: 22px; }
+        .prop-grid .cat-row td { background: var(--window-bg); color: var(--text); font-weight: 600; padding: 2px 6px; font-size: 11px; }
+        .prop-grid .prop-name { padding: 2px 6px; color: var(--text); width: 50%; border-right: 1px solid var(--border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .prop-grid .prop-val { padding: 2px 6px; color: #9CDCFE; width: 50%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--input-bg); }
+
+        /* CENTER TABS */
+        .tabs-bar {
+            display: flex; align-items: stretch; background: var(--window-bg);
+            border-bottom: 1px solid var(--border); height: 26px; flex-shrink: 0;
+            overflow-x: auto; overflow-y: hidden;
+        }
+        .tabs-bar::-webkit-scrollbar { height: 0; }
+        .tab {
+            display: flex; align-items: center; padding: 0 10px; cursor: default;
+            border-right: 1px solid var(--border); font-size: 12px;
+            background: var(--window-bg); color: var(--muted);
+            gap: 6px; user-select: none; white-space: nowrap; flex-shrink: 0;
+        }
+        .tab.active { background: var(--viewport-bg); color: var(--text); border-top: 2px solid var(--accent); }
+        .tab:hover:not(.active) { color: var(--text); background: rgba(255,255,255,.04); }
+        .tab-x {
+            width: 14px; height: 14px; display: flex; align-items: center; justify-content: center;
+            border-radius: 3px; font-size: 10px; color: var(--muted); cursor: pointer; line-height: 1;
+        }
+        .tab-x:hover { background: rgba(255,255,255,.15); color: var(--text); }
+
+        /* VIEWPORT */
+        .viewport-wrap { flex: 1; position: relative; overflow: hidden; }
+        .view-pane { position: absolute; inset: 0; }
+        .view-pane.hidden { display: none; }
+        #view-gl { background: var(--map-bg); }
+
+        /* Tool overlay */
+        .tool-overlay { position: absolute; left: 6px; top: 6px; display: flex; flex-direction: column; gap: 4px; z-index: 20; }
+        .tool-btn {
+            width: 38px; height: 38px; background: var(--viewport-bg);
+            border: 1px solid var(--border); border-radius: 3px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; color: var(--text);
+        }
+        .tool-btn:hover { background: rgba(255,255,255,.1); border-color: #666; }
+        .tool-btn.active { background: var(--accent); border-color: var(--accent); }
+        .tool-btn svg { width: 20px; height: 20px; }
+
+        /* WELCOME */
+        #view-welcome { display: flex; background: #FAFAFC; color: #1E1E1E; }
+        .wlc-sidebar { width: 240px; background: #F0F0F2; border-right: 1px solid #D2D2D8; padding: 40px 24px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+        .wlc-title    { font-size: 20px; font-weight: 700; color: #1E1E1E; margin-bottom: 2px; }
+        .wlc-subtitle { font-size: 12px; color: #888; margin-bottom: 20px; }
+        .wlc-btn { display: flex; align-items: center; gap: 8px; padding: 7px 14px; border: none; border-radius: 3px; cursor: pointer; font-size: 13px; font-family: var(--font); background: var(--accent); color: #fff; }
+        .wlc-btn:hover { background: var(--accent-hover); }
+        .wlc-btn.secondary { background: transparent; color: #1E1E1E; border: 1px solid #C0C0C8; }
+        .wlc-btn.secondary:hover { background: rgba(0,0,0,.06); }
+        .wlc-content { flex: 1; padding: 30px 36px; overflow-y: auto; }
+        .wlc-section { font-size: 13px; font-weight: 700; color: #1E1E1E; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid #D2D2D8; }
+        .wlc-list { list-style: none; margin-bottom: 28px; }
+        .wlc-list li { padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px; color: var(--accent); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .wlc-list li:hover { background: rgba(14,99,156,.1); }
+
+        /* HIERARCHY */
+        .hier-toolbar { display: flex; align-items: center; height: 26px; padding: 0 3px; gap: 1px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+        .hier-btn { width: 22px; height: 22px; background: transparent; border: 1px solid transparent; border-radius: 2px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text); }
+        .hier-btn:hover { background: rgba(255,255,255,.1); border-color: var(--border); }
+        .hier-btn svg { width: 13px; height: 13px; }
+        .hier-sep { width: 1px; height: 15px; background: var(--border); margin: 0 2px; }
+        .tree-view { flex: 1; overflow: auto; padding: 2px 0; }
+        .tree-node { display: flex; align-items: center; height: 22px; padding-left: 4px; cursor: default; user-select: none; }
+        .tree-node:hover { background: rgba(255,255,255,.05); }
+        .tree-node.selected { background: var(--accent); }
+        .tree-exp { width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 7px; flex-shrink: 0; cursor: pointer; }
+        .tree-exp.leaf { cursor: default; }
+        .tree-icon { width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 4px; }
+        .tree-icon svg { width: 14px; height: 14px; }
+        .tree-lbl { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .tree-lbl.root { font-weight: bold; color: #4EC9B0; }
+        .tree-indent { padding-left: 18px; }
+
+        /* TEXTURE VIEWER */
+        .tex-viewer { height: 136px; border-top: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
+        .tex-toolbar { display: flex; align-items: center; height: 24px; padding: 0 4px; gap: 4px; border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--panel-bg); }
+        .tex-toolbar select { background: var(--input-bg); color: var(--text); border: 1px solid var(--border); font-size: 11px; height: 18px; padding: 0 3px; outline: none; font-family: var(--font); }
+        .tex-canvas { flex: 1; background: #404040; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 11px; }
+
+        /* CONSOLE */
+        .console-inner { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+        .console-bar { display: flex; align-items: center; height: 26px; padding: 0 8px; gap: 6px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+        .console-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-right: 4px; }
+        .con-btn { padding: 1px 10px; background: transparent; border: 1px solid var(--border); border-radius: 2px; cursor: pointer; font-size: 11px; color: var(--text); font-family: var(--font); }
+        .con-btn:hover { background: rgba(255,255,255,.08); }
+        .console-out { flex: 1; overflow-y: auto; padding: 3px 8px; font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; line-height: 1.65; }
+        .log { white-space: pre-wrap; word-break: break-all; color: var(--text); }
+        .log.info  { color: #9CDCFE; }
+        .log.warn  { color: #DCDCAA; }
+        .log.error { color: #F48771; }
+
+        /* STATUS BAR */
+        .statusbar { background: var(--accent); color: #fff; height: 22px; display: flex; align-items: center; padding: 0 10px; font-size: 12px; gap: 16px; flex-shrink: 0; }
+    </style>
+</head>
+<body>
+
+<script src="https://greggman.github.io/webgl-lint/webgl-lint.js" crossorigin></script>
+
+<!-- MENU BAR -->
+<nav class="menubar" id="menubar">
+    <div class="mb-item" data-menu="file">File
+        <div class="mb-dropdown">
+            <div class="dd-item">Open Map</div>
+            <div class="dd-item">Save Map <span class="dd-key">Ctrl+M</span></div>
+            <div class="dd-item">Save Map As</div>
+        </div>
+    </div>
+    <div class="mb-item" data-menu="edit">Edit
+        <div class="mb-dropdown">
+            <div class="dd-item">Undo <span class="dd-key">Ctrl+Z</span></div>
+            <div class="dd-item">Redo <span class="dd-key">Ctrl+Y</span></div>
+        </div>
+    </div>
+    <div class="mb-item" data-menu="project">Project
+        <div class="mb-dropdown">
+            <div class="dd-item">Open</div>
+            <div class="dd-item">Save <span class="dd-key">Ctrl+S</span></div>
+            <div class="dd-item">Save As... <span class="dd-key">Ctrl+Shift+S</span></div>
+            <div class="dd-sep"></div>
+            <div class="dd-item">Edit</div>
+            <div class="dd-item">Close</div>
+        </div>
+    </div>
+    <div class="mb-item" data-menu="view">View
+        <div class="mb-dropdown">
+            <div class="dd-item" id="mi-properties">Properties</div>
+            <div class="dd-item" id="mi-hierarchy">Hierarchy</div>
+            <div class="dd-item" id="mi-console">Console <span class="dd-key">~</span></div>
+        </div>
+    </div>
+    <div class="mb-item" data-menu="tools">Tools
+        <div class="mb-dropdown">
+            <div class="dd-item">Tilesets</div>
+            <div class="dd-item">Entity Definitions</div>
+            <div class="dd-sep"></div>
+            <div class="dd-item">Theme...</div>
+        </div>
+    </div>
+    <div class="mb-item" data-menu="help">Help
+        <div class="mb-dropdown">
+            <div class="dd-item">About</div>
+        </div>
+    </div>
+</nav>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+    <button class="tb-btn" title="New Map">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M4 2h6l3 3v9H4V2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M10 2v3h3" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><line x1="6" y1="8" x2="11" y2="8" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><line x1="6" y1="11" x2="11" y2="11" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
+    </button>
+    <button class="tb-btn" title="Open Map">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M2 5h5l1 1.5h6V13H2V5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="tb-btn" title="Save (Ctrl+S)">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="5" y="2" width="6" height="4" stroke="currentColor" stroke-width="1.2"/><rect x="4" y="8" width="8" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2"/></svg>
+    </button>
+    <button class="tb-btn" title="Save As...">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="5" y="2" width="6" height="4" stroke="currentColor" stroke-width="1.2"/><rect x="4" y="8" width="8" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2"/><line x1="11" y1="5" x2="14" y2="2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
+    </button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" title="Undo (Ctrl+Z)">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M4 9.5a4.5 4.5 0 104.5-4.5H4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><polyline points="4,6.5 4,9.5 7,9.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="tb-btn" title="Redo (Ctrl+Y)">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M12 9.5a4.5 4.5 0 10-4.5-4.5H12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><polyline points="9,6.5 12,6.5 12,9.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" title="Tilesets">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="1.5" y="1.5" width="5.5" height="5.5" rx="0.5" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="1.5" width="5.5" height="5.5" rx="0.5" stroke="currentColor" stroke-width="1.2"/><rect x="1.5" y="9" width="5.5" height="5.5" rx="0.5" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="9" width="5.5" height="5.5" rx="0.5" stroke="currentColor" stroke-width="1.2"/></svg>
+    </button>
+    <button class="tb-btn" title="Entity Definitions">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M8 2a3 3 0 00-1.5 5.6V9h3V7.6A3 3 0 008 2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><line x1="6.5" y1="10.5" x2="9.5" y2="10.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="7" y1="12.5" x2="9" y2="12.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    </button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" title="Lighting">
+        <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.2"/><line x1="8" y1="1" x2="8" y2="3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="8" y1="13" x2="8" y2="15" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="1" y1="8" x2="3" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="13" y1="8" x2="15" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="3" y1="3" x2="4.4" y2="4.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="11.6" y1="11.6" x2="13" y2="13" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="13" y1="3" x2="11.6" y2="4.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="4.4" y1="11.6" x2="3" y2="13" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    </button>
+    <button class="tb-btn" title="Toggle Labels">
+        <svg viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="4" width="12" height="1.5" rx="0.75"/><rect x="2" y="7" width="8" height="1.5" rx="0.75"/><rect x="2" y="10" width="10" height="1.5" rx="0.75"/></svg>
+    </button>
+</div>
+
+<!-- DOCK WORKSPACE -->
+<div class="dock-workspace" id="dock-workspace">
+    <div class="dock-main" id="dock-main">
+
+        <!-- LEFT SLOT -->
+        <div class="dock-slot dock-slot-left" id="slot-left">
+            <div class="slot-resizer ew" id="resizer-left"></div>
+        </div>
+
+        <!-- CENTER SLOT (viewport — non-dockable) -->
+        <div class="dock-slot dock-slot-center" id="slot-center">
+            <div class="tabs-bar" id="tabs-bar">
+                <div class="tab active" data-tab="welcome">Welcome</div>
+                <div class="tab" data-tab="gl">default <span class="tab-x">×</span></div>
+            </div>
+            <div class="viewport-wrap">
+                <div class="view-pane" id="view-welcome">
+                    <div class="wlc-sidebar">
+                        <div class="wlc-title">csharp-editor</div>
+                        <div class="wlc-subtitle">Map &amp; Scene Editor</div>
+                        <button class="wlc-btn">+ &nbsp;New Project</button>
+                        <button class="wlc-btn secondary">&#128193;&nbsp; Open Project</button>
+                    </div>
+                    <div class="wlc-content">
+                        <div class="wlc-section">Recent Projects</div>
+                        <ul class="wlc-list">
+                            <li>C:\Users\efedorenko\Documents\projects\testG\res\maps\default.json</li>
+                            <li>C:\Users\efedorenko\Documents\projects\testG\project.json</li>
+                            <li>C:\Users\efedorenko\Documents\projects\testG\res\maps\defaultMap.json</li>
+                            <li>C:\...\csharp-editor\bin\x64\Debug\res\maps\SpelunkyProject.json</li>
+                            <li>C:\...\csharp-editor\bin\x64\Debug\res\maps\spelunky4.json</li>
+                            <li>C:\...\csharp-editor\bin\x64\Debug\res\maps\SpelunkyProject2.json</li>
+                            <li>C:\...\csharp-editor\bin\x64\Debug\res\maps\new.json</li>
+                        </ul>
+                        <div class="wlc-section">Recent Maps</div>
+                        <ul class="wlc-list">
+                            <li>C:\Users\efedorenko\Documents\projects\testG\res\maps\default.json</li>
+                            <li>C:\...\csharp-editor\bin\x64\Debug\res\maps\spelunky4.json</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="view-pane hidden" id="view-gl">
+                    <div class="tool-overlay">
+                        <button class="tool-btn active" id="tool-brush" title="Brush / Draw Tiles" data-tool="0">
+                            <svg viewBox="0 0 20 20" fill="none"><path d="M13 2.5l4 4L7 16.5H3.5V13L13 2.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M3.5 16.5c0 1.5-1.5 2-2 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        </button>
+                        <button class="tool-btn" id="tool-entity" title="Place Entities" data-tool="2">
+                            <svg viewBox="0 0 20 20" fill="none"><path d="M10 2a5 5 0 00-3.5 8.5L7 11v3h6v-3l.5-.5A5 5 0 0010 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><line x1="8" y1="15" x2="12" y2="15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="9" y1="17" x2="11" y2="17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        </button>
+                        <button class="tool-btn" id="tool-select" title="Select / Cursor" data-tool="3">
+                            <svg viewBox="0 0 20 20" fill="none"><path d="M4 2.5L15.5 10 10 11.5 7.5 17.5 4 2.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+                        </button>
+                    </div>
+                    <div id="canvas" style="position:absolute;inset:0;overflow:hidden;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT SLOT -->
+        <div class="dock-slot dock-slot-right" id="slot-right">
+            <div class="slot-resizer ew" id="resizer-right"></div>
+        </div>
+
+    </div><!-- /.dock-main -->
+
+    <!-- BOTTOM SLOT -->
+    <div class="dock-slot dock-slot-bottom dock-slot-empty" id="slot-bottom">
+        <div class="slot-resizer ns" id="resizer-bottom"></div>
+    </div>
+</div>
+
+<!-- STATUS BAR -->
+<div class="statusbar">
+    <span id="status-project">Project: default</span>
+</div>
+
+<!-- PANEL CONTENT TEMPLATES (hidden) -->
+<div id="tpl-properties" style="display:none">
+    <div class="dp-content" data-panel="properties" data-title="Properties">
+        <div style="overflow:auto; flex:1;">
+            <table class="prop-grid" id="prop-grid-table"></table>
+        </div>
+    </div>
+</div>
+
+<div id="tpl-hierarchy" style="display:none">
+    <div class="dp-content" data-panel="hierarchy" data-title="Hierarchy">
+        <div class="hier-toolbar">
+            <button class="hier-btn" id="btn-add-layer" title="Add Layer">
+                <svg viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="2" x2="6.5" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="2" y1="6.5" x2="11" y2="6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </button>
+            <button class="hier-btn" title="Remove Layer">
+                <svg viewBox="0 0 13 13" fill="none"><line x1="2" y1="6.5" x2="11" y2="6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </button>
+            <button class="hier-btn" title="Edit Layer">
+                <svg viewBox="0 0 13 13" fill="none"><path d="M8 2.5l2.5 2.5-6 6H2V8.5l6-6z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+            </button>
+            <div class="hier-sep"></div>
+            <button class="hier-btn" title="Move Layer Up">
+                <svg viewBox="0 0 13 13" fill="none"><polyline points="2.5,8.5 6.5,4 10.5,8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button class="hier-btn" title="Move Layer Down">
+                <svg viewBox="0 0 13 13" fill="none"><polyline points="2.5,4.5 6.5,9 10.5,4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+        </div>
+        <div class="tree-view" id="hierarchy-tree">
+            <div class="tree-node selected" data-id="state">
+                <span class="tree-exp">▶</span>
+                <span class="tree-icon"><svg viewBox="0 0 14 14" fill="none"><rect x="1.5" y="3" width="11" height="8" rx="1" stroke="#4EC9B0" stroke-width="1.2"/><line x1="4.5" y1="3" x2="4.5" y2="11" stroke="#4EC9B0" stroke-width="1"/></svg></span>
+                <span class="tree-lbl root">State</span>
+            </div>
+        </div>
+        <div class="tex-viewer">
+            <div class="tex-toolbar">
+                <span style="font-size:11px; color:var(--muted);">Zoom:</span>
+                <select><option>100%</option><option>50%</option><option>75%</option><option>150%</option><option>200%</option><option>300%</option><option>400%</option></select>
+                <button class="hier-btn" title="Toggle Checker Background" style="margin-left:2px;">
+                    <svg viewBox="0 0 13 13" fill="currentColor"><rect x="0" y="0" width="6" height="6" opacity=".5"/><rect x="7" y="7" width="6" height="6" opacity=".5"/><rect x="7" y="0" width="6" height="6" opacity=".25"/><rect x="0" y="7" width="6" height="6" opacity=".25"/></svg>
+                </button>
+            </div>
+            <div class="tex-canvas">No tileset selected</div>
+        </div>
+    </div>
+</div>
+
+<div id="tpl-console" style="display:none">
+    <div class="dp-content" data-panel="console" data-title="Console">
+        <div class="console-inner">
+            <div class="console-bar">
+                <span class="console-label">Console</span>
+                <button class="con-btn" id="btn-copy">Copy</button>
+                <button class="con-btn" id="btn-clear">Clear</button>
+            </div>
+            <div class="console-out" id="console-out">
+                <div class="log info">INFO - APP  - [LabelFont] Texture data: 512x512</div>
+                <div class="log info">INFO - APP  - [LabelFont] Texture uploaded, id=2</div>
+                <div class="log info">INFO - APP  - [LabelFont] text program created</div>
+                <div class="log info">INFO - APP  - [LabelFont] BitmapFont ready, regions=96</div>
+                <div class="log info">INFO - APP  - Switched to state 'EditorState'</div>
+                <div class="log info">INFO - SYSTEM - Editor init successfully.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Drop zone overlay -->
+<div class="dz-overlay" id="dz-overlay"></div>
+<div class="drag-ghost" id="drag-ghost" style="display:none"></div>
+
+<script src="editor.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    /* ══════════════════════════════════════════════════════
+       DOCK MANAGER
+    ══════════════════════════════════════════════════════ */
+
+    const panels = {};  // id → { id, title, contentEl, location, defaultSlot }
+
+    const slots = {
+        left:   document.getElementById('slot-left'),
+        right:  document.getElementById('slot-right'),
+        bottom: document.getElementById('slot-bottom'),
+    };
+
+    const PANEL_DEFS = [
+        { id: 'properties', tpl: 'tpl-properties', defaultSlot: 'left'   },
+        { id: 'hierarchy',  tpl: 'tpl-hierarchy',  defaultSlot: 'right'  },
+        { id: 'console',    tpl: 'tpl-console',    defaultSlot: 'bottom' },
+    ];
+
+    PANEL_DEFS.forEach(def => {
+        const tpl = document.getElementById(def.tpl);
+        const content = tpl.querySelector('.dp-content');
+        tpl.removeChild(content);
+        panels[def.id] = {
+            id: def.id,
+            title: content.dataset.title,
+            contentEl: content,
+            location: null,
+            defaultSlot: def.defaultSlot,
+        };
+        dockToSlot(def.id, def.defaultSlot);
+    });
+
+    /* ── Slot helpers ───────────────────────────────────── */
+
+    function getOrCreateDockPanel(slotId) {
+        const slot = slots[slotId];
+        let dp = slot.querySelector(':scope > .dock-panel');
+        if (!dp) {
+            dp = document.createElement('div');
+            dp.className = 'dock-panel';
+            dp.innerHTML = '<div class="dp-tabbar"></div><div class="dp-content-wrap"></div>';
+            const resizer = slot.querySelector('.slot-resizer');
+            slot.insertBefore(dp, resizer || null);
+        }
+        return dp;
+    }
+
+    function dockToSlot(panelId, slotId) {
+        const panel = panels[panelId];
+        removePanelFromCurrentLocation(panelId);
+        panel.location = slotId;
+        const slot = slots[slotId];
+        slot.classList.remove('dock-slot-empty');
+
+        const dp     = getOrCreateDockPanel(slotId);
+        const tabbar = dp.querySelector('.dp-tabbar');
+        const wrap   = dp.querySelector('.dp-content-wrap');
+
+        panel.contentEl.classList.remove('active');
+        wrap.appendChild(panel.contentEl);
+
+        const tab = document.createElement('div');
+        tab.className = 'dp-tab';
+        tab.dataset.panel = panelId;
+        tab.innerHTML = '<span class="dp-tab-title">' + panel.title + '</span>' +
+                        '<span class="dp-tab-close" title="Close">\xd7</span>';
+        tabbar.appendChild(tab);
+
+        activatePanelInSlot(panelId, slotId);
+
+        tab.querySelector('.dp-tab-title').addEventListener('mousedown', onTabDragStart);
+        tab.querySelector('.dp-tab-close').addEventListener('click', function() { hidePanel(panelId); });
+        tab.addEventListener('mousedown', function(e) {
+            if (e.target.classList.contains('dp-tab-close') ||
+                e.target.classList.contains('dp-tab-title')) return;
+            activatePanelInSlot(panelId, slotId);
+        });
+        tab.querySelector('.dp-tab-title').addEventListener('click', function() {
+            if (!isDragging) activatePanelInSlot(panelId, slotId);
+        });
+    }
+
+    function activatePanelInSlot(panelId, slotId) {
+        const slot = slots[slotId];
+        const dp   = slot.querySelector(':scope > .dock-panel');
+        if (!dp) return;
+        dp.querySelectorAll('.dp-tab').forEach(function(t) { t.classList.remove('active'); });
+        dp.querySelectorAll('.dp-content').forEach(function(c) { c.classList.remove('active'); });
+        var tab     = dp.querySelector('.dp-tab[data-panel="' + panelId + '"]');
+        var content = dp.querySelector('.dp-content[data-panel="' + panelId + '"]');
+        if (tab)     tab.classList.add('active');
+        if (content) content.classList.add('active');
+    }
+
+    function removePanelFromCurrentLocation(panelId) {
+        const panel = panels[panelId];
+        if (!panel.location) return;
+
+        if (panel.location === 'float') {
+            var fw = document.querySelector('.float-panel[data-panel="' + panelId + '"]');
+            if (fw) fw.remove();
+            panel.location = null;
+            return;
+        }
+
+        var slotId = panel.location;
+        var slot   = slots[slotId];
+        var dp     = slot ? slot.querySelector(':scope > .dock-panel') : null;
+        if (!dp) { panel.location = null; return; }
+
+        var tab = dp.querySelector('.dp-tab[data-panel="' + panelId + '"]');
+        if (tab) tab.remove();
+        var wrap = dp.querySelector('.dp-content-wrap');
+        if (panel.contentEl.parentElement === wrap) wrap.removeChild(panel.contentEl);
+        panel.contentEl.classList.remove('active');
+
+        var remaining = dp.querySelectorAll('.dp-content');
+        if (remaining.length === 0) {
+            dp.remove();
+            slot.classList.add('dock-slot-empty');
+        } else {
+            activatePanelInSlot(remaining[0].dataset.panel, slotId);
+        }
+        panel.location = null;
+    }
+
+    function hidePanel(panelId) {
+        removePanelFromCurrentLocation(panelId);
+        panels[panelId].location = 'hidden';
+    }
+
+    /* ── Floating panels ────────────────────────────────── */
+
+    var _zTop = 1000;
+
+    function floatPanel(panelId, x, y, w, h) {
+        var panel = panels[panelId];
+        removePanelFromCurrentLocation(panelId);
+        panel.location = 'float';
+        w = w || 300; h = h || 400;
+        x = Math.max(0, Math.min(x, window.innerWidth  - w));
+        y = Math.max(0, Math.min(y, window.innerHeight - h));
+
+        var fw = document.createElement('div');
+        fw.className = 'float-panel';
+        fw.dataset.panel = panelId;
+        fw.style.cssText = 'left:' + x + 'px;top:' + y + 'px;width:' + w + 'px;height:' + h + 'px;';
+        fw.innerHTML =
+            '<div class="float-titlebar">' +
+                '<span class="float-title">' + panel.title + '</span>' +
+                '<span class="float-dock-btn" title="Dock">\u229f</span>' +
+                '<span class="float-close" title="Close">\xd7</span>' +
+            '</div>' +
+            '<div class="float-body"></div>' +
+            '<div class="float-resize"></div>';
+
+        fw.querySelector('.float-body').appendChild(panel.contentEl);
+        panel.contentEl.classList.add('active');
+        document.body.appendChild(fw);
+
+        /* drag float */
+        fw.querySelector('.float-titlebar').addEventListener('mousedown', function(e) {
+            if (e.target.classList.contains('float-close') ||
+                e.target.classList.contains('float-dock-btn')) return;
+            e.preventDefault();
+            var ox = e.clientX - fw.offsetLeft, oy = e.clientY - fw.offsetTop;
+            function mm(e) { fw.style.left = (e.clientX - ox) + 'px'; fw.style.top = (e.clientY - oy) + 'px'; }
+            function mu() { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); }
+            document.addEventListener('mousemove', mm);
+            document.addEventListener('mouseup', mu);
+        });
+
+        /* resize float */
+        fw.querySelector('.float-resize').addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            var sx = e.clientX, sy = e.clientY, sw = fw.offsetWidth, sh = fw.offsetHeight;
+            function mm(e) { fw.style.width = Math.max(160, sw + e.clientX - sx) + 'px'; fw.style.height = Math.max(100, sh + e.clientY - sy) + 'px'; }
+            function mu() { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); }
+            document.addEventListener('mousemove', mm);
+            document.addEventListener('mouseup', mu);
+        });
+
+        /* dock button */
+        fw.querySelector('.float-dock-btn').addEventListener('click', function() {
+            dockToSlot(panelId, panel.defaultSlot);
+        });
+
+        /* close */
+        fw.querySelector('.float-close').addEventListener('click', function() { hidePanel(panelId); });
+
+        /* z-order */
+        fw.addEventListener('mousedown', function() { fw.style.zIndex = ++_zTop; });
+    }
+
+    /* ── Drag-to-dock ───────────────────────────────────── */
+
+    var isDragging   = false;
+    var dragPanelId  = null;
+    var dragGhost    = document.getElementById('drag-ghost');
+    var dzOverlay    = document.getElementById('dz-overlay');
+    var hotZone      = null;
+    var dragStartX, dragStartY, dragMoved;
+    var DRAG_THRESHOLD = 6;
+    var dropZones    = {};
+
+    function buildDropZones() {
+        dzOverlay.innerHTML = '';
+        dropZones = {};
+        ['left','right','bottom'].forEach(function(id) {
+            var el = document.createElement('div');
+            el.className = 'dz-zone';
+            el.dataset.zone = id;
+            el.innerHTML = '<span class="dz-zone-label">' + id.toUpperCase() + '</span>';
+            dzOverlay.appendChild(el);
+            dropZones[id] = { el: el, slotId: id };
+        });
+    }
+
+    function positionDropZones() {
+        var ws = document.getElementById('dock-workspace').getBoundingClientRect();
+        var W = ws.width, H = ws.height, ox = ws.left, oy = ws.top, E = 60;
+        var pos = {
+            left:   { left: ox,         top: oy,         width: E, height: H },
+            right:  { left: ox + W - E, top: oy,         width: E, height: H },
+            bottom: { left: ox,         top: oy + H - E, width: W, height: E },
+        };
+        Object.keys(dropZones).forEach(function(id) {
+            var p = pos[id], z = dropZones[id].el;
+            z.style.cssText = 'left:' + p.left + 'px;top:' + p.top + 'px;width:' + p.width + 'px;height:' + p.height + 'px;';
+        });
+    }
+
+    function onTabDragStart(e) {
+        e.preventDefault();
+        var tab = e.target.closest('.dp-tab');
+        if (!tab) return;
+        dragPanelId = tab.dataset.panel;
+        dragStartX  = e.clientX;
+        dragStartY  = e.clientY;
+        dragMoved   = false;
+        document.addEventListener('mousemove', onDragMove);
+        document.addEventListener('mouseup',   onDragEnd);
+    }
+
+    function onDragMove(e) {
+        if (!dragPanelId) return;
+        if (!dragMoved) {
+            if (Math.abs(e.clientX - dragStartX) < DRAG_THRESHOLD &&
+                Math.abs(e.clientY - dragStartY) < DRAG_THRESHOLD) return;
+            dragMoved = true; isDragging = true;
+            dragGhost.textContent = panels[dragPanelId].title;
+            dragGhost.style.display = 'block';
+            buildDropZones();
+            positionDropZones();
+            dzOverlay.classList.add('active');
+        }
+        dragGhost.style.left = (e.clientX + 12) + 'px';
+        dragGhost.style.top  = (e.clientY +  6) + 'px';
+        hotZone = null;
+        Object.keys(dropZones).forEach(function(id) {
+            var r   = dropZones[id].el.getBoundingClientRect();
+            var hit = e.clientX >= r.left && e.clientX <= r.right &&
+                      e.clientY >= r.top  && e.clientY <= r.bottom;
+            dropZones[id].el.classList.toggle('hot', hit);
+            if (hit) hotZone = id;
+        });
+    }
+
+    function onDragEnd(e) {
+        document.removeEventListener('mousemove', onDragMove);
+        document.removeEventListener('mouseup',   onDragEnd);
+        dragGhost.style.display = 'none';
+        dzOverlay.classList.remove('active');
+        dzOverlay.innerHTML = '';
+        if (dragMoved && dragPanelId) {
+            if (hotZone) {
+                dockToSlot(dragPanelId, hotZone);
+            } else {
+                floatPanel(dragPanelId, e.clientX - 20, e.clientY - 13);
+            }
+        }
+        dragPanelId = null; isDragging = false; dragMoved = false; hotZone = null;
+    }
+
+    /* ── Slot resizers ──────────────────────────────────── */
+
+    function makeSlotResizer(handleId, getEl, axis, inverted, min, max) {
+        var handle = document.getElementById(handleId);
+        handle.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            var startPx = axis === 'x' ? e.clientX : e.clientY;
+            var startSz = axis === 'x' ? getEl().offsetWidth : getEl().offsetHeight;
+            handle.classList.add('dragging');
+            function mm(e) {
+                var cur   = axis === 'x' ? e.clientX : e.clientY;
+                var delta = (cur - startPx) * (inverted ? -1 : 1);
+                var newSz = Math.max(min, Math.min(max, startSz + delta));
+                if (axis === 'x') getEl().style.width  = newSz + 'px';
+                else               getEl().style.height = newSz + 'px';
+                resizeGLCanvas();
+            }
+            function mu() {
+                handle.classList.remove('dragging');
+                document.removeEventListener('mousemove', mm);
+                document.removeEventListener('mouseup', mu);
+            }
+            document.addEventListener('mousemove', mm);
+            document.addEventListener('mouseup', mu);
+        });
+    }
+
+    makeSlotResizer('resizer-left',   function() { return slots.left;   }, 'x', false, 120, 500);
+    makeSlotResizer('resizer-right',  function() { return slots.right;  }, 'x', true,  120, 500);
+    makeSlotResizer('resizer-bottom', function() { return slots.bottom; }, 'y', true,  60,  500);
+
+    /* ── View menu toggles ──────────────────────────────── */
+
+    document.getElementById('mi-properties').addEventListener('click', function() { togglePanel('properties'); });
+    document.getElementById('mi-hierarchy').addEventListener('click',  function() { togglePanel('hierarchy');  });
+    document.getElementById('mi-console').addEventListener('click',    function() { togglePanel('console');    });
+
+    function togglePanel(panelId) {
+        var loc = panels[panelId].location;
+        if (loc === 'hidden' || loc === null) {
+            dockToSlot(panelId, panels[panelId].defaultSlot);
+        } else {
+            hidePanel(panelId);
+        }
+    }
+
+    /* ══════════════════════════════════════════════════════
+       CONSOLE CAPTURE
+    ══════════════════════════════════════════════════════ */
+    var _origLog  = console.log.bind(console);
+    var _origWarn = console.warn.bind(console);
+    var _origErr  = console.error.bind(console);
+
+    function appendToConsole(text, cls) {
+        var out = document.getElementById('console-out');
+        if (!out) return;
+        var line = document.createElement('div');
+        line.className = 'log ' + (cls || '');
+        line.textContent = text;
+        out.appendChild(line);
+        out.scrollTop = out.scrollHeight;
+    }
+    console.log   = function() { _origLog.apply(console, arguments);  appendToConsole(Array.prototype.join.call(arguments,' '),'info');  };
+    console.warn  = function() { _origWarn.apply(console, arguments); appendToConsole(Array.prototype.join.call(arguments,' '),'warn');  };
+    console.error = function() { _origErr.apply(console, arguments);  appendToConsole(Array.prototype.join.call(arguments,' '),'error'); };
+
+    /* ══════════════════════════════════════════════════════
+       MENU BAR
+    ══════════════════════════════════════════════════════ */
+    var openMenu = null;
+    document.querySelectorAll('.mb-item').forEach(function(item) {
+        item.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            if (item === openMenu) { closeMenus(); return; }
+            closeMenus();
+            item.classList.add('open');
+            openMenu = item;
+        });
+        item.addEventListener('mouseenter', function() {
+            if (openMenu && openMenu !== item) {
+                openMenu.classList.remove('open');
+                item.classList.add('open');
+                openMenu = item;
+            }
+        });
+    });
+    document.addEventListener('mousedown', function(e) {
+        if (!e.target.closest('.mb-item')) closeMenus();
+    });
+    function closeMenus() {
+        if (openMenu) { openMenu.classList.remove('open'); openMenu = null; }
+    }
+
+    /* ══════════════════════════════════════════════════════
+       CENTER VIEWPORT TABS
+    ══════════════════════════════════════════════════════ */
+    var tabsBar = document.getElementById('tabs-bar');
+    tabsBar.addEventListener('click', function(e) {
+        var closeBtn = e.target.closest('.tab-x');
+        if (closeBtn) {
+            var tab = closeBtn.closest('.tab');
+            var wasActive = tab.classList.contains('active');
+            tab.remove();
+            if (wasActive) {
+                var first = tabsBar.querySelector('.tab');
+                if (first) activateTab(first.dataset.tab);
+            }
+            return;
+        }
+        var tab = e.target.closest('.tab');
+        if (tab) activateTab(tab.dataset.tab);
+    });
+
+    function activateTab(id) {
+        tabsBar.querySelectorAll('.tab').forEach(function(t) {
+            t.classList.toggle('active', t.dataset.tab === id);
+        });
+        document.querySelectorAll('.view-pane').forEach(function(p) {
+            p.classList.toggle('hidden', p.id !== 'view-' + id);
+        });
+        if (id === 'gl') requestAnimationFrame(resizeGLCanvas);
+    }
+
+    /* ══════════════════════════════════════════════════════
+       TOOL BUTTONS
+    ══════════════════════════════════════════════════════ */
+    document.querySelectorAll('.tool-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.tool-btn').forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            var toolIndex = parseInt(btn.dataset.tool || '0', 10);
+            if (typeof Editor !== 'undefined') Editor.setToolType(toolIndex);
+        });
+    });
+
+    /* ══════════════════════════════════════════════════════
+       CONSOLE CLEAR / COPY
+    ══════════════════════════════════════════════════════ */
+    document.getElementById('btn-clear').addEventListener('click', function() {
+        document.getElementById('console-out').innerHTML = '';
+    });
+    document.getElementById('btn-copy').addEventListener('click', function() {
+        var text = document.getElementById('console-out').innerText;
+        navigator.clipboard.writeText(text).catch(function(){});
+    });
+
+    /* ══════════════════════════════════════════════════════
+       KEYBOARD SHORTCUTS
+    ══════════════════════════════════════════════════════ */
+    document.addEventListener('keydown', function(e) {
+        if (e.key === '`' || e.key === 'F1') {
+            e.preventDefault();
+            togglePanel('console');
+        }
+    });
+
+    /* ══════════════════════════════════════════════════════
+       GL CANVAS RESIZE
+    ══════════════════════════════════════════════════════ */
+    function resizeGLCanvas() {
+        var viewWrap = document.querySelector('.viewport-wrap');
+        if (!viewWrap) return;
+        var w = viewWrap.clientWidth, h = viewWrap.clientHeight;
+        if (w <= 0 || h <= 0) return; // Skip degenerate resize (pane hidden / zero-size)
+        if (typeof Editor !== 'undefined') Editor.setWindowSize(w, h);
+        // Note: Editor.setWindowSize already updates canvas.width/height via Window.set_size()
+    }
+    window.addEventListener('resize', resizeGLCanvas);
+
+    /* ══════════════════════════════════════════════════════
+       EDITOR INIT
+    ══════════════════════════════════════════════════════ */
+    window.addEventListener('DOMContentLoaded', function() {
+        if (typeof Editor === 'undefined') {
+            console.warn('editor.js not loaded — GL viewport unavailable.');
+            return;
+        }
+        var glPane = document.getElementById('view-gl');
+        glPane.classList.remove('hidden');
+        requestAnimationFrame(function() {
+            var viewWrap = document.querySelector('.viewport-wrap');
+            var initW = Math.max(400, viewWrap ? viewWrap.clientWidth  : 800);
+            var initH = Math.max(300, viewWrap ? viewWrap.clientHeight : 600);
+            var ok = Editor.init(initW, initH);
+            glPane.classList.add('hidden');
+            if (ok) {
+                console.log('INFO - SYSTEM - Editor init successfully.');
+                Editor.setEntitySelectionChangedCallback(function() { refreshPropertyGrid(); });
+            } else {
+                console.error('Editor.init() failed.');
+            }
+        });
+    });
+
+    /* ══════════════════════════════════════════════════════
+       PROPERTY GRID
+    ══════════════════════════════════════════════════════ */
+    function refreshPropertyGrid() {
+        if (typeof Editor === 'undefined') return;
+        var count = Editor.getEntitySelectionCount();
+        var table = document.getElementById('prop-grid-table');
+        if (!table) return;
+        table.innerHTML = '';
+        function addCat(label) {
+            var tr = document.createElement('tr');
+            tr.className = 'cat-row';
+            tr.innerHTML = '<td colspan="2">' + label + '</td>';
+            table.appendChild(tr);
+        }
+        function addProp(name, value) {
+            var tr = document.createElement('tr');
+            tr.innerHTML = '<td class="prop-name">' + name + '</td><td class="prop-val">' + (value != null ? value : '') + '</td>';
+            table.appendChild(tr);
+        }
+        if (count === 0) {
+            var mp = Editor.getMapProps();
+            if (mp) {
+                addCat('Map');
+                addProp('Width',  mp.width);
+                addProp('Height', mp.height);
+                addProp('Tile W', mp.tileSizeX);
+                addProp('Tile H', mp.tileSizeY);
+                if (mp.projectName) addProp('Project', mp.projectName);
+            }
+        } else {
+            addCat('Entity');
+            for (var i = 0; i < count; i++) {
+                var info = Editor.getEntitySelectionInfo(i);
+                if (!info) continue;
+                addProp('UID',  info.uid);
+                addProp('Name', info.name);
+                addProp('X',    info.x);
+                addProp('Y',    info.y);
+                addProp('W',    info.width);
+                addProp('H',    info.height);
+            }
+        }
+    }
+
+    /* ══════════════════════════════════════════════════════
+       HIERARCHY TREE
+    ══════════════════════════════════════════════════════ */
+    var tree = document.getElementById('hierarchy-tree');
+    tree.addEventListener('click', function(e) {
+        var node = e.target.closest('.tree-node');
+        if (!node) return;
+        tree.querySelectorAll('.tree-node.selected').forEach(function(n) { n.classList.remove('selected'); });
+        node.classList.add('selected');
+        var exp = node.querySelector('.tree-exp');
+        if (exp && exp.textContent.trim() !== '') {
+            exp.textContent = exp.textContent.trim() === '\u25b6' ? '\u25bc' : '\u25b6';
+        }
+        var layerName = node.dataset.layer;
+        if (layerName && typeof Editor !== 'undefined') Editor.setActiveLayer(layerName);
+    });
+
+    /* ══════════════════════════════════════════════════════
+       LAYER HIERARCHY SYNC
+    ══════════════════════════════════════════════════════ */
+    setInterval(function() {
+        if (typeof Editor === 'undefined') return;
+        var count = Editor.getLayerCount();
+        if (count === 0) return;
+        if (tree.querySelectorAll('[data-layer]').length === count) return;
+        tree.querySelectorAll('[data-layer]').forEach(function(n) { n.remove(); });
+        for (var i = 0; i < count; i++) {
+            var info = Editor.getLayerInfoAt(i);
+            if (!info) continue;
+            var typeIcon = info.type === 0 ? '\u25a6' : info.type === 1 ? '\u229e' : '\ud83d\udcc1';
+            var node = document.createElement('div');
+            node.className = 'tree-node tree-indent';
+            node.dataset.layer = info.name;
+            node.innerHTML = '<span class="tree-exp leaf"></span>' +
+                '<span class="tree-icon" style="font-size:11px;">' + typeIcon + '</span>' +
+                '<span class="tree-lbl">' + info.name + '</span>';
+            tree.appendChild(node);
+        }
+    }, 1000);
+
+    setTimeout(refreshPropertyGrid, 1500);
+
+})();
+</script>
+</body>
+</html>
