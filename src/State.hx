@@ -24,7 +24,7 @@ class State {
     private var __app:App;
     private static var __nextId:Int = 0;
 
-    private var cameraDebug:Bool = false;
+    private var cameraDebug:Bool = true;
     
     public function new(name:String, app:App) {
         this.name = name;
@@ -75,12 +75,12 @@ class State {
         }
 
         // Debug control: Toggle camera debug mode with 'C' key
-        if (app.input.keyboard.released(Keycode.C)) {
+        if (app.input.keyboard.released(Scancode.C)) {
             cameraDebug = !cameraDebug;
             app.log.debug(LogCategory.SYSTEM, "Camera debug mode: " + (cameraDebug ? "ON" : "OFF"));
         }
 
-        if (app.input.keyboard.released(Keycode.R)) {
+        if (app.input.keyboard.released(Scancode.R)) {
             resetCamera();
             app.log.debug(LogCategory.SYSTEM, "Camera reset to default position");
         }
@@ -89,30 +89,30 @@ class State {
         if (cameraDebug) {
             
             var moveSpeed:Float = 1000.0 * deltaTime;
-            if (app.input.keyboard.check(Keycode.A)) {
+            if (app.input.keyboard.check(Scancode.A)) {
                 camera.x -= moveSpeed;
                 //app.log.debug(LogCategory.SYSTEM, "DeltaTime: " + deltaTime);
             }
-            if (app.input.keyboard.check(Keycode.D)) {
+            if (app.input.keyboard.check(Scancode.D)) {
                 camera.x += moveSpeed;
             }
-            if (app.input.keyboard.check(Keycode.S)) {
+            if (app.input.keyboard.check(Scancode.S)) {
                 camera.y += moveSpeed;
             }
-            if (app.input.keyboard.check(Keycode.W)) {
+            if (app.input.keyboard.check(Scancode.W)) {
                 camera.y -= moveSpeed;
             }
         }
 
-        // If camera debug is active, allow for zooming with W/S keys
+        // If camera debug is active, allow for zooming with E/Q keys
         if (cameraDebug) {
             var zoomSpeed:Float = 2.0 * deltaTime;
-            if (app.input.keyboard.check(Keycode.E)) {
+            if (app.input.keyboard.check(Scancode.E)) {
                 // Zoom in (increase zoom factor)
                 camera.zoom += zoomSpeed;
                 if (camera.zoom > 10.0) camera.zoom = 10.0; // Limit max zoom
             }
-            if (app.input.keyboard.check(Keycode.Q)) {
+            if (app.input.keyboard.check(Scancode.Q)) {
                 // Zoom out (decrease zoom factor)
                 camera.zoom -= zoomSpeed;
                 if (camera.zoom < 0.1) camera.zoom = 0.1; // Limit min zoom
