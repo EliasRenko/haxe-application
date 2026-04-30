@@ -1,6 +1,6 @@
 package display;
 
-import display.BitmapFont;
+import display.IFontSource;
 
 /** Horizontal alignment of a Text label relative to its (x, y) origin. */
 enum TextAlign {
@@ -19,7 +19,7 @@ class Text {
     
     public var text(get, set):String;
 
-    public var font:BitmapFont;
+    public var font:IFontSource;
     private var textString:String = "";
     private var charTiles:Array<Int> = [];  // Track tile IDs for each character
     
@@ -41,7 +41,7 @@ class Text {
      * @param font The BitmapFont to use for rendering
      * @param text Initial text string (optional)
      */
-    public function new(font:BitmapFont, text:String = "", x:Float = 0, y:Float = 0) {
+    public function new(font:IFontSource, text:String = "", x:Float = 0, y:Float = 0) {
         this._x = x;
         this._y = y;
 
@@ -226,7 +226,7 @@ class Text {
                     tile.visible = value;
                 }
             }
-            font.needsBufferUpdate = true;
+            font.markDirty();
         }
 
         return __visible;

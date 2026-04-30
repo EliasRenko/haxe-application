@@ -1,6 +1,5 @@
 package states;
 
-import display.BitmapFont;
 import display.ManagedTileBatch;
 import entity.DisplayEntity;
 import gui.Button;
@@ -47,30 +46,21 @@ class GUITestState extends State {
 
         var renderer = app.renderer;
 
-        renderer.createProgramInfo("textured",
-            app.resources.getText("shaders/textured.vert"),
-            app.resources.getText("shaders/textured.frag"));
+        renderer.createProgramInfo("ui", null,
+            app.resources.getText("shaders/ui.frag"));
 
-        renderer.createProgramInfo("text",
-            app.resources.getText("shaders/mono.vert"),
-            app.resources.getText("shaders/text.frag"));
-
-        var guiTexture = renderer.uploadTexture(
+        var spriteTexture = renderer.uploadTexture(
             app.resources.getTexture("textures/gui_debug.tga"));
 
-        var uiTileBatch = new ManagedTileBatch(
-            renderer, renderer.getProgramInfo("textured"), guiTexture);
-
-        var font = new BitmapFont(renderer,
-            renderer.uploadTexture(app.resources.getTexture("textures/gohu14.tga")),
-            FontLoader.load(app.resources.getText("fonts/gohu14.json")));
-
-        addEntity(new DisplayEntity(uiTileBatch, "gui_tiles"));
-        addEntity(new DisplayEntity(font,        "gui_font"));
+        var fontTexture = renderer.uploadTexture(
+            app.resources.getTexture("textures/gohu14.tga"));
+        var fontData = FontLoader.load(
+            app.resources.getText("fonts/gohu14.json"));
 
         var ws = app.window.size;
         canvas = new Canvas(this, ws.x, ws.y);
-        canvas.initializeGraphics(uiTileBatch, font);
+        canvas.initializeGraphics(renderer, spriteTexture, fontTexture, fontData);
+        addEntity(new DisplayEntity(canvas.tilemap, "gui_tiles"));
         canvas.importSets(app.resources.getText("textures/gui.json"));
         addEntity(canvas);
 

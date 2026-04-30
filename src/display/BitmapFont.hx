@@ -2,6 +2,7 @@ package display;
 
 import ProgramInfo;
 import Texture;
+import display.IFontSource;
 import loaders.FontData;
 import display.ManagedTileBatch;
 
@@ -16,10 +17,12 @@ import display.ManagedTileBatch;
  * any BitmapFont instance.
  */
 @:shader("text")
-class BitmapFont extends ManagedTileBatch {
+class BitmapFont extends ManagedTileBatch implements IFontSource {
     
     public var fontData:FontData;
-    private var charCodeToRegion:Map<Int, Int> = new Map();  // Map character code to region ID
+    private var charCodeToRegion:Map<Int, Int> = new Map();
+
+    public function markDirty():Void { needsBufferUpdate = true; }  // Map character code to region ID
     
     /**
      * Create a new BitmapFont

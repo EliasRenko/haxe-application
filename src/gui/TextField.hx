@@ -64,7 +64,7 @@ class TextField extends Control {
 
         __graphic.width = 2;
 
-        __graphic.height = ____canvas.font.ascend;
+        __graphic.height = ____canvas.font.fontData.base;
 
         __graphic.visible = false;
 
