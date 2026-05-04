@@ -1,14 +1,16 @@
 package states;
 
-import display.ManagedTileBatch;
 import entity.DisplayEntity;
 import gui.Button;
 import gui.Canvas;
 import gui.Checkbox;
 import gui.Control;
 import gui.ControlEventType;
+import gui.Dropdown;
 import gui.Label;
 import gui.List as GUIList;
+import gui.TabControl;
+import gui.TabPage;
 import gui.Window;
 import loaders.FontLoader;
 
@@ -31,10 +33,11 @@ class MenuState extends State {
     private static inline var MARGIN_BOTTOM:Float = 140.0;
 
     private var canvas:Canvas;
-    private var menuList:GUIList<Label>;
+    private var menuList:GUIList<Label>; 
     private var menuLabels:Array<Label> = [];
     private var selectedIndex:Int = 0;
     private var optionsWindow:MenuOptionsWindow;
+    private var newGameWindow:MenuNewGameWindow;
 
     public function new(app:App) {
         super("Menu", app);
@@ -74,30 +77,75 @@ class MenuState extends State {
     //  UI setup
     // -------------------------------------------------------------------------
 
-    private function _initOptionsWindow():Void {
+    private function _initNewGameWindow():Void {
         var ws = app.window.size;
-        var ox = Math.round((ws.x - MenuOptionsWindow.WIDTH)  / 2);
-        var oy = Math.round((ws.y - MenuOptionsWindow.HEIGHT) / 2);
-        optionsWindow = new MenuOptionsWindow(ox, oy);
-        canvas.addControl(optionsWindow);
-
-        // Graphics
-        optionsWindow.addControl(new Label("Graphics", 8, 8));
-        var cbFullscreen = new Checkbox(false, 8, 28);
-        optionsWindow.addControl(cbFullscreen);
-        optionsWindow.addControl(new Label("Fullscreen", 44, 36));
-        var cbVsync = new Checkbox(false, 8, 56);
-        optionsWindow.addControl(cbVsync);
-        optionsWindow.addControl(new Label("VSync", 44, 64));
-
-        // Audio
-        optionsWindow.addControl(new Label("Audio", 8, 92));
-        var cbMute = new Checkbox(false, 8, 112);
-        optionsWindow.addControl(cbMute);
-        optionsWindow.addControl(new Label("Mute audio", 44, 120));
+        var ox = Math.round((ws.x - MenuNewGameWindow.WIDTH)  / 2);
+        var oy = Math.round((ws.y - MenuNewGameWindow.HEIGHT) / 2);
+        newGameWindow = new MenuNewGameWindow(ox, oy);
+        canvas.addControl(newGameWindow);
 
         // Close button
-        var btnClose = new Button("Close", 80, 70, 148);
+        var btnClose = new Button("Cancel", 80, 70, MenuNewGameWindow.HEIGHT - 38);
+        btnClose.addListener(_onNewGameClose, LEFT_CLICK);
+        newGameWindow.addControl(btnClose);
+    }
+
+    private function _initOptionsWindow():Void {
+        var ws = app.window.size;
+        var margin:Int = 40;
+        var w = ws.x - margin * 2;
+        var h = ws.y - margin * 2;
+        optionsWindow = new MenuOptionsWindow(w, h, margin, margin);
+        canvas.addControl(optionsWindow);
+
+        // Tab control fills the panel, leaving room for the Close button
+        var tabW = w - 16;
+        var tabH = h - 28 - 50; // 28 = window strip, 50 = close button area
+        var tabs = new TabControl(tabW, tabH, 8, 8);
+        optionsWindow.addControl(tabs);
+
+        // ── Graphics tab ──────────────────────────────────────────────────
+        var gfx:TabPage = tabs.addTab("Graphics");
+
+        gfx.addControl(new Label("Display Mode", 8, 8));
+        var ddDisplay = new Dropdown(160, 8, 26);
+        ddDisplay.addItem("Windowed");
+        ddDisplay.addItem("Fullscreen");
+        ddDisplay.addItem("Borderless");
+        ddDisplay.selectIndex(0);
+        gfx.addControl(ddDisplay);
+
+        gfx.addControl(new Label("Resolution", 8, 62));
+        var ddRes = new Dropdown(160, 8, 80);
+        ddRes.addItem("1920 x 1080");
+        ddRes.addItem("1280 x 720");
+        ddRes.addItem("1024 x 768");
+        ddRes.addItem("800 x 600");
+        ddRes.selectIndex(0);
+        gfx.addControl(ddRes);
+
+        gfx.addControl(new Label("Aspect Ratio", 8, 116));
+        var ddAspect = new Dropdown(160, 8, 134);
+        ddAspect.addItem("16:9");
+        ddAspect.addItem("16:10");
+        ddAspect.addItem("4:3");
+        ddAspect.addItem("21:9");
+        ddAspect.selectIndex(0);
+        gfx.addControl(ddAspect);
+
+        var cbVsync = new Checkbox(false, 8, 170);
+        gfx.addControl(cbVsync);
+        gfx.addControl(new Label("VSync", 44, 174));
+
+        // ── Audio tab ─────────────────────────────────────────────────────
+        var audio:TabPage = tabs.addTab("Audio");
+
+        var cbMute = new Checkbox(false, 8, 8);
+        audio.addControl(cbMute);
+        audio.addControl(new Label("Mute audio", 44, 12));
+
+        // ── Close button ──────────────────────────────────────────────────
+        var btnClose = new Button("Close", 80, Math.round((w - 80) / 2), h - 28 - 38);
         btnClose.addListener(_onOptionsClose, LEFT_CLICK);
         optionsWindow.addControl(btnClose);
     }
@@ -165,6 +213,10 @@ class MenuState extends State {
         }
     }
 
+    private function _onNewGameClose(control:Control, type:UInt):Void {
+        if (newGameWindow != null) newGameWindow.visible = false;
+    }
+
     private function _onOptionsClose(control:Control, type:UInt):Void {
         if (optionsWindow != null) optionsWindow.visible = false;
     }
@@ -172,7 +224,11 @@ class MenuState extends State {
     private function onSelect(index:Int):Void {
         switch (index) {
             case 0:
-                trace("MenuState: New Game");
+                if (newGameWindow == null) {
+                    _initNewGameWindow();
+                } else {
+                    newGameWindow.visible = !newGameWindow.visible;
+                }
             case 1:
                 trace("MenuState: Load Game");
             case 2:
@@ -190,12 +246,19 @@ class MenuState extends State {
     }
 }
 
-private class MenuOptionsWindow extends Window {
+private class MenuNewGameWindow extends Window {
 
-    public static inline var WIDTH:Float  = 220.0;
-    public static inline var HEIGHT:Float = 208.0;
+    public static inline var WIDTH:Float  = 240.0;
+    public static inline var HEIGHT:Float = 160.0;
 
     public function new(x:Float, y:Float) {
-        super("Options", WIDTH, HEIGHT, x, y);
+        super("New Game", WIDTH, HEIGHT, x, y);
+    }
+}
+
+private class MenuOptionsWindow extends Window {
+
+    public function new(width:Float, height:Float, x:Float, y:Float) {
+        super("Options", width, height, x, y);
     }
 }

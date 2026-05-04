@@ -35,6 +35,8 @@ class Text {
 
     private var _x:Float = 0;
     private var _y:Float = 0;
+    private var __prevX:Float = 0;
+    private var __prevY:Float = 0;
     
     /**
      * Create a new Text instance
@@ -44,6 +46,8 @@ class Text {
     public function new(font:IFontSource, text:String = "", x:Float = 0, y:Float = 0) {
         this._x = x;
         this._y = y;
+        __prevX = x;
+        __prevY = y;
 
         if (font != null) {
             this.font = font;
@@ -155,6 +159,10 @@ class Text {
         if (currentLineWidth > maxWidth) maxWidth = currentLineWidth;
         width = maxWidth;
         height = lineCount * font.fontData.lineHeight;
+
+        // Sync position tracking so updatePosition() delta is zero after a rebuild
+        __prevX = _x;
+        __prevY = _y;
     }
     
     /**
@@ -169,10 +177,22 @@ class Text {
      * Call this after changing x or y
      */
     public function updatePosition():Void {
-        // Regenerate text at new position
-        var currentText = textString;
-        //textString = ""; // Force regeneration
-        setText(currentText);
+        // Shift existing tiles by the position delta to preserve clip-rect associations.
+        // Re-creating tiles (via setText) would lose their __clipRects entries.
+        var dx = _x - __prevX;
+        var dy = _y - __prevY;
+        if (dx == 0 && dy == 0) return;
+        __prevX = _x;
+        __prevY = _y;
+        if (font == null) return;
+        for (tileId in charTiles) {
+            var tile = font.getTile(tileId);
+            if (tile != null) {
+                tile.x += dx;
+                tile.y += dy;
+            }
+        }
+        font.markDirty();
     }
     
 
@@ -212,7 +232,9 @@ class Text {
 
     public function set_text(value:String):String {
         textString = value;
-        updatePosition();
+        if (font != null) {
+            updateTiles();
+        }
         return textString;
     }
 

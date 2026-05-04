@@ -1,4 +1,4 @@
-package part;
+package ds;
 
 /**
  * SwapPopList<T> - Fast, unordered list with O(1) add/remove (swap-and-pop)

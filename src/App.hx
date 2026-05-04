@@ -284,6 +284,10 @@ class App extends Runtime {
         @:privateAccess __input.mouse.onMouseMotion(x, y, xrel, yrel);
     }
 
+    override function onMouseWheel(x:Float, y:Float, windowId:Int):Void {
+        @:privateAccess __input.mouse.onMouseWheel(y);
+    }
+
     // Window event handlers
     override function onWindowResized(windowId:Int, width:Int, height:Int):Void {
         renderer.resize(width, height);

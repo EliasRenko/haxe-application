@@ -42,11 +42,15 @@ class Canvas extends Entity {
     public var mouseX(get, null):Float;
     public var mouseY(get, null):Float;
     public var leftClick(get, null):Bool;
+    public var mouseScrollY(get, null):Float;
 
     private var __container:RootContainer;
     private var __font:IFontSource;
+    private var __uiBatch:UIBatch;
     private var __markedControl:Control;
     private var __focusedControl:Control;
+    private var __clipRectCounter:Int = 0;
+    private var __clipRectHandles:Map<Int, ClipRect> = new Map();
     
     /**
      * Create a new Canvas
@@ -83,9 +87,9 @@ class Canvas extends Entity {
      * @param fontData      Parsed font metrics (from FontLoader)
      */
     public function initializeGraphics(renderer:Renderer, spriteTexture:Texture, fontTexture:Texture, fontData:FontData):Void {
-        var uiBatch = new UIBatch(renderer, spriteTexture, fontTexture);
-        tilemap = uiBatch;
-        __font  = new UIFont(uiBatch, fontData);
+        __uiBatch = new UIBatch(renderer, spriteTexture, fontTexture);
+        tilemap = __uiBatch;
+        __font  = new UIFont(__uiBatch, fontData);
 
         trace("Canvas: Graphics initialized (UIBatch, dual-texture ui shader)");
     }
@@ -170,6 +174,35 @@ class Canvas extends Entity {
         return parentState.app.input.mouse.released(0);
     }
 
+    private function get_mouseScrollY():Float {
+        return parentState.app.input.mouse.scrollY;
+    }
+
+    // ── Clip rect API (used by ScrollableContainer) ──────────────────────────
+
+    public function createClipRect(x:Float, y:Float, w:Float, h:Float):Int {
+        var id = __clipRectCounter++;
+        __clipRectHandles.set(id, new ClipRect(x, y, x + w, y + h));
+        return id;
+    }
+
+    public function activateClipRect(handle:Int):Void {
+        __uiBatch.setPendingClipRect(__clipRectHandles.get(handle));
+    }
+
+    public function deactivateClipRect():Void {
+        __uiBatch.setPendingClipRect(null);
+    }
+
+    public function updateClipRect(handle:Int, x:Float, y:Float, w:Float, h:Float):Void {
+        var cr = __clipRectHandles.get(handle);
+        if (cr != null) cr.set(x, y, x + w, y + h);
+    }
+
+    public function destroyClipRect(handle:Int):Void {
+        __clipRectHandles.remove(handle);
+    }
+
      private function get_markedControl():Control {
         return __markedControl;
     }
@@ -214,6 +247,12 @@ private class UIBatch extends ManagedTileBatch {
     // Maps Tile reference → texIndex (only entries with value 1.0 are stored)
     private var __texIndices:Map<Tile, Float> = new Map();
 
+    // Maps Tile reference → ClipRect (only clipped tiles have entries)
+    private var __clipRects:Map<Tile, ClipRect> = new Map();
+
+    // Clip rect applied to the next addTile / addTileInstance call (null = unclipped)
+    private var __pendingClipRect:ClipRect = null;
+
     // Font texture dimensions, used to compute correct UVs for glyph regions
     private var __fontTexWidth:Int  = 1;
     private var __fontTexHeight:Int = 1;
@@ -241,6 +280,25 @@ private class UIBatch extends ManagedTileBatch {
         return regionId;
     }
 
+    /** Set the clip rect that will be assigned to the next tile(s) added. */
+    public function setPendingClipRect(clip:ClipRect):Void {
+        __pendingClipRect = clip;
+    }
+
+    override public function addTile(x:Float, y:Float, w:Float, h:Float, regionId:Int):Int {
+        var tileId = super.addTile(x, y, w, h, regionId);
+        if (__pendingClipRect != null && tileId != -1) {
+            var tile = getTile(tileId);
+            if (tile != null) __clipRects.set(tile, __pendingClipRect);
+        }
+        return tileId;
+    }
+
+    override public function addTileInstance(tile:Tile):Void {
+        super.addTileInstance(tile);
+        if (__pendingClipRect != null) __clipRects.set(tile, __pendingClipRect);
+    }
+
     /** Add a tile that will sample the font atlas (texIndex = 1.0). */
     public function addFontTile(x:Float, y:Float, width:Float, height:Float, regionId:Int):Int {
         var tileId = addTile(x, y, width, height, regionId);
@@ -251,12 +309,16 @@ private class UIBatch extends ManagedTileBatch {
 
     override public function removeTile(tileId:Int):Bool {
         var tile = getTile(tileId);
-        if (tile != null) __texIndices.remove(tile);
+        if (tile != null) {
+            __texIndices.remove(tile);
+            __clipRects.remove(tile);
+        }
         return super.removeTile(tileId);
     }
 
     override public function removeTileInstance(tile:Tile):Bool {
         __texIndices.remove(tile);
+        __clipRects.remove(tile);
         return super.removeTileInstance(tile);
     }
 
@@ -269,14 +331,16 @@ private class UIBatch extends ManagedTileBatch {
             region.u2 = -1.0; region.v2 = -1.0;
         }
 
-        // V flip to match TileBatch.generateTileVertices convention
+        // V flip: uv1 = visual-bottom UV, uv2 = visual-top UV (y-down screen coords)
         var uv1 = region.v2;
         var uv2 = region.v1;
 
         var tx = tile.x + tile.offsetX;
         var ty = tile.y + tile.offsetY;
-        var hw = tile.width  * 0.5;
-        var hh = tile.height * 0.5;
+        var tw = tile.width;
+        var th = tile.height;
+        var hw = tw * 0.5;
+        var hh = th * 0.5;
         var cx = tx + hw;
         var cy = ty + hh;
 
@@ -290,6 +354,44 @@ private class UIBatch extends ManagedTileBatch {
 
         var ti:Float = __texIndices.exists(tile) ? 1.0 : 0.0;
 
+        // ── Clip rect handling ────────────────────────────────────────────────
+        var clip = __clipRects.get(tile);
+        if (clip != null) {
+            // Tile world bounds (y-down screen coords; ty = visual top)
+            var wx1 = tx;        var wy1 = ty;
+            var wx2 = tx + tw;   var wy2 = ty + th;
+
+            // Fully outside → emit nothing
+            if (wx2 <= clip.x1 || wx1 >= clip.x2 || wy2 <= clip.y1 || wy1 >= clip.y2) return;
+
+            // Partially inside + no rotation → clamp geometry and remap UVs
+            if (tile.rotation == 0.0 && (wx1 < clip.x1 || wy1 < clip.y1 || wx2 > clip.x2 || wy2 > clip.y2)) {
+                var clx1 = Math.max(wx1, clip.x1);
+                var cly1 = Math.max(wy1, clip.y1);  // new visual top
+                var clx2 = Math.min(wx2, clip.x2);
+                var cly2 = Math.min(wy2, clip.y2);  // new visual bottom
+
+                // Remap U proportionally along X
+                var cu1 = region.u1 + (clx1 - wx1) / tw * (region.u2 - region.u1);
+                var cu2 = region.u1 + (clx2 - wx1) / tw * (region.u2 - region.u1);
+
+                // Remap V proportionally along Y (uv2 = visual-top, uv1 = visual-bottom)
+                var cuv_top    = uv2 + (cly1 - wy1) / th * (uv1 - uv2);
+                var cuv_bottom = uv2 + (cly2 - wy1) / th * (uv1 - uv2);
+
+                // Emit clipped quad — same vertex order as normal path (high-y first)
+                vertices.push(clx1); vertices.push(cly2); vertices.push(0.0); vertices.push(cu1); vertices.push(cuv_bottom); vertices.push(ti);
+                vertices.push(clx2); vertices.push(cly2); vertices.push(0.0); vertices.push(cu2); vertices.push(cuv_bottom); vertices.push(ti);
+                vertices.push(clx2); vertices.push(cly1); vertices.push(0.0); vertices.push(cu2); vertices.push(cuv_top);    vertices.push(ti);
+                vertices.push(clx1); vertices.push(cly1); vertices.push(0.0); vertices.push(cu1); vertices.push(cuv_top);    vertices.push(ti);
+                __verticesToRender += 4;
+                __indicesToRender  += 6;
+                return;
+            }
+            // Fully inside (or rotated partial) → fall through to normal path
+        }
+
+        // ── Normal (unclipped) path ────────────────────────────────────────────────
         // Top-left
         vertices.push(-hw * cosA - hh * sinA + cx); vertices.push(-hw * sinA + hh * cosA + cy); vertices.push(0.0); vertices.push(region.u1); vertices.push(uv1); vertices.push(ti);
         // Top-right
@@ -393,6 +495,23 @@ private class UIFont implements IFontSource {
     }
 
     public function markDirty():Void { __batch.needsBufferUpdate = true; }
+}
+
+// =============================================================================
+// ClipRect — axis-aligned clip region in screen (y-down) coordinates.
+// Stored as an object so all tiles sharing a handle automatically see
+// updates when the owning ScrollableContainer moves.
+// =============================================================================
+
+private class ClipRect {
+    public var x1:Float; public var y1:Float;
+    public var x2:Float; public var y2:Float;
+    public function new(x1:Float, y1:Float, x2:Float, y2:Float) {
+        this.x1 = x1; this.y1 = y1; this.x2 = x2; this.y2 = y2;
+    }
+    public inline function set(x1:Float, y1:Float, x2:Float, y2:Float):Void {
+        this.x1 = x1; this.y1 = y1; this.x2 = x2; this.y2 = y2;
+    }
 }
 
 // =============================================================================

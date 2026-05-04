@@ -2,6 +2,7 @@ package gui;
 
 import gui.Stamp;
 import gui.ControlEventType;
+import input.MouseControl;
 
 class Window extends Container<Control> {
 
@@ -11,6 +12,10 @@ class Window extends Container<Control> {
     // Privates
     private var __strip:WindowStrip;
     private var __panel:WindowPanel;
+
+    private var __dragging:Bool = false;
+    private var __dragOffsetX:Float = 0;
+    private var __dragOffsetY:Float = 0;
 
     public function new(text:String, width:Float, height:Float, x:Float, y:Float) {
         super(width, height, x, y);
@@ -42,6 +47,31 @@ class Window extends Container<Control> {
     
     public function clear():Void {
         __panel.clear();
+    }
+
+    override function hitTest():Bool {
+        return __dragging || super.hitTest();
+    }
+
+    override function update():Void {
+        var mouse = ____canvas.parentState.app.input.mouse;
+
+        if (!__dragging && mouse.pressed(MouseControl.LEFT) && __strip.hitTest()) {
+            __dragging = true;
+            __dragOffsetX = ____canvas.mouseX - __x;
+            __dragOffsetY = ____canvas.mouseY - __y;
+        }
+
+        if (__dragging) {
+            if (mouse.check(MouseControl.LEFT)) {
+                x = ____canvas.mouseX - __dragOffsetX;
+                y = ____canvas.mouseY - __dragOffsetY;
+            } else {
+                __dragging = false;
+            }
+        }
+
+        super.update();
     }
 
     private function __onCloseClickEvent(control:Control, type:UInt):Void {

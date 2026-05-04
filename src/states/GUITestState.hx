@@ -9,8 +9,12 @@ import gui.Control;
 import gui.ControlEventType;
 import gui.Label;
 import gui.Panel;
+import gui.ScrollableContainer;
 import gui.Stamp;
 import gui.Strip;
+import gui.Dropdown;
+import gui.TabControl;
+import gui.TabPage;
 import gui.Window;
 import loaders.FontLoader;
 
@@ -27,7 +31,7 @@ import loaders.FontLoader;
 class GUITestState extends State {
 
     private static final NAMES:Array<String> = [
-        "Label", "Button", "Checkbox", "Strip", "Panel", "Window", "Stamp"
+        "Label", "Button", "Checkbox", "Strip", "Panel", "Window", "Stamp", "ScrollableContainer", "TabControl", "Dropdown"
     ];
 
     private var canvas:Canvas;
@@ -109,6 +113,9 @@ class GUITestState extends State {
             case 4: _showPanel(cx, cy);
             case 5: _showWindow(cx, cy);
             case 6: _showStamp(cx, cy);
+            case 7: _showScrollableContainer(cx, cy);
+            case 8: _showTabControl(cx, cy);
+            case 9: _showDropdown(cx, cy);
         }
     }
 
@@ -156,6 +163,45 @@ class GUITestState extends State {
 
     private function _showStamp(cx:Int, cy:Int):Void {
         _track(new Stamp(canvas.getSet("stamp_close"), cx - 14, cy - 14));
+    }
+
+    private function _showDropdown(cx:Int, cy:Int):Void {
+        var dd = cast(_track(new Dropdown(160, cx - 80, cy - 12)), Dropdown);
+        dd.addItem("Option A");
+        dd.addItem("Option B");
+        dd.addItem("Option C");
+        dd.addItem("Option D");
+        dd.addListener(function(c, _) trace("Dropdown selected: " + cast(c, Dropdown).selectedValue), ON_ITEM_CLICK);
+    }
+
+    private function _showTabControl(cx:Int, cy:Int):Void {
+        var tabs = cast(_track(new TabControl(220, 140, cx - 110, cy - 70)), TabControl);
+
+        var page1:TabPage = tabs.addTab("General");
+        page1.addControl(new Label("General settings", 8, 8));
+        var chk = new Checkbox(false, 8, 32);
+        page1.addControl(chk);
+        page1.addControl(new Label("Enable feature", 44, 36));
+
+        var page2:TabPage = tabs.addTab("Audio");
+        page2.addControl(new Label("Audio settings", 8, 8));
+        var chkMute = new Checkbox(false, 8, 32);
+        page2.addControl(chkMute);
+        page2.addControl(new Label("Mute", 44, 36));
+
+        var page3:TabPage = tabs.addTab("Video");
+        page3.addControl(new Label("Video settings", 8, 8));
+        var chkFs = new Checkbox(false, 8, 32);
+        page3.addControl(chkFs);
+        page3.addControl(new Label("Fullscreen", 44, 36));
+    }
+
+    private function _showScrollableContainer(cx:Int, cy:Int):Void {
+        // A 160×140 viewport, centred, containing 12 label rows (total ~200px)
+        var sc = cast(_track(new ScrollableContainer(160, 140, cx - 80, cy - 70)), ScrollableContainer);
+        for (i in 0...12) {
+            sc.addControl(new Label("Row " + (i + 1) + " — scroll me", 4, i * 18));
+        }
     }
 
     // ── State overrides ───────────────────────────────────────────────────────

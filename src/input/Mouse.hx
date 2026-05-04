@@ -7,10 +7,12 @@ class Mouse {
     // Publics
     public var x(get, null):Float = 0;
     public var y(get, null):Float = 0;
+    public var scrollY(get, null):Float;
 
     // Privates
     private var __x:Float = 0;
     private var __y:Float = 0;
+    private var __scrollY:Float = 0;
     private var __checkCount:Int = 0;
 	private var __pressCount:Int = 0;
 	private var __releaseCount:Int = 0;
@@ -63,6 +65,7 @@ class Mouse {
 		while (__releaseCount > 0) {
 			__releaseControls[-- __releaseCount] = -1;
 		}
+		__scrollY = 0;
     }
 
     private function onButtonDown(x:Float, y:Float, button:Int):Void {
@@ -77,6 +80,10 @@ class Mouse {
 		__releaseControls[__releaseCount ++] = button;
     }
 
+    private function onMouseWheel(dy:Float):Void {
+        __scrollY = dy;
+    }
+
     private function onMouseMotion(x:Float, y:Float, xrel:Float, yrel:Float):Void {
         __x = x;
         __y = y;
@@ -89,6 +96,10 @@ class Mouse {
 
     private function get_y():Float {
         return __y;
+    }
+
+    private function get_scrollY():Float {
+        return __scrollY;
     }
 }
 
