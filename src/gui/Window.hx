@@ -16,6 +16,7 @@ class Window extends Container<Control> {
     private var __dragging:Bool = false;
     private var __dragOffsetX:Float = 0;
     private var __dragOffsetY:Float = 0;
+    private var __onFocusStack:Bool = false;
 
     public function new(text:String, width:Float, height:Float, x:Float, y:Float) {
         super(width, height, x, y);
@@ -51,6 +52,17 @@ class Window extends Container<Control> {
 
     override function hitTest():Bool {
         return __dragging || super.hitTest();
+    }
+
+    override function set_visible(value:Bool):Bool {
+        if (value && !__onFocusStack && ____canvas != null) {
+            __onFocusStack = true;
+            ____canvas.pushModalFocus(this);
+        } else if (!value && __onFocusStack && ____canvas != null) {
+            __onFocusStack = false;
+            ____canvas.popFocus(this);
+        }
+        return super.set_visible(value);
     }
 
     override function update():Void {

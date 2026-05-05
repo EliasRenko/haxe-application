@@ -13,6 +13,7 @@ import gui.TabControl;
 import gui.TabPage;
 import gui.Window;
 import loaders.FontLoader;
+import math.Vec2;
 
 /**
  * MenuState - Main menu screen
@@ -84,10 +85,30 @@ class MenuState extends State {
         newGameWindow = new MenuNewGameWindow(ox, oy);
         canvas.addControl(newGameWindow);
 
-        // Close button
-        var btnClose = new Button("Cancel", 80, 70, MenuNewGameWindow.HEIGHT - 38);
-        btnClose.addListener(_onNewGameClose, LEFT_CLICK);
-        newGameWindow.addControl(btnClose);
+        // Panel height = HEIGHT - strip(28) = 192
+        // Bottom buttons sit at panel-y = 192 - 28 - 8 = 156
+        var btnY = MenuNewGameWindow.HEIGHT - 28 - 28 - 8;
+        var btnX1 = Math.round((MenuNewGameWindow.WIDTH - 168) / 2); // (240-168)/2=36
+        var btnX2 = btnX1 + 80 + 8;
+
+        // Map selector
+        newGameWindow.addControl(new Label("Map", 8, 8));
+        var ddMap = new Dropdown(Math.round(MenuNewGameWindow.WIDTH - 16), 8, 26);
+        ddMap.addItem("Forest");
+        ddMap.addItem("Desert");
+        ddMap.addItem("Arctic");
+        ddMap.selectIndex(0);
+        newGameWindow.addControl(ddMap);
+
+        // Cancel button
+        var btnCancel = new Button("Cancel", 80, btnX1, btnY);
+        btnCancel.addListener(_onNewGameClose, LEFT_CLICK);
+        newGameWindow.addControl(btnCancel);
+
+        // Start button
+        var btnStart = new Button("Start", 80, btnX2, btnY);
+        btnStart.addListener(_onNewGameStart, LEFT_CLICK);
+        newGameWindow.addControl(btnStart);
     }
 
     private function _initOptionsWindow():Void {
@@ -111,7 +132,6 @@ class MenuState extends State {
         var ddDisplay = new Dropdown(160, 8, 26);
         ddDisplay.addItem("Windowed");
         ddDisplay.addItem("Fullscreen");
-        ddDisplay.addItem("Borderless");
         ddDisplay.selectIndex(0);
         gfx.addControl(ddDisplay);
 
@@ -122,6 +142,10 @@ class MenuState extends State {
         ddRes.addItem("1024 x 768");
         ddRes.addItem("800 x 600");
         ddRes.selectIndex(0);
+        ddRes.addListener(function(c:Control, t:UInt) {
+            var res = _resolutionFromLabel(ddRes.selectedValue);
+            if (res != null) app.window.size = res;
+        }, ON_ITEM_CLICK);
         gfx.addControl(ddRes);
 
         gfx.addControl(new Label("Aspect Ratio", 8, 116));
@@ -201,6 +225,16 @@ class MenuState extends State {
     //  Helpers
     // -------------------------------------------------------------------------
 
+    private function _resolutionFromLabel(label:String):Null<Vec2> {
+        return switch (label) {
+            case "1920 x 1080": new Vec2(1920, 1080);
+            case "1280 x 720":  new Vec2(1280, 720);
+            case "1024 x 768":  new Vec2(1024, 768);
+            case "800 x 600":   new Vec2(800,  600);
+            default: null;
+        };
+    }
+
     private function _onItemClick(control:Control, type:UInt):Void {
         var i = 0;
         for (listItem in menuList.controls) {
@@ -215,6 +249,10 @@ class MenuState extends State {
 
     private function _onNewGameClose(control:Control, type:UInt):Void {
         if (newGameWindow != null) newGameWindow.visible = false;
+    }
+
+    private function _onNewGameStart(control:Control, type:UInt):Void {
+        trace("MenuState: Start game");
     }
 
     private function _onOptionsClose(control:Control, type:UInt):Void {
@@ -249,7 +287,7 @@ class MenuState extends State {
 private class MenuNewGameWindow extends Window {
 
     public static inline var WIDTH:Float  = 240.0;
-    public static inline var HEIGHT:Float = 160.0;
+    public static inline var HEIGHT:Float = 220.0;
 
     public function new(x:Float, y:Float) {
         super("New Game", WIDTH, HEIGHT, x, y);

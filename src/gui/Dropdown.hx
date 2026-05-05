@@ -13,15 +13,18 @@ import gui.ThreeSlice;
  *   var dd = new Dropdown(120, 10, 10);
  *   dd.addItem("Option A");
  *   dd.addItem("Option B");
- *   dd.addItem("Option C");
  *   dd.addListener(onChanged, ON_ITEM_CLICK);
  *   canvas.addControl(dd);
  *
- *   // Read selected value
  *   trace(dd.selectedIndex);   // -1 until something is picked
  *   trace(dd.selectedValue);   // "" until something is picked
  *
  * Fires ON_ITEM_CLICK whenever the selection changes.
+ *
+ * The popup panel is created fresh on each open and added directly to the
+ * Canvas overlay layer (tiles land at the end of the batch → always on top).
+ * It also pushes itself to the Canvas focus stack so nothing behind it
+ * receives input while it is open.
  */
 class Dropdown extends Container<Control> {
 
@@ -35,43 +38,31 @@ class Dropdown extends Container<Control> {
     // ── Privates ─────────────────────────────────────────────────────────────
 
     private var __header:DropdownHeader;
-    private var __popup:DropdownPopup;
+    private var __popup:DropdownPopup = null;
     private var __items:Array<String> = [];
     private var __selectedIndex:Int = -1;
     private var __open:Bool = false;
 
     public function new(width:Float, x:Float, y:Float) {
-        // Height is just the header row; popup grows downward outside the bounds
         super(width, ROW_HEIGHT, x, y);
         __type = 'dropdown';
-
         __header = new DropdownHeader(width, 0, 0);
-        __popup  = new DropdownPopup(width, 0, ROW_HEIGHT);
     }
 
     override function init():Void {
         __addControl(__header);
-        __addControl(__popup);
-
         __header.addListener(__onHeaderClick, LEFT_CLICK);
-
-        // Pre-populate popup with any items added before init
-        for (item in __items) {
-            __popup.__addRow(item);
-        }
-
-        __popup.visible = false;
-
         super.init();
+        // Re-apply any selection made before init (font was null then, tiles weren't built)
+        if (__selectedIndex >= 0 && __selectedIndex < __items.length) {
+            __header.__setText(__items[__selectedIndex]);
+        }
     }
 
     // ── Public methods ───────────────────────────────────────────────────────
 
     public function addItem(label:String):Void {
         __items.push(label);
-        if (__active) {
-            __popup.__addRow(label);
-        }
     }
 
     public function selectIndex(index:Int):Void {
@@ -80,27 +71,43 @@ class Dropdown extends Container<Control> {
         __header.__setText(__items[index]);
     }
 
-    // ── Internals ────────────────────────────────────────────────────────────
+    // ── Called by DropdownPopup when a row is selected ───────────────────────
 
     @:noCompletion
     public function __rowClicked(index:Int):Void {
         __selectedIndex = index;
         __header.__setText(__items[index]);
-        __open = false;
-        __popup.visible = false;
+        __closePopup();
         dispatchEvent(this, ON_ITEM_CLICK);
     }
 
+    // ── Internals ────────────────────────────────────────────────────────────
+
     private function __onHeaderClick(control:Control, type:UInt):Void {
-        __open = !__open;
-        __popup.visible = __open;
+        if (__open) {
+            __closePopup();
+        } else {
+            __openPopup();
+        }
     }
 
-    // ── hitTest override — keep open popup hittable ──────────────────────────
+    private function __openPopup():Void {
+        __open = true;
+        var absX = __x + ____offsetX;
+        var absY = __y + ____offsetY + ROW_HEIGHT;
+        __popup = new DropdownPopup(__width, absX, absY, this);
+        for (item in __items) __popup.__addRow(item);
+        ____canvas.pushOverlay(__popup);
+        ____canvas.pushFocus(__popup);
+    }
 
-    override function hitTest():Bool {
-        if (__open && __popup.hitTest()) return true;
-        return super.hitTest();
+    private function __closePopup():Void {
+        __open = false;
+        if (__popup != null) {
+            ____canvas.popFocus(__popup);
+            ____canvas.removeOverlay(__popup);
+            __popup = null;
+        }
     }
 
     // ── Getters ──────────────────────────────────────────────────────────────
@@ -202,9 +209,11 @@ private class DropdownHeader extends Control {
 private class DropdownPopup extends Container<DropdownRow> {
 
     private var __nineSlice:NineSlice = new NineSlice();
+    private var __dropdown:Dropdown;
 
-    public function new(width:Float, x:Float, y:Float) {
+    public function new(width:Float, x:Float, y:Float, dropdown:Dropdown) {
         super(width, 0, x, y);
+        __dropdown = dropdown;
         __type = 'dropdown_popup';
     }
 
@@ -228,17 +237,14 @@ private class DropdownPopup extends Container<DropdownRow> {
     public function __addRow(label:String):Void {
         var index = Lambda.count(__controls);
         var row = new DropdownRow(label, index, __width, 0, index * Dropdown.ROW_HEIGHT);
+        var dd = __dropdown;
         row.addListener(function(c:Control, t:UInt) {
-            var parent = cast(____parent, Dropdown);
-            parent.__rowClicked(cast(c, DropdownRow).__index);
+            dd.__rowClicked(cast(c, DropdownRow).__index);
         }, LEFT_CLICK);
         __addControl(row);
 
-        // Grow the panel height
         __height = (index + 1) * Dropdown.ROW_HEIGHT;
-        if (__active) {
-            __nineSlice.setHeight(__height);
-        }
+        if (__active) __nineSlice.setHeight(__height);
     }
 
     private function __initGraphics():Void {

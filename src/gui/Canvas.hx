@@ -51,6 +51,16 @@ class Canvas extends Entity {
     private var __focusedControl:Control;
     private var __clipRectCounter:Int = 0;
     private var __clipRectHandles:Map<Int, ClipRect> = new Map();
+
+    // ── Focus stack ───────────────────────────────────────────────────────────
+    // The top entry is the only container that receives mouse input each frame.
+    // Modal entries (Windows) block input behind them unconditionally.
+    // Non-modal entries (Dropdown popups) auto-dismiss on an outside click.
+    private var __focusStack:Array<{control:Control, modal:Bool}> = [];
+
+    // Flat list of controls added via pushOverlay — their tiles are added to the
+    // batch AFTER all normal controls, so they always render on top.
+    private var __overlayControls:Array<Control> = [];
     
     /**
      * Create a new Canvas
@@ -129,6 +139,62 @@ class Canvas extends Entity {
         return __container.removeControl(control);
     }
 
+    // ── Focus stack API ───────────────────────────────────────────────────────
+
+    /**
+     * Push a non-modal focus entry (e.g. a Dropdown popup).
+     * Auto-dismissed when the user clicks outside it.
+     */
+    public function pushFocus(control:Control):Void {
+        __focusStack.push({control: control, modal: false});
+    }
+
+    /**
+     * Push a modal focus entry (e.g. a Window).
+     * Blocks all input behind it; must be explicitly dismissed.
+     */
+    public function pushModalFocus(control:Control):Void {
+        __focusStack.push({control: control, modal: true});
+    }
+
+    /**
+     * Remove a control from the focus stack (by reference, any position).
+     */
+    public function popFocus(control:Control):Void {
+        for (i in 0...__focusStack.length) {
+            if (__focusStack[i].control == control) {
+                __focusStack.splice(i, 1);
+                return;
+            }
+        }
+    }
+
+    // ── Overlay API ───────────────────────────────────────────────────────────
+
+    /**
+     * Add a control to the overlay layer.
+     * Its tiles are initialised here, so they land at the END of the batch
+     * and therefore render on top of everything else.
+     */
+    public function pushOverlay(control:Control):Void {
+        @:privateAccess control.____canvas  = this;
+        @:privateAccess control.____offsetX = 0.0;
+        @:privateAccess control.____offsetY = 0.0;
+        @:privateAccess control.____parent  = null;
+        control.init();
+        __overlayControls.push(control);
+    }
+
+    /**
+     * Remove a control from the overlay layer and release its tiles.
+     * Safe to call even if the control was already removed.
+     */
+    public function removeOverlay(control:Control):Void {
+        if (__overlayControls.remove(control)) {
+            control.release();
+        }
+    }
+
     
     /**
      * Get a UI texture region ID by name
@@ -141,12 +207,25 @@ class Canvas extends Entity {
     }
     
     override public function update(deltaTime:Float):Void {
-        // if (__dialog.visible) {
-        //     __dialog.update();
-        //     return;
-        // }
-
-        __container.update();
+        if (__focusStack.length > 0) {
+            var entry = __focusStack[__focusStack.length - 1];
+            if (entry.modal) {
+                // Modal (Window): always process — blocks everything behind it.
+                if (entry.control.visible) entry.control.update();
+            } else {
+                // Non-modal (Dropdown popup): process when hit, dismiss on outside click.
+                if (entry.control.hitTest()) {
+                    entry.control.update();
+                } else if (leftClick) {
+                    // Auto-dismiss and consume the click.
+                    var ctrl = entry.control;
+                    popFocus(ctrl);
+                    removeOverlay(ctrl);
+                }
+            }
+        } else {
+            __container.update();
+        }
     }
     
     public function resize(width:Int, height:Int) {
