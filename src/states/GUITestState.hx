@@ -64,6 +64,7 @@ class GUITestState extends State {
         var ws = app.window.size;
         canvas = new Canvas(this, ws.x, ws.y);
         canvas.initializeGraphics(renderer, spriteTexture, fontTexture, fontData);
+        canvas.setTint(0.588, 0.690, 0.518);  // HL1 olive-green tint
         addEntity(new DisplayEntity(canvas.tilemap, "gui_tiles"));
         canvas.importSets(app.resources.getText("textures/gui.json"));
         addEntity(canvas);

@@ -273,6 +273,18 @@ class Canvas extends Entity {
         __uiBatch.setPendingClipRect(null);
     }
 
+    /**
+     * Set the default multiply tint applied to all graphic tiles.
+     * Font tiles are always rendered white regardless of this setting.
+     * @param r  Red   (0.0–1.0)
+     * @param g  Green (0.0–1.0)
+     * @param b  Blue  (0.0–1.0)
+     * @param a  Alpha (0.0–1.0), default 1.0
+     */
+    public function setTint(r:Float, g:Float, b:Float, a:Float = 1.0):Void {
+        __uiBatch.defaultColor = [r, g, b, a];
+    }
+
     public function updateClipRect(handle:Int, x:Float, y:Float, w:Float, h:Float):Void {
         var cr = __clipRectHandles.get(handle);
         if (cr != null) cr.set(x, y, x + w, y + h);
@@ -306,12 +318,14 @@ class Canvas extends Entity {
 }
 
 // =============================================================================
-// UIBatch — unified 6-float-per-vertex tile batch for the UI shader.
+// UIBatch — unified 10-float-per-vertex tile batch for the UI shader.
 //
 // Extends ManagedTileBatch without touching the primitive TileBatch or Tile
-// classes. The extra float per vertex carries a texture-unit selector:
-//   0.0 → uGraphics  (sprite atlas, unit 0)
-//   1.0 → uFont      (bitmap font atlas, unit 1)
+// classes. Per-vertex layout: x y z u v ti r g b a
+//   ti:    0.0 → uGraphics (sprite atlas, unit 0)
+//          1.0 → uFont    (bitmap font atlas, unit 1)
+//   r,g,b,a: multiply tint — font tiles are always (1,1,1,1); graphic tiles
+//            use __tileColors[tile] if set, otherwise defaultColor.
 //
 // Font regions are registered with UV coordinates relative to the font texture
 // (not the sprite atlas) via defineFontRegion(). Font tiles are added via
@@ -328,6 +342,15 @@ private class UIBatch extends ManagedTileBatch {
 
     // Maps Tile reference → ClipRect (only clipped tiles have entries)
     private var __clipRects:Map<Tile, ClipRect> = new Map();
+
+    // Per-tile RGBA multiply color. Missing entries use defaultColor.
+    private var __tileColors:Map<Tile, Array<Float>> = new Map();
+
+    // Default multiply tint applied to all graphic tiles without an explicit color.
+    // Font tiles always use (1,1,1,1) regardless of this value.
+    public var defaultColor:Array<Float> = [1.0, 1.0, 1.0, 1.0];
+
+    private static final __WHITE:Array<Float> = [1.0, 1.0, 1.0, 1.0];
 
     // Clip rect applied to the next addTile / addTileInstance call (null = unclipped)
     private var __pendingClipRect:ClipRect = null;
@@ -386,11 +409,22 @@ private class UIBatch extends ManagedTileBatch {
         return tileId;
     }
 
+    /** Set an explicit RGBA multiply color for this tile. */
+    public function setTileColor(tile:Tile, r:Float, g:Float, b:Float, a:Float):Void {
+        __tileColors.set(tile, [r, g, b, a]);
+    }
+
+    /** Remove per-tile color override (reverts to defaultColor). */
+    public function clearTileColor(tile:Tile):Void {
+        __tileColors.remove(tile);
+    }
+
     override public function removeTile(tileId:Int):Bool {
         var tile = getTile(tileId);
         if (tile != null) {
             __texIndices.remove(tile);
             __clipRects.remove(tile);
+            __tileColors.remove(tile);
         }
         return super.removeTile(tileId);
     }
@@ -398,10 +432,11 @@ private class UIBatch extends ManagedTileBatch {
     override public function removeTileInstance(tile:Tile):Bool {
         __texIndices.remove(tile);
         __clipRects.remove(tile);
+        __tileColors.remove(tile);
         return super.removeTileInstance(tile);
     }
 
-    /** Build one tile into the vertex buffer — 6 floats per vertex (x,y,z,u,v,ti). */
+    /** Build one tile into the vertex buffer — 10 floats per vertex (x,y,z,u,v,ti,r,g,b,a). */
     override public function buildTile(tile:Tile):Void {
         var region = atlasRegions.get(tile.regionId);
         if (region == null) {
@@ -433,6 +468,10 @@ private class UIBatch extends ManagedTileBatch {
 
         var ti:Float = __texIndices.exists(tile) ? 1.0 : 0.0;
 
+        // Per-vertex color: font tiles always white; graphic tiles use tile or default
+        var col:Array<Float> = ti > 0.5 ? __WHITE : (__tileColors.get(tile) != null ? __tileColors.get(tile) : defaultColor);
+        var cr = col[0]; var cg = col[1]; var cb = col[2]; var ca = col[3];
+
         // ── Clip rect handling ────────────────────────────────────────────────
         var clip = __clipRects.get(tile);
         if (clip != null) {
@@ -459,10 +498,10 @@ private class UIBatch extends ManagedTileBatch {
                 var cuv_bottom = uv2 + (cly2 - wy1) / th * (uv1 - uv2);
 
                 // Emit clipped quad — same vertex order as normal path (high-y first)
-                vertices.push(clx1); vertices.push(cly2); vertices.push(0.0); vertices.push(cu1); vertices.push(cuv_bottom); vertices.push(ti);
-                vertices.push(clx2); vertices.push(cly2); vertices.push(0.0); vertices.push(cu2); vertices.push(cuv_bottom); vertices.push(ti);
-                vertices.push(clx2); vertices.push(cly1); vertices.push(0.0); vertices.push(cu2); vertices.push(cuv_top);    vertices.push(ti);
-                vertices.push(clx1); vertices.push(cly1); vertices.push(0.0); vertices.push(cu1); vertices.push(cuv_top);    vertices.push(ti);
+                vertices.push(clx1); vertices.push(cly2); vertices.push(0.0); vertices.push(cu1); vertices.push(cuv_bottom); vertices.push(ti); vertices.push(cr); vertices.push(cg); vertices.push(cb); vertices.push(ca);
+                vertices.push(clx2); vertices.push(cly2); vertices.push(0.0); vertices.push(cu2); vertices.push(cuv_bottom); vertices.push(ti); vertices.push(cr); vertices.push(cg); vertices.push(cb); vertices.push(ca);
+                vertices.push(clx2); vertices.push(cly1); vertices.push(0.0); vertices.push(cu2); vertices.push(cuv_top);    vertices.push(ti); vertices.push(cr); vertices.push(cg); vertices.push(cb); vertices.push(ca);
+                vertices.push(clx1); vertices.push(cly1); vertices.push(0.0); vertices.push(cu1); vertices.push(cuv_top);    vertices.push(ti); vertices.push(cr); vertices.push(cg); vertices.push(cb); vertices.push(ca);
                 __verticesToRender += 4;
                 __indicesToRender  += 6;
                 return;
@@ -472,13 +511,13 @@ private class UIBatch extends ManagedTileBatch {
 
         // ── Normal (unclipped) path ────────────────────────────────────────────────
         // Top-left
-        vertices.push(-hw * cosA - hh * sinA + cx); vertices.push(-hw * sinA + hh * cosA + cy); vertices.push(0.0); vertices.push(region.u1); vertices.push(uv1); vertices.push(ti);
+        vertices.push(-hw * cosA - hh * sinA + cx); vertices.push(-hw * sinA + hh * cosA + cy); vertices.push(0.0); vertices.push(region.u1); vertices.push(uv1); vertices.push(ti); vertices.push(cr); vertices.push(cg); vertices.push(cb); vertices.push(ca);
         // Top-right
-        vertices.push( hw * cosA - hh * sinA + cx); vertices.push( hw * sinA + hh * cosA + cy); vertices.push(0.0); vertices.push(region.u2); vertices.push(uv1); vertices.push(ti);
+        vertices.push( hw * cosA - hh * sinA + cx); vertices.push( hw * sinA + hh * cosA + cy); vertices.push(0.0); vertices.push(region.u2); vertices.push(uv1); vertices.push(ti); vertices.push(cr); vertices.push(cg); vertices.push(cb); vertices.push(ca);
         // Bottom-right
-        vertices.push( hw * cosA + hh * sinA + cx); vertices.push( hw * sinA - hh * cosA + cy); vertices.push(0.0); vertices.push(region.u2); vertices.push(uv2); vertices.push(ti);
+        vertices.push( hw * cosA + hh * sinA + cx); vertices.push( hw * sinA - hh * cosA + cy); vertices.push(0.0); vertices.push(region.u2); vertices.push(uv2); vertices.push(ti); vertices.push(cr); vertices.push(cg); vertices.push(cb); vertices.push(ca);
         // Bottom-left
-        vertices.push(-hw * cosA + hh * sinA + cx); vertices.push(-hw * sinA - hh * cosA + cy); vertices.push(0.0); vertices.push(region.u1); vertices.push(uv2); vertices.push(ti);
+        vertices.push(-hw * cosA + hh * sinA + cx); vertices.push(-hw * sinA - hh * cosA + cy); vertices.push(0.0); vertices.push(region.u1); vertices.push(uv2); vertices.push(ti); vertices.push(cr); vertices.push(cg); vertices.push(cb); vertices.push(ca);
 
         __verticesToRender += 4;
         __indicesToRender  += 6;
@@ -497,7 +536,7 @@ private class UIBatch extends ManagedTileBatch {
         }
 
         if (vbo != 0 && vertices.length > 0) {
-            renderer.orphanAndUploadData(this, MAX_TILES_UI * 4 * 6 * 4);
+            renderer.orphanAndUploadData(this, MAX_TILES_UI * 4 * 10 * 4);
         }
 
         needsBufferUpdate = false;

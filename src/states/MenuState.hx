@@ -65,6 +65,7 @@ class MenuState extends State {
         var ws = app.window.size;
         canvas = new Canvas(this, ws.x, ws.y);
         canvas.initializeGraphics(renderer, spriteTexture, fontTexture, fontData);
+        canvas.setTint(0.588, 0.690, 0.518);  // HL1 olive-green tint
         addEntity(new DisplayEntity(canvas.tilemap, "gui_tiles"));
         canvas.importSets(app.resources.getText("textures/gui.json"));
         addEntity(canvas);
@@ -94,9 +95,9 @@ class MenuState extends State {
         // Map selector
         newGameWindow.addControl(new Label("Map", 8, 8));
         var ddMap = new Dropdown(Math.round(MenuNewGameWindow.WIDTH - 16), 8, 26);
-        ddMap.addItem("Forest");
-        ddMap.addItem("Desert");
-        ddMap.addItem("Arctic");
+        ddMap.addItem("Map1");
+        ddMap.addItem("Map2");
+        ddMap.addItem("Map3");
         ddMap.selectIndex(0);
         newGameWindow.addControl(ddMap);
 

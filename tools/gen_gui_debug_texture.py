@@ -1,15 +1,12 @@
 """
-Generates a debug GUI texture (gui_debug.tga) with visually distinct regions
-matching the layout defined in res/textures/gui.json.
+Generates a GUI texture (gui_debug.tga) with a grayscale bevel palette.
 
-Each UI category (buttons, checkboxes, panels, strips, stamps, sliders,
-windowPanels/Strips) is given a distinct hue. 9-slice corner tiles get a
-visible corner marker so they are easy to spot in-engine.
-
-Small "embedded" regions (grip_0, slider_full_*, folder, indicator_0,
-stamp_brush, stamp_clipping, stamp_select) share pixel space with the main
-large tiles by atlas design. They are drawn last as outline-only rectangles
-so the main tile colour remains visible and correct.
+All colors are pure greyscale so the shader can tint them via per-vertex
+color multiply (r,g,b,a).  Luminance values are scaled so the panel
+background maps to 128 (0.5), giving headroom for both highlights and
+shadows.  The HL1 olive-green look is applied at runtime by setting
+canvas.setTint(0.588, 0.690, 0.518).
+Icons: stamp_close = X, stamp_fold = underscore.
 """
 
 from PIL import Image, ImageDraw
@@ -17,204 +14,180 @@ from PIL import Image, ImageDraw
 WIDTH  = 512
 HEIGHT = 512
 
-# ── Region data (matches gui.json) ─────────────────────────────────────────
+def g(v): return (v, v, v)   # grayscale helper
+
+C_PANEL_BG  = g(128)
+C_PANEL_HI  = g(215)
+C_PANEL_SH  = g( 62)
+C_STRIP_BG  = g( 88)
+C_STRIP_HI  = g(163)
+C_STRIP_SH  = g( 42)
+C_BTN_BG    = g(153)
+C_BTN_HI    = g(248)
+C_BTN_SH    = g( 62)
+C_CB_BG     = g(106)
+C_CB_HI     = g(189)
+C_CB_SH     = g( 53)
+C_CB_TICK   = g(255)
+C_ICON      = g(255)
+C_CANVAS    = ( 39,  39,  39, 255)
+
 REGIONS = [
-    # Buttons (3-slice)
-    {"name": "button_0",    "dim": [  0,   0, 28, 28]},
-    {"name": "button_1",    "dim": [ 30,   0, 28, 28]},
-    {"name": "button_2",    "dim": [ 60,   0, 28, 28]},
-
-    # Checkboxes
-    {"name": "checkbox_0",  "dim": [  0,  30, 28, 28]},
-    {"name": "checkbox_1",  "dim": [ 30,  30, 28, 28]},
-
-    # Panels (9-slice: TL T TR / L C R / BL B BR)
-    {"name": "panel_1",     "dim": [  0,  60, 28, 28]},   # TL
-    {"name": "panel_2",     "dim": [ 30,  60, 28, 28]},   # T
-    {"name": "panel_3",     "dim": [ 60,  60, 28, 28]},   # TR
-    {"name": "panel_4",     "dim": [ 90,  60, 28, 28]},   # L
-    {"name": "panel_5",     "dim": [120,  60, 28, 28]},   # C
-    {"name": "panel_6",     "dim": [150,  60, 28, 28]},   # R
-    {"name": "panel_7",     "dim": [180,  60, 28, 28]},   # BL
-    {"name": "panel_8",     "dim": [210,  60, 28, 28]},   # B
-    {"name": "panel_9",     "dim": [240,  60, 28, 28]},   # BR
-
-    # Strips (3-slice) + stamps in the same row — all safe, no overlap
-    {"name": "strip_1",     "dim": [  0,  90, 28, 28]},
-    {"name": "strip_2",     "dim": [ 30,  90, 28, 28]},
-    {"name": "strip_3",     "dim": [ 60,  90, 28, 28]},
-    {"name": "stamp_fold",  "dim": [ 90,  90, 28, 28]},
-    {"name": "stamp_close", "dim": [120,  90, 28, 28]},
-
-    # Sliders — standalone rows (safe)
-    {"name": "slider_0",    "dim": [  0, 349, 24, 24]},
-    {"name": "slider_1",    "dim": [  0, 373, 24, 24]},
-    {"name": "slider_2",    "dim": [  0, 397, 24, 24]},
-
-    # Stamp file / folder — safe rows
-    {"name": "stamp_file",   "dim": [  0, 437, 24, 18]},
-    {"name": "stamp_folder", "dim": [  0, 471, 18, 16]},
-
-    # Window panels (9-slice: TL T TR / L C R / BL B BR)
-    {"name": "windowPanel_0", "dim": [156,   0, 24, 24]},  # TL
-    {"name": "windowPanel_1", "dim": [180,   0, 24, 24]},  # T
-    {"name": "windowPanel_2", "dim": [204,   0, 24, 24]},  # TR
-    {"name": "windowPanel_3", "dim": [228,   0, 24, 24]},  # L
-    {"name": "windowPanel_4", "dim": [252,   0, 24, 24]},  # C
-    {"name": "windowPanel_5", "dim": [276,   0, 24, 24]},  # R
-    {"name": "windowPanel_6", "dim": [300,   0, 24, 24]},  # BL
-    {"name": "windowPanel_7", "dim": [324,   0, 24, 24]},  # B
-    {"name": "windowPanel_8", "dim": [348,   0, 24, 24]},  # BR
-    # Window strips (3-slice)
+    {"name": "button_0",      "dim": [  0,   0, 28, 28]},
+    {"name": "button_1",      "dim": [ 30,   0, 28, 28]},
+    {"name": "button_2",      "dim": [ 60,   0, 28, 28]},
+    {"name": "checkbox_0",    "dim": [  0,  30, 28, 28]},
+    {"name": "checkbox_1",    "dim": [ 30,  30, 28, 28]},
+    {"name": "panel_1",       "dim": [  0,  60, 28, 28]},
+    {"name": "panel_2",       "dim": [ 30,  60, 28, 28]},
+    {"name": "panel_3",       "dim": [ 60,  60, 28, 28]},
+    {"name": "panel_4",       "dim": [ 90,  60, 28, 28]},
+    {"name": "panel_5",       "dim": [120,  60, 28, 28]},
+    {"name": "panel_6",       "dim": [150,  60, 28, 28]},
+    {"name": "panel_7",       "dim": [180,  60, 28, 28]},
+    {"name": "panel_8",       "dim": [210,  60, 28, 28]},
+    {"name": "panel_9",       "dim": [240,  60, 28, 28]},
+    {"name": "strip_1",       "dim": [  0,  90, 28, 28]},
+    {"name": "strip_2",       "dim": [ 30,  90, 28, 28]},
+    {"name": "strip_3",       "dim": [ 60,  90, 28, 28]},
+    {"name": "stamp_fold",    "dim": [ 90,  90, 28, 28]},
+    {"name": "stamp_close",   "dim": [120,  90, 28, 28]},
+    {"name": "slider_0",      "dim": [  0, 349, 24, 24]},
+    {"name": "slider_1",      "dim": [  0, 373, 24, 24]},
+    {"name": "slider_2",      "dim": [  0, 397, 24, 24]},
+    {"name": "stamp_file",    "dim": [  0, 437, 24, 18]},
+    {"name": "stamp_folder",  "dim": [  0, 471, 18, 16]},
+    {"name": "windowPanel_0", "dim": [156,   0, 24, 24]},
+    {"name": "windowPanel_1", "dim": [180,   0, 24, 24]},
+    {"name": "windowPanel_2", "dim": [204,   0, 24, 24]},
+    {"name": "windowPanel_3", "dim": [228,   0, 24, 24]},
+    {"name": "windowPanel_4", "dim": [252,   0, 24, 24]},
+    {"name": "windowPanel_5", "dim": [276,   0, 24, 24]},
+    {"name": "windowPanel_6", "dim": [300,   0, 24, 24]},
+    {"name": "windowPanel_7", "dim": [324,   0, 24, 24]},
+    {"name": "windowPanel_8", "dim": [348,   0, 24, 24]},
     {"name": "windowStrip_0", "dim": [372,   0, 24, 24]},
     {"name": "windowStrip_1", "dim": [396,   0, 24, 24]},
     {"name": "windowStrip_2", "dim": [420,   0, 24, 24]},
 ]
 
-# These regions are intentionally packed INSIDE a larger tile's pixel area
-# in the original atlas design. Draw them outline-only so the main tile
-# colours remain visible.
 OUTLINE_ONLY = {
-    "empty",
-    "folder",
-    "grip_0",
-    "indicator_0",
-    "slider_full_0",
-    "slider_full_1",
-    "slider_full_2",
-    "stamp_brush",
-    "stamp_clipping",
-    "stamp_select",
+    "empty", "folder", "grip_0", "indicator_0",
+    "slider_full_0", "slider_full_1", "slider_full_2",
+    "stamp_brush", "stamp_clipping", "stamp_select",
 }
 
-# ── 9-slice role lookup ─────────────────────────────────────────────────────
-NINE_SLICE_ROLES = {0: "corner", 1: "edge", 2: "corner",
-                    3: "edge",   4: "center", 5: "edge",
-                    6: "corner", 7: "edge",   8: "corner"}
+_ROLES = {0: "corner", 1: "edge_h", 2: "corner",
+          3: "edge_v", 4: "center", 5: "edge_v",
+          6: "corner", 7: "edge_h", 8: "corner"}
 
-WP_ROLES = {0: "corner", 1: "edge", 2: "corner",
-            3: "edge",   4: "center", 5: "edge",
-            6: "corner", 7: "edge",   8: "corner"}
-
-
-def get_role(name: str):
-    if name.startswith("panel_"):
-        try:
-            idx = int(name[6:]) - 1
-            return NINE_SLICE_ROLES.get(idx)
-        except ValueError:
-            pass
-    if name.startswith("windowPanel_"):
-        try:
-            idx = int(name[12:])
-            return WP_ROLES.get(idx)
-        except ValueError:
-            pass
+def get_role(name):
+    for prefix, offset, base in (("panel_", 6, 1), ("windowPanel_", 12, 0)):
+        if name.startswith(prefix):
+            try: return _ROLES.get(int(name[offset:]) - base)
+            except ValueError: pass
     return None
 
+def bevel(draw, x, y, w, h, bg, hi, sh, bv=2):
+    draw.rectangle([x, y, x+w-1, y+h-1], fill=bg+(255,))
+    for i in range(bv):
+        draw.line([x+i,     y+i,     x+w-1-i, y+i      ], fill=hi+(255,))
+        draw.line([x+i,     y+i,     x+i,     y+h-1-i  ], fill=hi+(255,))
+        draw.line([x+i,     y+h-1-i, x+w-1-i, y+h-1-i  ], fill=sh+(255,))
+        draw.line([x+w-1-i, y+i,     x+w-1-i, y+h-1-i  ], fill=sh+(255,))
 
-def base_color(name: str):
-    if name.startswith("button"):
-        return (60, 110, 210)
-    if name.startswith("checkbox"):
-        return (55, 175, 80)
-    if name.startswith("panel"):
-        return (190, 130, 45)
-    if name.startswith("strip"):
-        return (160, 65, 200)
-    if name.startswith("stamp"):
-        return (40, 190, 175)
-    if name.startswith("slider"):
-        return (210, 60, 70)
-    if name.startswith("window"):
-        return (70, 145, 225)
-    if name in ("folder", "grip_0", "indicator_0"):
-        return (140, 140, 140)
-    return (130, 120, 95)
-
-
-def brighten(c, amount=70):
-    return tuple(min(255, v + amount) for v in c)
-
-
-def darken(c, amount=50):
-    return tuple(max(0, v - amount) for v in c)
-
-
-def draw_region(draw: ImageDraw.ImageDraw, name: str,
-                x: int, y: int, w: int, h: int, outline_only: bool = False):
-    if w <= 0 or h <= 0:
-        return
-
-    fill   = base_color(name)
-    border = brighten(fill, 80)
-    dark   = darken(fill, 40)
-    role   = get_role(name)
-
+def draw_region(draw, name, x, y, w, h, outline_only=False):
+    if w <= 0 or h <= 0: return
     if outline_only:
-        # Draw just a 1-pixel border — leaves main tile colour untouched
-        if w >= 2 and h >= 2:
-            draw.rectangle([x, y, x + w - 1, y + h - 1],
-                           outline=brighten(fill, 120) + (180,))
+        draw.rectangle([x, y, x+w-1, y+h-1], outline=C_PANEL_HI+(120,))
+        return
+    role = get_role(name)
+
+    if name.startswith("panel_") or name.startswith("windowPanel_"):
+        bg, hi, sh = C_PANEL_BG, C_PANEL_HI, C_PANEL_SH
+        try: idx = int(name.split("_")[1]) - (1 if name.startswith("panel_") else 0)
+        except: idx = 4
+        # idx map: 0=TL 1=T 2=TR / 3=L 4=C 5=R / 6=BL 7=B 8=BR
+        draw.rectangle([x, y, x+w-1, y+h-1], fill=bg+(255,))
+        bv = 2
+        for i in range(bv):
+            if idx in (0, 1, 2):  # top-facing tiles
+                draw.line([x, y+i, x+w-1, y+i], fill=hi+(255,))
+            if idx in (0, 3, 6):  # left-facing tiles
+                draw.line([x+i, y, x+i, y+h-1], fill=hi+(255,))
+            if idx in (6, 7, 8):  # bottom-facing tiles
+                draw.line([x, y+h-1-i, x+w-1, y+h-1-i], fill=sh+(255,))
+            if idx in (2, 5, 8):  # right-facing tiles
+                draw.line([x+w-1-i, y, x+w-1-i, y+h-1], fill=sh+(255,))
         return
 
-    # ── Solid fill ──────────────────────────────────────────────────────────
-    if role == "center":
-        fill = brighten(fill, 30)
-    elif role == "corner":
-        fill = darken(fill, 10)
+    # 3-slice helper: idx 0=left cap, 1=center, 2=right cap
+    # Caps: top+bottom always; left side only on left cap; right side only on right cap
+    def threeslice(bg, hi, sh):
+        draw.rectangle([x, y, x+w-1, y+h-1], fill=bg+(255,))
+        bv = 2
+        for i in range(bv):
+            # top + bottom on all three pieces
+            draw.line([x, y+i,     x+w-1, y+i     ], fill=hi+(255,))
+            draw.line([x, y+h-1-i, x+w-1, y+h-1-i ], fill=sh+(255,))
+            # left cap only
+            if idx == 0:
+                draw.line([x+i, y, x+i, y+h-1], fill=hi+(255,))
+            # right cap only
+            if idx == 2:
+                draw.line([x+w-1-i, y, x+w-1-i, y+h-1], fill=sh+(255,))
 
-    draw.rectangle([x, y, x + w - 1, y + h - 1], fill=fill + (255,))
+    if name.startswith("button_"):
+        idx = int(name[7:])
+        threeslice(C_BTN_BG, C_BTN_HI, C_BTN_SH)
+        return
 
-    if w >= 2 and h >= 2:
-        draw.rectangle([x, y, x + w - 1, y + h - 1], outline=border + (255,))
+    if name.startswith("strip_") or name.startswith("windowStrip_"):
+        try: idx = int(name.split("_")[1]) - (1 if name.startswith("strip_") else 0)
+        except: idx = 1
+        threeslice(C_STRIP_BG, C_STRIP_HI, C_STRIP_SH)
+        return
 
-    # ── Role markers ────────────────────────────────────────────────────────
-    if role == "corner" and w >= 8 and h >= 8:
-        m = 4
-        draw.rectangle([x + 2, y + 2, x + 2 + m, y + 2 + m], fill=border + (255,))
-    elif role == "edge" and w >= 6 and h >= 6:
-        cx, cy = x + w // 2, y + h // 2
-        if w > h:
-            draw.line([x + 2, cy, x + w - 3, cy], fill=border + (200,))
-        else:
-            draw.line([cx, y + 2, cx, y + h - 3], fill=border + (200,))
-    elif role == "center" and w >= 10 and h >= 10:
-        cx, cy = x + w // 2, y + h // 2
-        draw.line([cx - 4, cy, cx + 4, cy], fill=dark + (200,))
-        draw.line([cx, cy - 4, cx, cy + 4], fill=dark + (200,))
-    elif role is None and w >= 8 and h >= 8:
-        cx, cy = x + w // 2, y + h // 2
-        draw.line([cx - 3, cy, cx + 3, cy], fill=brighten(fill, 60) + (180,))
-        draw.line([cx, cy - 3, cx, cy + 3], fill=brighten(fill, 60) + (180,))
+    if name.startswith("checkbox_"):
+        # Checkboxes are standalone — full bevel but sunken (hi/sh swapped)
+        bevel(draw, x, y, w, h, C_CB_BG, C_CB_SH, C_CB_HI)
+        if name == "checkbox_1":
+            p = 5
+            draw.line([x+p, y+h//2, x+w//2-1, y+h-p-1], fill=C_CB_TICK+(255,), width=2)
+            draw.line([x+w//2-1, y+h-p-1, x+w-p, y+p], fill=C_CB_TICK+(255,), width=2)
+        return
 
-    # ── Stamp icon ───────────────────────────────────────────────────────────
-    if name.startswith("stamp") and w >= 14 and h >= 14:
-        icon = brighten(fill, 100) + (220,)
-        cx, cy = x + w // 2, y + h // 2
-        r = min(w, h) // 4
-        draw.ellipse([cx - r, cy - r, cx + r, cy + r], outline=icon)
+    if name == "stamp_close":
+        bevel(draw, x, y, w, h, C_STRIP_BG, C_STRIP_HI, C_STRIP_SH)
+        p = 6
+        draw.line([x+p, y+p, x+w-1-p, y+h-1-p], fill=C_ICON+(255,), width=2)
+        draw.line([x+w-1-p, y+p, x+p, y+h-1-p], fill=C_ICON+(255,), width=2)
+        return
 
-    # ── Checkbox tick on state 1 ──────────────────────────────────────────────
-    if name == "checkbox_1" and w >= 12 and h >= 12:
-        tick = brighten(fill, 120) + (230,)
-        x0, y0 = x + w // 4, y + h // 2
-        x1, y1 = x + w // 2 - 1, y + h * 3 // 4
-        x2, y2 = x + w * 3 // 4, y + h // 4
-        draw.line([x0, y0, x1, y1], fill=tick, width=2)
-        draw.line([x1, y1, x2, y2], fill=tick, width=2)
+    if name == "stamp_fold":
+        bevel(draw, x, y, w, h, C_STRIP_BG, C_STRIP_HI, C_STRIP_SH)
+        p = 6
+        cy = y + h - p - 2
+        draw.line([x+p, cy, x+w-1-p, cy], fill=C_ICON+(255,), width=2)
+        return
+
+    if name.startswith("stamp_"):
+        bevel(draw, x, y, w, h, C_STRIP_BG, C_STRIP_HI, C_STRIP_SH)
+        return
+
+    if name.startswith("slider_"):
+        bevel(draw, x, y, w, h, C_BTN_BG, C_BTN_HI, C_BTN_SH)
+        return
+
+    bevel(draw, x, y, w, h, C_PANEL_BG, C_PANEL_HI, C_PANEL_SH)
 
 
-# ── Main ───────────────────────────────────────────────────────────────────
-img  = Image.new("RGBA", (WIDTH, HEIGHT), (18, 18, 28, 255))
+img  = Image.new("RGBA", (WIDTH, HEIGHT), C_CANVAS)
 draw = ImageDraw.Draw(img)
-
 for r in REGIONS:
     x, y, w, h = r["dim"]
-    draw_region(draw, r["name"], x, y, w, h,
-                outline_only=(r["name"] in OUTLINE_ONLY))
+    draw_region(draw, r["name"], x, y, w, h, outline_only=(r["name"] in OUTLINE_ONLY))
 
-out = r"c:\Users\efedorenko\Documents\projects\github\haxe-application\res\textures\gui_debug.tga"
+out = 'c:\\Users\\efedorenko\\Documents\\projects\\github\\haxe-application\\res\\textures\\gui_debug.tga'
 img.save(out)
-print(f"Saved  →  {out}  ({WIDTH}×{HEIGHT} RGBA)")
-
+print("Saved ->", out, str(WIDTH)+"x"+str(HEIGHT)+" RGBA")

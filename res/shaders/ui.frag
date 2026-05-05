@@ -2,6 +2,7 @@
 
 in vec2 TexCoord;
 in float TexIndex;
+in vec4 Color;
 
 out vec4 FragColor;
 
@@ -23,5 +24,5 @@ void main() {
 
     if (color.a < 0.01) discard;
 
-    FragColor = color;
+    FragColor = color * Color;
 }
