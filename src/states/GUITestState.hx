@@ -13,6 +13,7 @@ import gui.ScrollableContainer;
 import gui.Stamp;
 import gui.Strip;
 import gui.Dropdown;
+import gui.ProgressBar;
 import gui.TabControl;
 import gui.TabPage;
 import gui.Window;
@@ -31,7 +32,7 @@ import loaders.FontLoader;
 class GUITestState extends State {
 
     private static final NAMES:Array<String> = [
-        "Label", "Button", "Checkbox", "Strip", "Panel", "Window", "Stamp", "ScrollableContainer", "TabControl", "Dropdown"
+        "Label", "Button", "Checkbox", "Strip", "Panel", "Window", "Stamp", "ScrollableContainer", "TabControl", "Dropdown", "ProgressBar"
     ];
 
     private var canvas:Canvas;
@@ -116,7 +117,8 @@ class GUITestState extends State {
             case 6: _showStamp(cx, cy);
             case 7: _showScrollableContainer(cx, cy);
             case 8: _showTabControl(cx, cy);
-            case 9: _showDropdown(cx, cy);
+            case 9:  _showDropdown(cx, cy);
+            case 10: _showProgressBar(cx, cy);
         }
     }
 
@@ -195,6 +197,12 @@ class GUITestState extends State {
         var chkFs = new Checkbox(false, 8, 32);
         page3.addControl(chkFs);
         page3.addControl(new Label("Fullscreen", 44, 36));
+    }
+
+    private function _showProgressBar(cx:Int, cy:Int):Void {
+        var pb = cast(_track(new ProgressBar(200, cx - 100, cy - 14)), ProgressBar);
+        pb.value = 0.7;
+        _track(new Label("70%", cx + 108, cy - 8));
     }
 
     private function _showScrollableContainer(cx:Int, cy:Int):Void {
