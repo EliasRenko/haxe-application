@@ -1,7 +1,5 @@
 package states;
 
-import display.ManagedTileBatch;
-import entity.DisplayEntity;
 import gui.Button;
 import gui.Canvas;
 import gui.Checkbox;
@@ -13,6 +11,7 @@ import gui.ScrollableContainer;
 import gui.Stamp;
 import gui.Strip;
 import gui.Dropdown;
+import gui.ImageView;
 import gui.ProgressBar;
 import gui.TabControl;
 import gui.TabPage;
@@ -32,7 +31,7 @@ import loaders.FontLoader;
 class GUITestState extends State {
 
     private static final NAMES:Array<String> = [
-        "Label", "Button", "Checkbox", "Strip", "Panel", "Window", "Stamp", "ScrollableContainer", "TabControl", "Dropdown", "ProgressBar"
+        "Label", "Button", "Checkbox", "Strip", "Panel", "Window", "Stamp", "ScrollableContainer", "TabControl", "Dropdown", "ProgressBar", "ImageView", "3 Windows"
     ];
 
     private var canvas:Canvas;
@@ -54,6 +53,11 @@ class GUITestState extends State {
         renderer.createProgramInfo("ui", null,
             app.resources.getText("shaders/ui.frag"));
 
+        // Required by ImageView (uses the textured shader for image draw calls).
+        renderer.createProgramInfo("textured",
+            app.resources.getText("shaders/textured.vert"),
+            app.resources.getText("shaders/textured.frag"));
+
         var spriteTexture = renderer.uploadTexture(
             app.resources.getTexture("textures/gui_debug.tga"));
 
@@ -66,7 +70,6 @@ class GUITestState extends State {
         canvas = new Canvas(this, ws.x, ws.y);
         canvas.initializeGraphics(renderer, spriteTexture, fontTexture, fontData);
         canvas.setTint(0.588, 0.690, 0.518);  // HL1 olive-green tint
-        addEntity(new DisplayEntity(canvas.tilemap, "gui_tiles"));
         canvas.importSets(app.resources.getText("textures/gui.json"));
         addEntity(canvas);
 
@@ -119,6 +122,8 @@ class GUITestState extends State {
             case 8: _showTabControl(cx, cy);
             case 9:  _showDropdown(cx, cy);
             case 10: _showProgressBar(cx, cy);
+            case 11: _showImageView(cx, cy);
+            case 12: _showThreeWindows(cx, cy);
         }
     }
 
@@ -197,6 +202,62 @@ class GUITestState extends State {
         var chkFs = new Checkbox(false, 8, 32);
         page3.addControl(chkFs);
         page3.addControl(new Label("Fullscreen", 44, 36));
+    }
+
+    private function _showThreeWindows(cx:Int, cy:Int):Void {
+        // ── Window 1: scrollable text ──────────────────────────────────────────
+        var win1 = cast(_track(new Window("Text", 200, 180, cx - 330, cy - 90)), Window);
+        var sc = new ScrollableContainer(184, 118, 4, 4);
+        for (i in 0...14)
+            sc.addControl(new Label("Line " + (i + 1) + " — lorem ipsum dolor", 4, i * 18));
+        win1.addControl(sc);
+
+        // ── Window 2: buttons ─────────────────────────────────────────────────
+        var win2 = cast(_track(new Window("Actions", 180, 180, cx - 110, cy - 90)), Window);
+        var labels = ["New Game", "Load Game", "Settings", "Quit"];
+        for (i in 0...labels.length) {
+            var btn = new Button(labels[i], 140, 16, 8 + i * 32);
+            var name = labels[i];
+            btn.addListener(function(_, __) trace("3W btn: " + name), LEFT_CLICK);
+            win2.addControl(btn);
+        }
+
+        // ── Window 3: image (cat.tga), sized to fit the texture ──────────────
+        var td = app.resources.getTexture("textures/cat.tga");
+        var imgW = td.width;
+        var imgH = td.height;
+        // Window chrome: 28px title bar + 8px vertical padding, 12px horizontal padding.
+        var win3W = imgW + 12;
+        var win3H = imgH + Window.DEFAULT_TILE_HEIGHT + 8;
+        var win3 = cast(_track(new Window("Image", win3W, win3H, cx + 90, cy - Std.int(win3H / 2))), Window);
+        var iv = new ImageView(imgW, imgH, 6, 6);
+        win3.addControl(iv);
+        iv.setPixels(td.bytes, imgW, imgH, td.bytesPerPixel);
+    }
+
+    private function _showImageView(cx:Int, cy:Int):Void {
+        // Create a 128x128 ImageView and fill it with a procedural checkerboard
+        // pattern so it works without any external image file.
+        var W = 128; var H = 128;
+        var iv = cast(_track(new ImageView(W, H, cx - Std.int(W / 2), cy - Std.int(H / 2))), ImageView);
+
+        // Generate RGBA checkerboard (8x8 cells, dark green / olive).
+        var bytes = new haxe.io.UInt8Array(W * H * 4);
+        for (py in 0...H) {
+            for (px in 0...W) {
+                var cell  = (Std.int(px / 16) + Std.int(py / 16)) % 2 == 0;
+                var r = cell ? 40  : 90;
+                var g = cell ? 80  : 140;
+                var b = cell ? 40  : 60;
+                var idx = (py * W + px) * 4;
+                bytes[idx]     = r;
+                bytes[idx + 1] = g;
+                bytes[idx + 2] = b;
+                bytes[idx + 3] = 255;
+            }
+        }
+        iv.setPixels(bytes, W, H, 4);
+        _track(new Label("ImageView", cx - 26, cy + Std.int(H / 2) + 6));
     }
 
     private function _showProgressBar(cx:Int, cy:Int):Void {

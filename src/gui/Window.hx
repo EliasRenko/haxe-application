@@ -39,7 +39,10 @@ class Window extends Container<Control> {
     }
 
     public function addControl(control:Control):Control {
-        return __panel.addControl(control);
+        if (____canvas != null) ____canvas.beginGroupTag(this);
+        var result = __panel.addControl(control);
+        if (____canvas != null) ____canvas.endGroupTag();
+        return result;
     }
 
     public function removeControl(control:Control):Void {

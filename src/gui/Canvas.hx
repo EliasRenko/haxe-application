@@ -3,13 +3,16 @@ package gui;
 import display.TileBatch.AtlasRegion;
 import display.ManagedTileBatch;
 import display.IFontSource;
+import display.Image;
 import display.Tile;
 import Entity;
 import State;
 import Renderer;
 import loaders.FontData;
 import loaders.FontData.FontChar;
+import math.Matrix;
 import Texture;
+import gui.ImageHook;
 import haxe.Json;
 
 /**
@@ -44,6 +47,9 @@ class Canvas extends Entity {
     public var leftClick(get, null):Bool;
     public var mouseScrollY(get, null):Float;
 
+    // Renderer reference (stored at initializeGraphics time)
+    public var renderer(get, null):Renderer;
+
     private var __container:RootContainer;
     private var __font:IFontSource;
     private var __uiBatch:UIBatch;
@@ -51,6 +57,9 @@ class Canvas extends Entity {
     private var __focusedControl:Control;
     private var __clipRectCounter:Int = 0;
     private var __clipRectHandles:Map<Int, ClipRect> = new Map();
+    private var __renderer:Renderer;
+    private var __nextGroupTag:Int = 1;
+    private var __controlGroupTags:Map<Control, Int> = new Map();
 
     // ── Focus stack ───────────────────────────────────────────────────────────
     // The top entry is the only container that receives mouse input each frame.
@@ -97,6 +106,7 @@ class Canvas extends Entity {
      * @param fontData      Parsed font metrics (from FontLoader)
      */
     public function initializeGraphics(renderer:Renderer, spriteTexture:Texture, fontTexture:Texture, fontData:FontData):Void {
+        __renderer = renderer;
         __uiBatch = new UIBatch(renderer, spriteTexture, fontTexture);
         tilemap = __uiBatch;
         __font  = new UIFont(__uiBatch, fontData);
@@ -132,11 +142,20 @@ class Canvas extends Entity {
     }
 
     public function addControl(control:Control):Control {
+        if (Std.isOfType(control, Window) && __uiBatch != null) {
+            var tag = __nextGroupTag++;
+            __controlGroupTags.set(control, tag);
+            __uiBatch.pendingGroupTag = tag;
+            var result = __container.addControl(control);
+            __uiBatch.pendingGroupTag = 0;
+            return result;
+        }
         return __container.addControl(control);
     }
 
     public function removeControl(control:Control):Void {
-        return __container.removeControl(control);
+        __controlGroupTags.remove(control);
+        __container.removeControl(control);
     }
 
     // ── Focus stack API ───────────────────────────────────────────────────────
@@ -167,6 +186,50 @@ class Canvas extends Entity {
                 return;
             }
         }
+    }
+
+    // ── Z-order API ───────────────────────────────────────────────────────────
+
+    /**
+     * Begin attributing newly added tiles/hooks to the group tag of [control].
+     * Called by Window.addControl so that content tiles share the window's tag.
+     */
+    public function beginGroupTag(control:Control):Void {
+        if (__uiBatch == null) return;
+        var tag = __controlGroupTags.get(control);
+        if (tag != null) __uiBatch.pendingGroupTag = tag;
+    }
+
+    /** Clear the pending group tag (called by Window.addControl after child init). */
+    public function endGroupTag():Void {
+        if (__uiBatch != null) __uiBatch.pendingGroupTag = 0;
+    }
+
+    /**
+     * Move all render list entries belonging to [control]'s group tag to the
+     * end of the render list so the control renders on top of everything else.
+     */
+    public function raiseControlToTop(control:Control):Void {
+        var tag = __controlGroupTags.get(control);
+        if (tag != null) __uiBatch.raiseGroupToTop(tag);
+    }
+
+    // ── ImageView hook API ────────────────────────────────────────────────────
+
+    /**
+     * Register an ImageHook into the UIBatch render list at the current
+     * insertion position.  Called by ImageView.init().
+     */
+    public function registerImageHook(hook:ImageHook):Void {
+        __uiBatch.addImageHook(hook);
+    }
+
+    /**
+     * Remove an ImageHook from the UIBatch render list.
+     * Called by ImageView.release().
+     */
+    public function unregisterImageHook(hook:ImageHook):Void {
+        __uiBatch.removeImageHook(hook);
     }
 
     // ── Overlay API ───────────────────────────────────────────────────────────
@@ -206,8 +269,84 @@ class Canvas extends Entity {
         return regionId != null ? regionId : -1;
     }
     
+    /**
+     * Render the canvas.  Replaces the old DisplayEntity(canvas.tilemap) pattern.
+     *
+     * When no ImageViews are present: single UIBatch draw call (identical to
+     * the previous behaviour).
+     *
+     * When ImageViews are present: the UIBatch render list is walked in
+     * insertion order.  Accumulated tile segments are flushed before each
+     * image hook, producing N+1 draw calls for N ImageViews.
+     */
+    override public function render(renderer:Renderer, viewProjectionMatrix:Matrix):Void {
+        if (!active || !visible || __uiBatch == null) return;
+
+        var renderList = __uiBatch.getRenderList();
+
+        // Fast path: no image hooks — single draw call.
+        var hasHooks = false;
+        for (item in renderList) {
+            if (!item.isTile) { hasHooks = true; break; }
+        }
+
+        if (!hasHooks) {
+            __uiBatch.segmentTiles = null;
+            renderer.renderDisplayObject(__uiBatch, viewProjectionMatrix);
+            return;
+        }
+
+        // Segmented path: flush tile segments around each image hook.
+        var segment:Array<Tile> = [];
+        for (item in renderList) {
+            if (item.isTile) {
+                if (item.tile.visible) segment.push(item.tile);
+            } else {
+                // Flush accumulated tile segment.
+                if (segment.length > 0) {
+                    __uiBatch.segmentTiles = segment;
+                    renderer.renderDisplayObject(__uiBatch, viewProjectionMatrix);
+                    __uiBatch.segmentTiles = null;
+                    segment = [];
+                }
+                // Draw the image.
+                var hook = item.hook;
+                if (hook.visible && hook.displayImage != null) {
+                    renderer.renderDisplayObject(hook.displayImage, viewProjectionMatrix);
+                }
+            }
+        }
+        // Flush any remaining tiles after the last hook.
+        if (segment.length > 0) {
+            __uiBatch.segmentTiles = segment;
+            renderer.renderDisplayObject(__uiBatch, viewProjectionMatrix);
+            __uiBatch.segmentTiles = null;
+        }
+    }
+
     override public function update(deltaTime:Float):Void {
         if (__focusStack.length > 0) {
+            // Click-to-raise: fire on mouse-down so the window can also start
+            // dragging in the same frame (mouse.pressed matches Window.update).
+            // Only look for a background window if the click missed the top window —
+            // this prevents clicks from passing through the focused window.
+            if (parentState.app.input.mouse.pressed(0)) {
+                var topEntry = __focusStack[__focusStack.length - 1];
+                if (!topEntry.control.hitTest()) {
+                    var i = __focusStack.length - 2;
+                    while (i >= 0) {
+                        var e = __focusStack[i];
+                        if (e.modal && e.control.hitTest()) {
+                            __focusStack.splice(i, 1);
+                            __focusStack.push(e);
+                            raiseControlToTop(e.control);
+                            break;
+                        }
+                        i--;
+                    }
+                }
+            }
+
             var entry = __focusStack[__focusStack.length - 1];
             if (entry.modal) {
                 // Modal (Window): always process — blocks everything behind it.
@@ -255,6 +394,10 @@ class Canvas extends Entity {
 
     private function get_mouseScrollY():Float {
         return parentState.app.input.mouse.scrollY;
+    }
+
+    private function get_renderer():Renderer {
+        return __renderer;
     }
 
     // ── Clip rect API (used by ScrollableContainer) ──────────────────────────
@@ -350,6 +493,21 @@ private class UIBatch extends ManagedTileBatch {
     // Font tiles always use (1,1,1,1) regardless of this value.
     public var defaultColor:Array<Float> = [1.0, 1.0, 1.0, 1.0];
 
+    // ── Render list ───────────────────────────────────────────────────────────
+    // Ordered list of all items (tiles + image hooks) in insertion order.
+    // Canvas.render() walks this to interleave UIBatch segments and Image draws.
+    private var __renderList:Array<{isTile:Bool, tile:Tile, hook:ImageHook}> = [];
+
+    // When non-null, updateBuffers() builds only this subset of tiles.
+    // Canvas.render() sets/clears this around each renderDisplayObject call.
+    public var segmentTiles:Array<Tile> = null;
+
+    // Group tagging for Z-order: tiles/hooks added while pendingGroupTag != 0 are
+    // recorded so raiseGroupToTop() can move them to the end of the render list.
+    public var pendingGroupTag:Int = 0;
+    private var __tileTags:Map<Tile, Int> = new Map();
+    private var __hookTags:Map<ImageHook, Int> = new Map();
+
     private static final __WHITE:Array<Float> = [1.0, 1.0, 1.0, 1.0];
 
     // Clip rect applied to the next addTile / addTileInstance call (null = unclipped)
@@ -389,16 +547,22 @@ private class UIBatch extends ManagedTileBatch {
 
     override public function addTile(x:Float, y:Float, w:Float, h:Float, regionId:Int):Int {
         var tileId = super.addTile(x, y, w, h, regionId);
-        if (__pendingClipRect != null && tileId != -1) {
+        if (tileId != -1) {
             var tile = getTile(tileId);
-            if (tile != null) __clipRects.set(tile, __pendingClipRect);
+            if (tile != null) {
+                __renderList.push({isTile: true, tile: tile, hook: null});
+                if (__pendingClipRect != null) __clipRects.set(tile, __pendingClipRect);
+                if (pendingGroupTag > 0) __tileTags.set(tile, pendingGroupTag);
+            }
         }
         return tileId;
     }
 
     override public function addTileInstance(tile:Tile):Void {
         super.addTileInstance(tile);
+        __renderList.push({isTile: true, tile: tile, hook: null});
         if (__pendingClipRect != null) __clipRects.set(tile, __pendingClipRect);
+        if (pendingGroupTag > 0) __tileTags.set(tile, pendingGroupTag);
     }
 
     /** Add a tile that will sample the font atlas (texIndex = 1.0). */
@@ -425,6 +589,8 @@ private class UIBatch extends ManagedTileBatch {
             __texIndices.remove(tile);
             __clipRects.remove(tile);
             __tileColors.remove(tile);
+            __tileTags.remove(tile);
+            __removeRenderListEntry(tile, null);
         }
         return super.removeTile(tileId);
     }
@@ -433,7 +599,57 @@ private class UIBatch extends ManagedTileBatch {
         __texIndices.remove(tile);
         __clipRects.remove(tile);
         __tileColors.remove(tile);
+        __tileTags.remove(tile);
+        __removeRenderListEntry(tile, null);
         return super.removeTileInstance(tile);
+    }
+
+    private function __removeRenderListEntry(tile:Tile, hook:ImageHook):Void {
+        var i = 0;
+        while (i < __renderList.length) {
+            var item = __renderList[i];
+            if ((tile != null && item.isTile  && item.tile == tile) ||
+                (hook != null && !item.isTile && item.hook == hook)) {
+                __renderList.splice(i, 1);
+                return;
+            }
+            i++;
+        }
+    }
+
+    /** Called by Canvas.registerImageHook — appends to the render list. */
+    public function addImageHook(hook:ImageHook):Void {
+        __renderList.push({isTile: false, tile: null, hook: hook});
+        if (pendingGroupTag > 0) __hookTags.set(hook, pendingGroupTag);
+    }
+
+    /** Called by Canvas.unregisterImageHook — removes from the render list. */
+    public function removeImageHook(hook:ImageHook):Void {
+        __hookTags.remove(hook);
+        __removeRenderListEntry(null, hook);
+    }
+
+    /** Returns the ordered render list for Canvas.render() to walk. */
+    public function getRenderList():Array<{isTile:Bool, tile:Tile, hook:ImageHook}> {
+        return __renderList;
+    }
+
+    /**
+     * Move all render list entries tagged with [tag] to the end, so the
+     * owning window renders on top of all other controls.
+     */
+    public function raiseGroupToTop(tag:Int):Void {
+        var toRaise:Array<{isTile:Bool, tile:Tile, hook:ImageHook}> = [];
+        var i = 0;
+        while (i < __renderList.length) {
+            var item = __renderList[i];
+            var itemTag = item.isTile ? __tileTags.get(item.tile) : __hookTags.get(item.hook);
+            if (itemTag == tag) {
+                toRaise.push(item);
+                __renderList.splice(i, 1);
+            } else i++;
+        }
+        for (item in toRaise) __renderList.push(item);
     }
 
     /** Build one tile into the vertex buffer — 10 floats per vertex (x,y,z,u,v,ti,r,g,b,a). */
@@ -526,13 +742,24 @@ private class UIBatch extends ManagedTileBatch {
     /**
      * Override updateBuffers to use the 6-float orphan size and to call our
      * overridden buildTile instead of the base 5-float version.
+     *
+     * When Canvas drives segmented rendering it sets `segmentTiles` to the
+     * subset of tiles for the current segment before calling
+     * renderDisplayObject.  When null, the legacy full-batch path is used
+     * (e.g. when there are no ImageViews in the control tree).
      */
     override public function updateBuffers(renderer:Renderer):Void {
         if (!active || textures[0] == null) return;
 
-        @:privateAccess
-        for (tile in tiles) {
-            if (tile.visible) buildTile(tile);
+        if (segmentTiles != null) {
+            for (tile in segmentTiles) {
+                if (tile.visible) buildTile(tile);
+            }
+        } else {
+            @:privateAccess
+            for (tile in tiles) {
+                if (tile.visible) buildTile(tile);
+            }
         }
 
         if (vbo != 0 && vertices.length > 0) {

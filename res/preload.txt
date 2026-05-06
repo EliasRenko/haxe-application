@@ -30,6 +30,7 @@ textures/gohu14.tga
 textures/nokia.tga
 textures/gui.tga
 textures/sky.tga
+textures/cat.tga
 
 # Shaders
 shaders/basic.vert
