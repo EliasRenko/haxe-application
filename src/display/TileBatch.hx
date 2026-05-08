@@ -65,9 +65,11 @@ class TileBatch extends DisplayObject {
         // Set OpenGL properties
         mode = GL.TRIANGLES;
         
-        // Set proper alpha blending for transparent textures
+        // Premultiplied-alpha blending — pairs with TGALoader's premultiplication.
+        // GL_ONE because RGB is already scaled by alpha in the texture data.
         blendFactors = {
-            source: GL.SRC_ALPHA,
+            source: GL.ONE,
+            //source: GL.ONE,
             destination: GL.ONE_MINUS_SRC_ALPHA
         };
         
