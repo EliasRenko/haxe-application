@@ -51,7 +51,7 @@ class Canvas extends Entity {
     public var renderer(get, null):Renderer;
 
     private var __container:RootContainer;
-    private var __font:IFontSource;
+    private var __fontFaces:Array<UIFontFace> = [];
     private var __uiBatch:UIBatch;
     private var __markedControl:Control;
     private var __focusedControl:Control;
@@ -112,7 +112,7 @@ class Canvas extends Entity {
         __renderer = renderer;
         __uiBatch = new UIBatch(renderer, spriteTexture, fontTexture);
         tilemap = __uiBatch;
-        __font  = new UIFont(__uiBatch, fontData);
+        __fontFaces = [new UIFontFace(__uiBatch, fontData)];
 
         trace("Canvas: Graphics initialized (UIBatch, dual-texture ui shader)");
     }
@@ -380,7 +380,32 @@ class Canvas extends Entity {
 
     // Getters
     private function get_font():IFontSource {
-        return __font;
+        return __fontFaces[0];
+    }
+
+    /**
+     * Return the IFontSource for the given face index.
+     * Face 0 is always the font passed to initializeGraphics.
+     * Faces 1..n are added via addFontFace().
+     */
+    public function getFace(index:Int):IFontSource {
+        if (index < 0 || index >= __fontFaces.length)
+            throw 'Canvas.getFace: index $index out of range (${__fontFaces.length} face(s) registered)';
+        return __fontFaces[index];
+    }
+
+    /**
+     * Register an additional font face that shares the same atlas texture.
+     * The fontData must describe glyphs baked into the same texture that was
+     * passed to initializeGraphics() — as produced by FontBaker.bakeMultiple().
+     *
+     * @return  The face index to pass to getFace().
+     */
+    public function addFontFace(fontData:FontData):Int {
+        if (__uiBatch == null)
+            throw "Canvas.addFontFace: call initializeGraphics first";
+        __fontFaces.push(new UIFontFace(__uiBatch, fontData));
+        return __fontFaces.length - 1;
     }
 
     // Mouse getters
@@ -775,15 +800,15 @@ private class UIBatch extends ManagedTileBatch {
 }
 
 // =============================================================================
-// UIFont — private font proxy that submits glyph tiles into UIBatch with
+// UIFontFace — private font proxy that submits glyph tiles into UIBatch with
 // texIndex = 1.0. Implements IFontSource so Text can use it transparently.
 //
-// Never instantiated outside Canvas. Character regions are registered once
-// in the constructor using UIBatch.defineFontRegion() so UVs are computed
-// relative to the font texture, not the sprite atlas.
+// Multiple UIFontFace instances may share the same UIBatch (one per baked face).
+// Character regions are registered once in the constructor using
+// UIBatch.defineFontRegion() so UVs are computed relative to the font texture.
 // =============================================================================
 
-private class UIFont implements IFontSource {
+private class UIFontFace implements IFontSource {
 
     public var fontData:FontData;
 

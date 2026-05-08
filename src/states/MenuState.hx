@@ -60,7 +60,7 @@ class MenuState extends State {
             app.resources.getTexture("textures/gui_debug.tga"));
 
         var fontTexture = renderer.uploadTexture(
-            app.resources.getTexture("textures/nokia.tga"));
+            app.resources.getTexture("textures/font_atlas.tga"));
         var fontData = FontLoader.load(
             app.resources.getText("fonts/nokia.json"));
 

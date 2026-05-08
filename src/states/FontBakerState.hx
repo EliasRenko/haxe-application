@@ -1,8 +1,14 @@
 package states;
 
+import gui.Button;
 import gui.Canvas;
+import gui.Control;
+import gui.ControlEventType;
+import gui.Dropdown;
 import gui.ImageView;
 import gui.Label;
+import gui.List;
+import gui.ListItem;
 import gui.TextField;
 import gui.Toolstripmenu;
 import gui.Window;
@@ -13,35 +19,42 @@ import utils.FontBaker;
 import utils.NativeDialog;
 
 /**
- * FontBakerState - Tool state for baking TrueType fonts into bitmap atlases.
+ * FontBakerState - Tool for baking one or more TTF fonts into a shared atlas.
  *
  * Workflow:
- *   1. Enter the path to a TTF file in the Options window (left panel).
- *   2. Enter the desired font size in pixels.
- *   3. Click "Bake" to generate the bitmap atlas and preview it on screen.
- *   4. Click "Export" to write the JSON fontdata and TGA atlas to res/fonts/.
- *   5. Click "Back" (or press ESCAPE) to return to the menu.
+ *   1. Add one or more font entries with "Add Font" (or File → Open TTF).
+ *   2. Select an entry in the list to edit its path / size / name.
+ *   3. Choose an atlas size from the dropdown.
+ *   4. Click Bake → "Bake All" to pack all entries into a single atlas and
+ *      preview it.
+ *   5. File → Export to write one TGA + one JSON per face to res/fonts/.
+ *   6. File → Back (or ESCAPE) to return to the menu.
  */
 class FontBakerState extends State {
 
-    // ── Layout constants ──────────────────────────────────────────────────────
-    private static inline var TOOLSTRIP_H:Int    = 24;
-    private static inline var OPTIONS_W:Int      = 220;
-    private static inline var OPTIONS_MARGIN:Int = 4;
-    private static inline var DEFAULT_FONT_SIZE:Int = 16;
-    private static inline var ATLAS_SIZE:Int     = 512;
+    // ── Layout ────────────────────────────────────────────────────────────────
+    private static inline var MENU_H:Int         = 24;
+    private static inline var OPTIONS_W:Int      = 240;
+    private static inline var MARGIN:Int         = 4;
+    private static inline var DEFAULT_SIZE:Int   = 16;
+    private static inline var LIST_ITEM_H:Int    = 20;
 
     // ── GUI ───────────────────────────────────────────────────────────────────
     private var _canvas:Canvas;
-
-    private var _optionsWindow:Window;
+    private var _fontList:List<Label>;
     private var _pathField:TextField;
     private var _sizeField:TextField;
-
+    private var _nameField:TextField;
+    private var _atlasDropdown:Dropdown;
     private var _atlasView:ImageView;
     private var _statusLabel:Label;
 
-    // ── State ─────────────────────────────────────────────────────────────────
+    // ── Font entries ──────────────────────────────────────────────────────────
+    /** Each entry: { path, size, name } */
+    private var _entries:Array<{ path:String, size:Int, name:String }> = [];
+    private var _selectedIdx:Int = -1;
+
+    // ── Last bake result ──────────────────────────────────────────────────────
     private var _bakedFont:Null<BakedFontData> = null;
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -54,44 +67,41 @@ class FontBakerState extends State {
 
     override public function init():Void {
         super.init();
-
         camera.ortho = true;
 
         var renderer = app.renderer;
-
         renderer.createProgramInfo("ui", null,
             app.resources.getText("shaders/ui.frag"));
-
-        // Required by ImageView.
         renderer.createProgramInfo("textured",
             app.resources.getText("shaders/textured.vert"),
             app.resources.getText("shaders/textured.frag"));
 
         var spriteTexture = renderer.uploadTexture(
             app.resources.getTexture("textures/gui_debug.tga"));
+
+        // Shared font atlas — all 3 faces live in this one texture
         var fontTexture = renderer.uploadTexture(
-            app.resources.getTexture("textures/gohu14.tga"));
+            app.resources.getTexture("textures/font_atlas.tga"));
         var fontData = FontLoader.load(
             app.resources.getText("fonts/gohu14.json"));
 
         var ws = app.window.size;
         _canvas = new Canvas(this, ws.x, ws.y);
         _canvas.initializeGraphics(renderer, spriteTexture, fontTexture, fontData);
+        // Register the other two faces — they share the same fontTexture atlas
+        _canvas.addFontFace(FontLoader.load(app.resources.getText("fonts/gohu11.json")));
+        _canvas.addFontFace(FontLoader.load(app.resources.getText("fonts/nokia.json")));
         _canvas.setTint(0.588, 0.690, 0.518);
         _canvas.importSets(app.resources.getText("textures/gui.json"));
         addEntity(_canvas);
 
         _buildUI();
-
-        trace("FontBakerState: initialized");
     }
 
     override public function update(deltaTime:Float):Void {
         super.update(deltaTime);
-
-        if (app.input.keyboard.released(Scancode.ESCAPE)) {
+        if (app.input.keyboard.released(Scancode.ESCAPE))
             app.switchToStateByName("Menu");
-        }
     }
 
     override public function onWindowResized(width:Int, height:Int):Void {
@@ -104,42 +114,135 @@ class FontBakerState extends State {
     private function _buildUI():Void {
         var ws = app.window.size;
 
-        // ── Menu bar ─────────────────────────────────────────────────────
+        // ── Menu bar ──────────────────────────────────────────────────────────
         var menu = new Toolstripmenu();
-        menu.addItem("File",   ["Open TTF", "Export", "Back"], _onFileMenu);
-        menu.addItem("Bake",   ["Bake Font"],                  _onBakeMenu);
+        menu.addItem("File", ["Open TTF", "Export", "Back"], _onFileMenu);
+        menu.addItem("Bake", ["Bake All"],                   _onBakeMenu);
         _canvas.addControl(menu);
 
-        // ── Options window (left panel) ───────────────────────────────────────
-        var optH:Float = ws.y - TOOLSTRIP_H - OPTIONS_MARGIN * 2;
-        _optionsWindow = new Window("Options", OPTIONS_W, optH,
-            OPTIONS_MARGIN, TOOLSTRIP_H + OPTIONS_MARGIN);
-        _canvas.addControl(_optionsWindow);
+        // ── Left panel — font list + editor ──────────────────────────────────
+        var panelH:Float = ws.y - MENU_H - MARGIN * 2;
+        var panel = new Window("Fonts", OPTIONS_W, panelH,
+                               MARGIN, MENU_H + MARGIN);
+        _canvas.addControl(panel);
 
-        // Controls inside the options window (coords are panel-relative).
-        _optionsWindow.addControl(new Label("TTF Path:", 8, 8));
-        _pathField = new TextField("", OPTIONS_W - 16, 8, 24);
-        _optionsWindow.addControl(_pathField);
+        // List of added fonts
+        _fontList = new List(OPTIONS_W - 16, 8, 26);
+        _fontList.addListener(_onListItemClick, ON_ITEM_CLICK);
+        panel.addControl(_fontList);
 
-        _optionsWindow.addControl(new Label("Font Size (px):", 8, 52));
-        _sizeField = new TextField("" + DEFAULT_FONT_SIZE, 60, 8, 68);
-        _optionsWindow.addControl(_sizeField);
+        // Add / Remove buttons
+        var btnAdd = new Button("Add", 56, 8, 108);
+        btnAdd.addListener(function(_, _) { _addEntry(); }, LEFT_CLICK);
+        panel.addControl(btnAdd);
 
-        // ── Main area ─────────────────────────────────────────────────────────
-        var mainX:Float = OPTIONS_W + OPTIONS_MARGIN * 2;
-        var mainY:Float = TOOLSTRIP_H + OPTIONS_MARGIN;
-        var mainW:Float = ws.x - mainX - OPTIONS_MARGIN;
-        var mainH:Float = ws.y - mainY - OPTIONS_MARGIN;
+        var btnRemove = new Button("Remove", 72, 72, 108);
+        btnRemove.addListener(function(_, _) { _removeSelected(); }, LEFT_CLICK);
+        panel.addControl(btnRemove);
 
-        _statusLabel = new Label("No font loaded.  Enter a TTF path and click Bake.", mainX, mainY + 4);
+        // Separator label
+        panel.addControl(new Label("── Selected font ──────────", 8, 138));
+
+        // Path field
+        panel.addControl(new Label("Path:", 8, 158));
+        _pathField = new TextField("", OPTIONS_W - 16, 8, 174);
+        _pathField.maxCharacters = 260;
+        panel.addControl(_pathField);
+
+        // Size field
+        panel.addControl(new Label("Size (px):", 8, 202));
+        _sizeField = new TextField("" + DEFAULT_SIZE, 52, 8, 218);
+        _sizeField.restriction = "0123456789";
+        _sizeField.maxCharacters = 4;
+        panel.addControl(_sizeField);
+
+        // Name field
+        panel.addControl(new Label("Name:", 8, 246));
+        _nameField = new TextField("", OPTIONS_W - 16, 8, 262);
+        panel.addControl(_nameField);
+
+        // Apply button — write field values back to the selected entry
+        var btnApply = new Button("Apply", 60, 8, 296);
+        btnApply.addListener(function(_, _) { _applyEdits(); }, LEFT_CLICK);
+        panel.addControl(btnApply);
+
+        // Atlas size dropdown
+        panel.addControl(new Label("Atlas size:", 8, 332));
+        _atlasDropdown = new Dropdown(100, 8, 348);
+        _atlasDropdown.addItem("256");
+        _atlasDropdown.addItem("512");
+        _atlasDropdown.addItem("1024");
+        _atlasDropdown.addItem("2048");
+        _atlasDropdown.selectIndex(1); // default 512
+        panel.addControl(_atlasDropdown);
+
+        // ── Main area — atlas preview + status ───────────────────────────────
+        var mainX:Float = OPTIONS_W + MARGIN * 2;
+        var mainY:Float = MENU_H + MARGIN;
+        var mainW:Float = ws.x - mainX - MARGIN;
+        var mainH:Float = ws.y - mainY - MARGIN;
+
+        _statusLabel = new Label("Add fonts and click Bake → Bake All.", mainX, mainY + 4);
         _canvas.addControl(_statusLabel);
 
-        var atlasY = mainY + 20;
-        _atlasView = new ImageView(mainW, mainH - 20, mainX, atlasY);
+        _atlasView = new ImageView(mainW, mainH - 20, mainX, mainY + 20);
         _canvas.addControl(_atlasView);
     }
 
-    // ── Menu handlers ──────────────────────────────────────────────────────
+    // ── Entry management ──────────────────────────────────────────────────────
+
+    private function _addEntry():Void {
+        _entries.push({ path: "", size: DEFAULT_SIZE, name: "font" + _entries.length });
+        _rebuildList();
+        _selectEntry(_entries.length - 1);
+    }
+
+    private function _removeSelected():Void {
+        if (_selectedIdx < 0 || _selectedIdx >= _entries.length) return;
+        _entries.splice(_selectedIdx, 1);
+        _rebuildList();
+        _selectEntry(_entries.length > 0 ? Std.int(Math.min(_selectedIdx, _entries.length - 1)) : -1);
+    }
+
+    private function _applyEdits():Void {
+        if (_selectedIdx < 0 || _selectedIdx >= _entries.length) return;
+        var e = _entries[_selectedIdx];
+        e.path = StringTools.trim(_pathField.text);
+        var sz = Std.parseInt(StringTools.trim(_sizeField.text));
+        e.size = (sz != null && sz > 0) ? sz : DEFAULT_SIZE;
+        var n = StringTools.trim(_nameField.text);
+        e.name = n.length > 0 ? n : e.name;
+        _rebuildList();
+        _selectEntry(_selectedIdx);
+        _statusLabel.text = 'Entry updated: ${e.name} @ ${e.size}px';
+    }
+
+    private function _selectEntry(idx:Int):Void {
+        _selectedIdx = idx;
+        if (idx >= 0 && idx < _entries.length) {
+            var e = _entries[idx];
+            _pathField.text = e.path;
+            _sizeField.text = Std.string(e.size);
+            _nameField.text = e.name;
+        } else {
+            _pathField.text = "";
+            _sizeField.text = Std.string(DEFAULT_SIZE);
+            _nameField.text = "";
+        }
+    }
+
+    private function _rebuildList():Void {
+        // Remove all items and re-add them as labels.
+        while (!_fontList.controls.isEmpty()) {
+            _fontList.removeControlAt(0);
+        }
+        for (e in _entries) {
+            var lbl = new Label(e.name + "  " + e.size + "px", 0, 0);
+            _fontList.addControl(lbl);
+        }
+    }
+
+    // ── Menu handlers ─────────────────────────────────────────────────────────
 
     private function _onFileMenu(option:String):Void {
         switch (option) {
@@ -150,59 +253,100 @@ class FontBakerState extends State {
     }
 
     private function _onBakeMenu(option:String):Void {
-        _onBake();
+        _onBakeAll();
     }
+
+    private function _onListItemClick(control:Control, type:UInt):Void {
+        var idx = 0;
+        for (c in _fontList.controls) {
+            if (c == control) { _selectEntry(idx); return; }
+            idx++;
+        }
+    }
+
+    // ── Actions ───────────────────────────────────────────────────────────────
 
     private function _onOpen():Void {
         var path = NativeDialog.openFontFile();
-        if (path == null) return; // user cancelled
-        _pathField.text = path;
-        _statusLabel.text = "Ready: " + path;
-    }
+        if (path == null) return;
 
-    private function _onBake():Void {
-        var path = StringTools.trim(_pathField.text);
-        if (path.length == 0) {
-            _statusLabel.text = "Enter a TTF path in the Options panel first.";
-            return;
-        }
-        if (!sys.FileSystem.exists(path)) {
-            _statusLabel.text = "File not found: " + path;
-            return;
-        }
-
-        var sizeStr = StringTools.trim(_sizeField.text);
-        var fontSize = Std.parseInt(sizeStr);
-        if (fontSize == null || fontSize <= 0) fontSize = DEFAULT_FONT_SIZE;
-
-        var fontBytes = sys.io.File.getBytes(path);
-
-        // Derive a clean font name from the file name (no extension).
+        // Auto-derive name from filename
         var lastSlash = Std.int(Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\")));
         var baseName  = path.substring(lastSlash + 1);
         var dotPos    = baseName.lastIndexOf(".");
         var fontName  = dotPos > 0 ? baseName.substring(0, dotPos) : baseName;
 
-        trace('FontBakerState: Baking "$fontName" at ${fontSize}px, atlas ${ATLAS_SIZE}x${ATLAS_SIZE}');
+        if (_selectedIdx >= 0 && _selectedIdx < _entries.length) {
+            // Fill the selected entry
+            _entries[_selectedIdx].path = path;
+            _entries[_selectedIdx].name = fontName;
+            _selectEntry(_selectedIdx);
+            _rebuildList();
+        } else {
+            // No selection — create a new entry
+            _entries.push({ path: path, size: DEFAULT_SIZE, name: fontName });
+            _rebuildList();
+            _selectEntry(_entries.length - 1);
+        }
+        _statusLabel.text = "Ready: " + path;
+    }
 
-        _bakedFont = FontBaker.bakeFontFromBytes(fontBytes, fontName, fontSize,
-            ATLAS_SIZE, ATLAS_SIZE);
+    private function _onBakeAll():Void {
+        if (_entries.length == 0) {
+            _statusLabel.text = "Add at least one font entry first.";
+            return;
+        }
 
-        // Upload the RGBA atlas pixels into the ImageView.
-        _atlasView.setPixels(_bakedFont.textureData.bytes, ATLAS_SIZE, ATLAS_SIZE, 4);
+        // Validate all entries
+        var bakeEntries = [];
+        for (e in _entries) {
+            var path = StringTools.trim(e.path);
+            if (path.length == 0) {
+                _statusLabel.text = 'Entry "${e.name}" has no path — set a TTF path first.';
+                return;
+            }
+            #if sys
+            if (!sys.FileSystem.exists(path)) {
+                _statusLabel.text = 'File not found: $path';
+                return;
+            }
+            bakeEntries.push({
+                bytes: sys.io.File.getBytes(path),
+                name:  e.name,
+                size:  (e.size : Float),
+                firstChar: null,
+                numChars:  null
+            });
+            #end
+        }
 
-        _statusLabel.text = 'Baked: $fontName @ ${fontSize}px  (${ATLAS_SIZE}x${ATLAS_SIZE} atlas)';
+        var atlasSize = Std.parseInt(_atlasDropdown.selectedValue);
+        if (atlasSize == null || atlasSize <= 0) atlasSize = 512;
+
+        #if sys
+        trace('FontBakerState: baking ${bakeEntries.length} font(s) into ${atlasSize}x${atlasSize} atlas');
+
+        _bakedFont = FontBaker.bakeMultiple(bakeEntries, atlasSize, atlasSize);
+
+        _atlasView.setPixels(cast _bakedFont.textureData.bytes, atlasSize, atlasSize, 4);
+
+        var names = [for (f in _bakedFont.faces) '${f.fontName} ${f.fontSize}px'];
+        _statusLabel.text = 'Baked: ' + names.join(", ") + '  (${atlasSize}x${atlasSize})';
+        #end
     }
 
     private function _onExport():Void {
         if (_bakedFont == null) {
-            _statusLabel.text = "Nothing to export — bake a font first.";
+            _statusLabel.text = "Nothing to export — bake first.";
             return;
         }
-
-        var outPath = "res/fonts/" + _bakedFont.fontName + "_" + _bakedFont.fontSize;
-        _bakedFont.exportToFiles(outPath);
-        _statusLabel.text = "Exported: " + outPath + ".json / .tga";
+        #if sys
+        var atlasName = _bakedFont.faces.length == 1
+            ? _bakedFont.fontName + "_" + _bakedFont.fontSize
+            : "font_atlas";
+        _bakedFont.exportAllFaces("res/fonts", atlasName);
+        _statusLabel.text = "Exported " + _bakedFont.faces.length + " face(s) to res/fonts/";
+        #end
     }
 
     private function _onBack():Void {

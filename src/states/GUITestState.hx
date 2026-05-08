@@ -63,14 +63,18 @@ class GUITestState extends State {
         var spriteTexture = renderer.uploadTexture(
             app.resources.getTexture("textures/gui_debug.tga"));
 
+        // Shared font atlas — all 3 faces live in this one texture
         var fontTexture = renderer.uploadTexture(
-            app.resources.getTexture("textures/gohu14.tga"));
+            app.resources.getTexture("textures/font_atlas.tga"));
         var fontData = FontLoader.load(
             app.resources.getText("fonts/gohu14.json"));
 
         var ws = app.window.size;
         canvas = new Canvas(this, ws.x, ws.y);
         canvas.initializeGraphics(renderer, spriteTexture, fontTexture, fontData);
+        // Register the other two faces — they share the same fontTexture atlas
+        canvas.addFontFace(FontLoader.load(app.resources.getText("fonts/gohu11.json")));
+        canvas.addFontFace(FontLoader.load(app.resources.getText("fonts/nokia.json")));
         canvas.setTint(0.588, 0.690, 0.518);  // HL1 olive-green tint
         canvas.importSets(app.resources.getText("textures/gui.json"));
         addEntity(canvas);
