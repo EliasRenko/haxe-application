@@ -54,7 +54,11 @@ class Text {
         }
 
         if (text.length > 0) {
-            setText(text);
+            if (font != null) {
+                setText(text);
+            } else {
+                textString = text; // stored; updateTiles() called later by Label.init()
+            }
         }
     }
     
@@ -68,13 +72,10 @@ class Text {
         textString = text;
 
         if (font == null) {
-            trace("Text: Error - Cannot set text because font is null");
             return;
         }
         
         updateTiles();
-        
-        trace("Text: Set text to \"" + text + "\" (" + charTiles.length + " characters, width=" + width + ", height=" + height + ")");
     }
 
     public function updateTiles():Void {

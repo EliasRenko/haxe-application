@@ -1,5 +1,6 @@
 package states;
 
+import DebugConsole;
 import gui.Button;
 import gui.Canvas;
 import gui.Checkbox;
@@ -13,6 +14,7 @@ import gui.TabPage;
 import gui.Window;
 import loaders.FontLoader;
 import math.Vec2;
+import Scancode;
 
 /**
  * MenuState - Main menu screen
@@ -27,7 +29,7 @@ import math.Vec2;
  */
 class MenuState extends State {
 
-    private static final ITEMS:Array<String> = ["New game", "Load game", "Options", "GUI Test", "Quit"];
+    private static final ITEMS:Array<String> = ["New game", "Load game", "Options", "GUI Test", "Font Baker", "Quit"];
 
     private static inline var MARGIN_LEFT:Float   = 60.0;
     private static inline var MARGIN_BOTTOM:Float = 140.0;
@@ -38,6 +40,7 @@ class MenuState extends State {
     private var selectedIndex:Int = 0;
     private var optionsWindow:MenuOptionsWindow;
     private var newGameWindow:MenuNewGameWindow;
+    private var console:DebugConsole;
 
     public function new(app:App) {
         super("Menu", app);
@@ -69,6 +72,9 @@ class MenuState extends State {
         addEntity(canvas);
 
         _buildMenu();
+
+        console = new DebugConsole(app, canvas);
+        console.visible = false;
 
         trace("MenuState: initialized");
     }
@@ -200,18 +206,21 @@ class MenuState extends State {
 
         var prevIndex = selectedIndex;
 
-        if (app.input.keyboard.released(Keycode.UP)) {
+        if (app.input.keyboard.released(Scancode.UP)) {
             selectedIndex = (selectedIndex - 1 + ITEMS.length) % ITEMS.length;
         }
-        if (app.input.keyboard.released(Keycode.DOWN)) {
+        if (app.input.keyboard.released(Scancode.DOWN)) {
             selectedIndex = (selectedIndex + 1) % ITEMS.length;
         }
 
-        if (app.input.keyboard.released(Keycode.RETURN)) {
+        if (app.input.keyboard.released(Scancode.RETURN)) {
             onSelect(selectedIndex);
         }
-        if (app.input.keyboard.released(Keycode.ESCAPE)) {
+        if (app.input.keyboard.released(Scancode.ESCAPE)) {
             onSelect(ITEMS.length - 1);
+        }
+        if (app.input.keyboard.released(Scancode.GRAVE)) {
+            console.visible = !console.visible;
         }
     }
 
@@ -277,6 +286,8 @@ class MenuState extends State {
             case 3:
                 app.switchToStateByName("GUITest");
             case 4:
+                app.switchToStateByName("FontBaker");
+            case 5:
                 trace("MenuState: Quit");
                 @:privateAccess app.__active = false;
         }

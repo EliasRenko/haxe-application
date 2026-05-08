@@ -1,7 +1,7 @@
 package utils;
 
-import sys.io.File;
-import sys.FileSystem;
+//import sys.io.File;
+//import sys.FileSystem;
 import haxe.io.Bytes;
 import haxe.Json;
 import stb.STB_Truetype;

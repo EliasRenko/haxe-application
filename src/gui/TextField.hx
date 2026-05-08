@@ -2,9 +2,7 @@ package gui;
 
 import display.Text;
 import display.Tile;
-//import types.KeyboardEvent;
-//import utils.Common;
-import gui.Control;
+import Scancode;
 
 class TextField extends Control {
 
@@ -40,12 +38,8 @@ class TextField extends Control {
     override function init():Void {
 
         __threeSlice.iterate(function (tile) {
-
-            //tile.parentTilemap = ____canvas.font;
-
             tile.visible = visible;
-
-            ____canvas.tilemap.addTile(tile);
+            ____canvas.tilemap.addTileInstance(tile);
         });
 
         __initGraphics();
@@ -54,23 +48,13 @@ class TextField extends Control {
 
         //__threeSlice.setZ(z);
 
-        __bitmapText.parent = ____canvas.font;
-
-        //__bitmapText.z = z - 1;
-
-        //__bitmapText.addToParent();
-
-        __graphic.parent = ____canvas.tilemap;
+        __bitmapText.font = ____canvas.font;
+        __bitmapText.updateTiles();
 
         __graphic.width = 2;
-
         __graphic.height = ____canvas.font.fontData.base;
-
         __graphic.visible = false;
-
-        __graphic.z = z - 1;
-
-        ____canvas.tilemap.addTile(__graphic);
+        ____canvas.tilemap.addTileInstance(__graphic);
 
         super.init();
     }
@@ -78,9 +62,9 @@ class TextField extends Control {
     override function release():Void {
 
         __threeSlice.iterate(function (tile) {
-
-            ____canvas.tilemap.removeTile(tile);
+            ____canvas.tilemap.removeTileInstance(tile);
         });
+        ____canvas.tilemap.removeTileInstance(__graphic);
 
         __bitmapText.dispose();
 
@@ -88,17 +72,25 @@ class TextField extends Control {
     }
 
     override function update() {
-
         super.update();
 
         if (__focused) {
+            var keyboard = ____canvas.parentState.app.input.keyboard;
 
-            ____canvas.onTextInput(this);
+            if (keyboard.textInput.length > 0) {
+                for (i in 0...keyboard.textInput.length) {
+                    var ch = keyboard.textInput.charAt(i);
+                    if (restriction != null && !StringTools.contains(restriction, ch)) continue;
+                    if (maxCharacters >= 0 && text.length >= maxCharacters) break;
+                    text = text + ch;
+                }
+                onTextInput();
+            }
 
-            // if (Common.input.keyboard.pressed(40)) {
-
-            //     ____canvas.focusedControl = null;
-            // }
+            if (keyboard.released(Scancode.BACKSPACE) && text.length > 0) {
+                text = text.substring(0, text.length - 1);
+                onTextInput();
+            }
         }
     }
 
@@ -107,14 +99,14 @@ class TextField extends Control {
     }
 
     private function __initGraphics():Void {
-
-        __threeSlice.get(0).id = ____canvas.sets.get('slider_0');
-
-        __threeSlice.get(1).id = ____canvas.sets.get('slider_1');
-
-        __threeSlice.get(2).id = ____canvas.sets.get('slider_2');
-
-        __graphic.id = ____canvas.sets.get('empty');
+        var r0 = ____canvas.sets.get('slider_0');
+        var r1 = ____canvas.sets.get('slider_1');
+        var r2 = ____canvas.sets.get('slider_2');
+        var re = ____canvas.sets.get('empty');
+        __threeSlice.get(0).regionId = r0 != null ? r0 : 0;
+        __threeSlice.get(1).regionId = r1 != null ? r1 : 0;
+        __threeSlice.get(2).regionId = r2 != null ? r2 : 0;
+        __graphic.regionId = re != null ? re : 0;
     }
 
     override function __setGraphicX():Void {
@@ -137,66 +129,30 @@ class TextField extends Control {
 
     override function onFocusGain():Void {
 
-        //Common.input.keyboard.addEventListener(__onkeyInputEvent, 1);
-
-        //Common.input.keyboard.addEventListener(__onTextInputEvent, 3);
-        //canvas.parentState.parent.input.addEventListener(__onTextInputEvent, 3); // TODO: Fix this to use the correct input system.
-
-        //__graphic.visible = true;
+        ____canvas.parentState.app.enableTextInput();
 
         super.onFocusGain();
     }
 
     override function onFocusLost():Void {
 
-        //Common.input.keyboard.removeEventListener(__onkeyInputEvent);
-
-        //Common.input.keyboard.removeEventListener(__onTextInputEvent);
-
-        //__graphic.visible = false;
+        ____canvas.parentState.app.disableTextInput();
 
         super.onFocusLost();
+    }
+
+    override function set_visible(value:Bool):Bool {
+        if (__active) {
+            __threeSlice.iterate(function(tile) { tile.visible = value; });
+            __graphic.visible = value && __focused; // cursor only shows when focused
+            __bitmapText.visible = value;
+        }
+        return super.set_visible(value);
     }
 
     public function onTextInput():Void {
         
         __graphic.x = __bitmapText.x + __bitmapText.width;
-    }
-
-    private function __onTextInputEvent(event:KeyboardEvent, type:UInt):Void {
-
-        if (maxCharacters > -1) {
-
-            if (text.length >= maxCharacters) {
-
-                return;
-            }
-        }
-
-        if (restriction != null) {
-
-            if (!StringTools.contains(restriction, event.text)) {
-
-                return;
-            }
-        }
-
-        text = text + event.text;
-
-        onTextInput();
-    }
-
-    private function __onkeyInputEvent(event:KeyboardEvent, type:UInt):Void {
-        
-        switch (event.key) {
-
-            case 42:
-
-                text = text.substring(0, text.length - 1);
-
-        }
-
-        onTextInput();
     }
 
     // ** Getters and setters.

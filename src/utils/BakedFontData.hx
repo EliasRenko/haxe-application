@@ -1,6 +1,7 @@
 package utils;
-
+#if cpp
 import sys.io.File;
+#end
 import haxe.Json;
 import loaders.TGAExporter;
 import data.TextureData;

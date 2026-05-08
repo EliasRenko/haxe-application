@@ -13,6 +13,8 @@ import gui.Strip;
 import gui.Dropdown;
 import gui.ImageView;
 import gui.ProgressBar;
+import gui.Table;
+import gui.TextBox;
 import gui.TabControl;
 import gui.TabPage;
 import gui.Window;
@@ -31,7 +33,7 @@ import loaders.FontLoader;
 class GUITestState extends State {
 
     private static final NAMES:Array<String> = [
-        "Label", "Button", "Checkbox", "Strip", "Panel", "Window", "Stamp", "ScrollableContainer", "TabControl", "Dropdown", "ProgressBar", "ImageView", "3 Windows"
+        "Label", "Button", "Checkbox", "Strip", "Panel", "Window", "Stamp", "ScrollableContainer", "TabControl", "Dropdown", "ProgressBar", "ImageView", "3 Windows", "Table", "TextBox"
     ];
 
     private var canvas:Canvas;
@@ -124,6 +126,8 @@ class GUITestState extends State {
             case 10: _showProgressBar(cx, cy);
             case 11: _showImageView(cx, cy);
             case 12: _showThreeWindows(cx, cy);
+            case 13: _showTable(cx, cy);
+            case 14: _showTextBox(cx, cy);
         }
     }
 
@@ -202,6 +206,46 @@ class GUITestState extends State {
         var chkFs = new Checkbox(false, 8, 32);
         page3.addControl(chkFs);
         page3.addControl(new Label("Fullscreen", 44, 36));
+    }
+
+    private function _showTextBox(cx:Int, cy:Int):Void {
+        var tb = cast(_track(new TextBox(380, 160, cx - 190, cy - 80)), TextBox);
+        tb.autoScroll = true;
+        tb.append("> TextBox component initialised");
+        tb.append("> Supports unlimited scrollable lines");
+        tb.append("> Auto-scrolls to bottom on append");
+        tb.append("> Evicts oldest lines when maxLines is reached");
+        tb.append("> Use mouse wheel to scroll");
+        tb.append("---");
+        var messages = [
+            "[INFO]  Player connected",
+            "[INFO]  Map loaded: dungeon_floor_1",
+            "[WARN]  Low memory: 42 MB remaining",
+            "[INFO]  Entity spawned at (128, 256)",
+            "[INFO]  Entity spawned at (64, 192)",
+            "[ERRO]  Shader compile warning: unused uniform",
+            "[INFO]  Audio stream started",
+            "[INFO]  Save file written to slot 1",
+        ];
+        for (m in messages) tb.append(m);
+    }
+
+    private function _showTable(cx:Int, cy:Int):Void {
+        var t = cast(_track(new Table(360, 180, cx - 180, cy - 90)), Table);
+        t.addColumn("Name",   120);
+        t.addColumn("Class",  100);
+        t.addColumn("HP",      60);
+        t.addColumn("Status",  80);
+        t.addRow(["Alice",   "Warrior",  "320",  "Active"]);
+        t.addRow(["Bob",     "Mage",     "180",  "Active"]);
+        t.addRow(["Carol",   "Rogue",    "240",  "Stunned"]);
+        t.addRow(["Dave",    "Cleric",   "290",  "Active"]);
+        t.addRow(["Eve",     "Archer",   "210",  "Poisoned"]);
+        t.addRow(["Frank",   "Paladin",  "400",  "Active"]);
+        t.addRow(["Grace",   "Warlock",  "155",  "Dead"]);
+        t.addRow(["Hank",    "Barbarian","510",  "Active"]);
+        t.addRow(["Ivy",     "Bard",     "195",  "Active"]);
+        t.addRow(["Jack",    "Monk",     "280",  "Active"]);
     }
 
     private function _showThreeWindows(cx:Int, cy:Int):Void {

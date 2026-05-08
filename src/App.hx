@@ -269,13 +269,31 @@ class App extends Runtime {
         #end
     }
 
+    #if js
+    override function onTextInput(text:String, timestamp:Float):Void {
+        __input.keyboard.textInput += text;
+    }
+    #else
+    override function onTextInput(text:String, timestamp:Float, windowId:Int):Void {
+        __input.keyboard.textInput += text;
+    }
+    #end
+
     // Mouse event handlers
     override function onMouseButtonDown(x:Float, y:Float, button:Int, windowId:Int):Void {
+        // SDL3 uses 1-based button indices (1=left, 2=middle, 3=right).
+        // Normalize to 0-based to match the DOM MouseEvent convention used on web.
+        #if !js
+        button -= 1;
+        #end
         @:privateAccess __input.mouse.onButtonDown(x, y, button);
         log.info(LogCategory.INPUT, "Mouse button " + button + " down at (" + x + ", " + y + ")");
     }
 
     override function onMouseButtonUp(x:Float, y:Float, button:Int, windowId:Int):Void {
+        #if !js
+        button -= 1;
+        #end
         @:privateAccess __input.mouse.onButtonUp(x, y, button);
         log.info(LogCategory.INPUT, "Mouse button " + button + " up at (" + x + ", " + y + ")");
     }
@@ -286,6 +304,20 @@ class App extends Runtime {
 
     override function onMouseWheel(x:Float, y:Float, windowId:Int):Void {
         @:privateAccess __input.mouse.onMouseWheel(y);
+    }
+
+    /** Enable OS text-input mode (required on native for SDL_EVENT_TEXT_INPUT). */
+    public function enableTextInput():Void {
+        #if !js
+        startTextInput(window.ptr);
+        #end
+    }
+
+    /** Disable OS text-input mode. */
+    public function disableTextInput():Void {
+        #if !js
+        stopTextInput(window.ptr);
+        #end
     }
 
     // Window event handlers

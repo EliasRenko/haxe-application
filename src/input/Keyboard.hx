@@ -12,6 +12,9 @@ class Keyboard {
 	private var __releaseControls:Array<Int>;
 	private var __releaseCount:Int = 0;
 
+    /** Characters typed this frame, populated by App.onTextInput. Cleared each postUpdate. */
+    public var textInput:String = "";
+
     public function new() {
         __checkControls = new Vector<Bool>(312);
         __pressControls = [];
@@ -44,6 +47,7 @@ class Keyboard {
         __pressCount = 0;
         __releaseControls = [];
         __releaseCount = 0;
+        textInput = "";
     }
 
     private function onKeyDown(key:UInt, repeat:Bool, mod:Int):Void {

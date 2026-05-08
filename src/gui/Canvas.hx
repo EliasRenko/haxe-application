@@ -66,6 +66,9 @@ class Canvas extends Entity {
     // Modal entries (Windows) block input behind them unconditionally.
     // Non-modal entries (Dropdown popups) auto-dismiss on an outside click.
     private var __focusStack:Array<{control:Control, modal:Bool}> = [];
+    // Prevents the auto-dismiss logic from firing on the same frame a non-modal
+    // overlay was pushed (avoids open→dismiss in one tick).
+    private var __overlayAddedThisFrame:Bool = false;
 
     // Flat list of controls added via pushOverlay — their tiles are added to the
     // batch AFTER all normal controls, so they always render on top.
@@ -166,6 +169,7 @@ class Canvas extends Entity {
      */
     public function pushFocus(control:Control):Void {
         __focusStack.push({control: control, modal: false});
+        __overlayAddedThisFrame = true;
     }
 
     /**
@@ -325,45 +329,45 @@ class Canvas extends Entity {
     }
 
     override public function update(deltaTime:Float):Void {
-        if (__focusStack.length > 0) {
-            // Click-to-raise: fire on mouse-down so the window can also start
-            // dragging in the same frame (mouse.pressed matches Window.update).
-            // Only look for a background window if the click missed the top window —
-            // this prevents clicks from passing through the focused window.
-            if (parentState.app.input.mouse.pressed(0)) {
-                var topEntry = __focusStack[__focusStack.length - 1];
-                if (!topEntry.control.hitTest()) {
-                    var i = __focusStack.length - 2;
-                    while (i >= 0) {
-                        var e = __focusStack[i];
-                        if (e.modal && e.control.hitTest()) {
-                            __focusStack.splice(i, 1);
-                            __focusStack.push(e);
-                            raiseControlToTop(e.control);
-                            break;
-                        }
-                        i--;
+        __overlayAddedThisFrame = false;
+
+        // Click-to-raise: when the user clicks somewhere other than the topmost
+        // window, check if another (background) window was hit and bring it forward.
+        if (__focusStack.length > 0 && parentState.app.input.mouse.pressed(0)) {
+            var topEntry = __focusStack[__focusStack.length - 1];
+            if (!topEntry.control.hitTest()) {
+                var i = __focusStack.length - 2;
+                while (i >= 0) {
+                    var e = __focusStack[i];
+                    if (e.modal && e.control.hitTest()) {
+                        __focusStack.splice(i, 1);
+                        __focusStack.push(e);
+                        raiseControlToTop(e.control);
+                        break;
                     }
+                    i--;
                 }
             }
+        }
 
+        // Always update the full control tree.
+        // Modal windows (Window) live inside __container and receive their update
+        // naturally via Container's hit-test loop, so they never block the toolstrip.
+        __container.update();
+
+        // Non-modal overlay controls (e.g. Dropdown popups) are NOT in __container;
+        // they need an explicit update and must be dismissed on outside click.
+        if (__focusStack.length > 0) {
             var entry = __focusStack[__focusStack.length - 1];
-            if (entry.modal) {
-                // Modal (Window): always process — blocks everything behind it.
-                if (entry.control.visible) entry.control.update();
-            } else {
-                // Non-modal (Dropdown popup): process when hit, dismiss on outside click.
+            if (!entry.modal) {
                 if (entry.control.hitTest()) {
                     entry.control.update();
-                } else if (leftClick) {
-                    // Auto-dismiss and consume the click.
+                } else if (leftClick && !__overlayAddedThisFrame) {
                     var ctrl = entry.control;
                     popFocus(ctrl);
                     removeOverlay(ctrl);
                 }
             }
-        } else {
-            __container.update();
         }
     }
     

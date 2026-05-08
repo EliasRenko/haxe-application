@@ -29,6 +29,7 @@ private class __Log {
     // Publics
     public var active:Bool = true;
     public var logHistory(get, null):String;
+    public var onMessage:Null<String -> Void> = null;
 
     // Privates
     private var __app:App;
@@ -69,37 +70,51 @@ private class __Log {
     
     public function trace(category:Int, message:String):Void {
         __app.logTrace(category, message);
-        __logHistory += "[TRACE] [" + getCategoryName(category) + "] " + message + "\n";
+        var line = "[TRACE] [" + getCategoryName(category) + "] " + message;
+        __logHistory += line + "\n";
+        if (onMessage != null) onMessage(line);
     }
 
     public function verbose(category:Int, message:String):Void {
         __app.logVerbose(category, message);
-        __logHistory += "[VERBOSE] [" + getCategoryName(category) + "] " + message + "\n";
+        var line = "[VERBOSE] [" + getCategoryName(category) + "] " + message;
+        __logHistory += line + "\n";
+        if (onMessage != null) onMessage(line);
     }
     
     public function debug(category:Int, message:String):Void {
         __app.logDebug(category, message);
-        __logHistory += "[DEBUG] [" + getCategoryName(category) + "] " + message + "\n";
+        var line = "[DEBUG] [" + getCategoryName(category) + "] " + message;
+        __logHistory += line + "\n";
+        if (onMessage != null) onMessage(line);
     }
     
     public function info(category:Int, message:String):Void {
         __app.logInfo(category, message);
-        __logHistory += "[INFO] [" + getCategoryName(category) + "] " + message + "\n";
+        var line = "[INFO] [" + getCategoryName(category) + "] " + message;
+        __logHistory += line + "\n";
+        if (onMessage != null) onMessage(line);
     }
     
     public function warn(category:Int, message:String):Void {
         __app.logWarn(category, message);
-        __logHistory += "[WARN] [" + getCategoryName(category) + "] " + message + "\n";
+        var line = "[WARN] [" + getCategoryName(category) + "] " + message;
+        __logHistory += line + "\n";
+        if (onMessage != null) onMessage(line);
     }
     
     public function error(category:Int, message:String):Void {
         __app.logError(category, message);
-        __logHistory += "[ERROR] [" + getCategoryName(category) + "] " + message + "\n";
+        var line = "[ERROR] [" + getCategoryName(category) + "] " + message;
+        __logHistory += line + "\n";
+        if (onMessage != null) onMessage(line);
     }
     
     public function critical(category:Int, message:String):Void {
         __app.logCritical(category, message);
-        __logHistory += "[CRITICAL] [" + getCategoryName(category) + "] " + message + "\n";
+        var line = "[CRITICAL] [" + getCategoryName(category) + "] " + message;
+        __logHistory += line + "\n";
+        if (onMessage != null) onMessage(line);
     }
 
     // Privates
