@@ -282,6 +282,28 @@ class TGALoader {
 			}
 		}
 
+		// Premultiply alpha for RGBA images.
+		// This eliminates white fringe on sprite edges: semi-transparent white
+		// edge pixels (e.g. alpha=64) get their RGB scaled down proportionally
+		// so they contribute far less colour to the blend.
+		// Pair with GL_ONE / GL_ONE_MINUS_SRC_ALPHA blend mode.
+		if (outputBytesPerPixel == 4) {
+			var i = 0;
+			while (i < outputDataSize) {
+				var a = pixelData[i + 3];
+				if (a == 0) {
+					pixelData[i]     = 0;
+					pixelData[i + 1] = 0;
+					pixelData[i + 2] = 0;
+				} else if (a < 255) {
+					pixelData[i]     = Std.int(pixelData[i]     * a / 255);
+					pixelData[i + 1] = Std.int(pixelData[i + 1] * a / 255);
+					pixelData[i + 2] = Std.int(pixelData[i + 2] * a / 255);
+				}
+				i += 4;
+			}
+		}
+
 		// Check if image has alpha channel
 		var hasAlpha = (outputBytesPerPixel == 4) || (outputBytesPerPixel == 2);
 
