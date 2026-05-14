@@ -1,6 +1,4 @@
-package differ.math;
-
-import differ.math.Matrix;
+package math;
 
 //NOTE : Only implements the basics required for the collision code.
 //The goal is to make this library as simple and unencumbered as possible, making it easier to integrate
@@ -10,7 +8,7 @@ import differ.math.Matrix;
 
 
     /** 2D vector class */
-class Vector {
+class Vec2 {
 
         /** The x component */
     public var x  : Float = 0;
@@ -30,26 +28,14 @@ class Vector {
     } //new
 
         /** Copy, returns a new vector instance from this vector. */
-    public inline function clone() : Vector {
+    public inline function clone() : Vec2 {
 
-        return new Vector(x, y);
+        return new Vec2(x, y);
 
     } //clone
 
-        /** Transforms Vector based on the given Matrix. Returns this vector, modified. */
-    public function transform(matrix:Matrix):Vector {
-
-        var v:Vector = clone();
-
-            v.x = x*matrix.a + y*matrix.c + matrix.tx;
-            v.y = x*matrix.b + y*matrix.d + matrix.ty;
-
-        return v;
-
-    } //transform
-
         /** Sets the vector's length to 1. Returns this vector, modified. */
-    public function normalize() : Vector {
+    public function normalize() : Vec2 {
 
         if(length == 0){
             x = 1;
@@ -68,7 +54,7 @@ class Vector {
         /** Sets the length to fit under the given maximum value.
             Nothing is done if the vector is already shorter.
             Returns this vector, modified. */
-    public function truncate( max:Float ) : Vector {
+    public function truncate( max:Float ) : Vec2 {
 
         length = Math.min(max, length);
 
@@ -77,7 +63,7 @@ class Vector {
     } //truncate
 
         /** Invert this vector. Returns this vector, modified. */
-    public function invert() : Vector {
+    public function invert() : Vec2 {
 
             x = -x;
             y = -y;
@@ -87,21 +73,21 @@ class Vector {
     } //invert
 
         /** Return the dot product of this vector and another vector. */
-    public function dot( other:Vector ) : Float {
+    public function dot( other:Vec2 ) : Float {
 
         return x * other.x + y * other.y;
 
     } //dot
 
         /** Return the cross product of this vector and another vector. */
-    public function cross( other:Vector ) : Float {
+    public function cross( other:Vec2 ) : Float {
 
         return x * other.y - y * other.x;
 
     } //cross
 
         /** Add a vector to this vector. Returns this vector, modified. */
-    public function add(other:Vector):Vector {
+    public function add(other:Vec2):Vec2 {
 
             x += other.x;
             y += other.y;
@@ -111,7 +97,7 @@ class Vector {
     } //add
 
         /** Subtract a vector from this one. Returns this vector, modified. */
-    public function subtract( other:Vector ) : Vector {
+    public function subtract( other:Vec2 ) : Vec2 {
 
             x -= other.x;
             y -= other.y;

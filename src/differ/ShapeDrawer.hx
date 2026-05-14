@@ -1,6 +1,7 @@
 package differ;
 
 import differ.math.*;
+import math.Vec2;
 import differ.shapes.*;
 import differ.data.*;
 
@@ -58,14 +59,14 @@ class ShapeDrawer {
         var x : Float = circle.transformedRadius;
         var y : Float = 0;
 
-        var _verts : Array<Vector> = [];
+        var _verts : Array<Vec2> = [];
 
         for( i in 0 ... _steps ) {
 
             var __x = x + circle.x;
             var __y = y + circle.y;
 
-            _verts.push(new Vector(__x,__y));
+            _verts.push(new Vec2(__x,__y));
 
                 var tx = -y;
                 var ty = x;
@@ -127,7 +128,7 @@ class ShapeDrawer {
 
 
         /** Draw a list of points as lines */
-    function drawVertList( _verts : Array<Vector> ) {
+    function drawVertList( _verts : Array<Vec2> ) {
 
         var _count : Int = _verts.length;
 

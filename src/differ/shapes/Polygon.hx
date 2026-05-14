@@ -1,6 +1,7 @@
 package differ.shapes;
 
 import differ.math.*;
+import math.Vec2;
 import differ.shapes.*;
 import differ.data.*;
 import differ.sat.*;
@@ -9,22 +10,22 @@ import differ.sat.*;
 class Polygon extends Shape {
 
         /** The transformed (rotated/scale) vertices cache */
-    public var transformedVertices ( get, never ) : Array<Vector>;
+    public var transformedVertices ( get, never ) : Array<Vec2>;
         /** The vertices of this shape */
-    public var vertices ( get, never ) : Array<Vector>;
+    public var vertices ( get, never ) : Array<Vec2>;
 
-    var _transformedVertices : Array<Vector>;
-    var _vertices : Array<Vector>;
+    var _transformedVertices : Array<Vec2>;
+    var _vertices : Array<Vec2>;
 
 
         /** Create a new polygon with a given set of vertices at position x,y. */
-    public function new( x:Float, y:Float, vertices:Array<Vector> ) {
+    public function new( x:Float, y:Float, vertices:Array<Vec2> ) {
 
         super( x,y );
 
         name = 'polygon(sides:${vertices.length})';
 
-        _transformedVertices = new Array<Vector>();
+        _transformedVertices = new Array<Vec2>();
         _vertices = vertices;
 
     } //new
@@ -85,12 +86,12 @@ class Polygon extends Shape {
 
         var rotation:Float = (Math.PI * 2) / sides;
         var angle:Float;
-        var vector:Vector;
-        var vertices:Array<Vector> = new Array<Vector>();
+        var vector:Vec2;
+        var vertices:Array<Vec2> = new Array<Vec2>();
 
         for(i in 0 ... sides) {
             angle = (i * rotation) + ((Math.PI - rotation) * 0.5);
-            vector = new Vector();
+            vector = new Vec2();
             vector.x = Math.cos(angle) * radius;
             vector.y = Math.sin(angle) * radius;
             vertices.push(vector);
@@ -104,21 +105,21 @@ class Polygon extends Shape {
             Centered by default. Returns a ready made `Polygon` collision `Shape` */
     public static function rectangle(x:Float, y:Float, width:Float, height:Float, centered:Bool = true):Polygon {
 
-        var vertices:Array<Vector> = new Array<Vector>();
+        var vertices:Array<Vec2> = new Array<Vec2>();
 
         if(centered) {
 
-            vertices.push( new Vector( -width / 2, -height / 2) );
-            vertices.push( new Vector(  width / 2, -height / 2) );
-            vertices.push( new Vector(  width / 2,  height / 2) );
-            vertices.push( new Vector( -width / 2,  height / 2) );
+            vertices.push( new Vec2( -width / 2, -height / 2) );
+            vertices.push( new Vec2(  width / 2, -height / 2) );
+            vertices.push( new Vec2(  width / 2,  height / 2) );
+            vertices.push( new Vec2( -width / 2,  height / 2) );
 
         } else {
 
-            vertices.push( new Vector( 0, 0 ) );
-            vertices.push( new Vector( width, 0 ) );
-            vertices.push( new Vector( width, height) );
-            vertices.push( new Vector( 0, height) );
+            vertices.push( new Vec2( 0, 0 ) );
+            vertices.push( new Vec2( width, 0 ) );
+            vertices.push( new Vec2( width, height) );
+            vertices.push( new Vec2( 0, height) );
 
         }
 
@@ -144,23 +145,23 @@ class Polygon extends Shape {
 
 //Internal
 
-    function get_transformedVertices() : Array<Vector> {
+    function get_transformedVertices() : Array<Vec2> {
 
         if(!_transformed) {
-            _transformedVertices = new Array<Vector>();
+            _transformedVertices = new Array<Vec2>();
             _transformed = true;
 
             var _count : Int = _vertices.length;
 
             for(i in 0..._count) {
-                _transformedVertices.push( _vertices[i].clone().transform( _transformMatrix ) );
+                _transformedVertices.push( _transformMatrix.transformVector( _vertices[i] ) );
             }
         }
 
         return _transformedVertices;
     }
 
-    function get_vertices() : Array<Vector> {
+    function get_vertices() : Array<Vec2> {
         return _vertices;
     }
 

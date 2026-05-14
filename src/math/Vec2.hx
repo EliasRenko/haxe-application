@@ -1,39 +1,134 @@
 package math;
 
+//NOTE : Only implements the basics required for the collision code.
+//The goal is to make this library as simple and unencumbered as possible, making it easier to integrate
+//into an existing codebase. This means that using abstracts or similar you can add a function like "toMyEngineVectorFormat()"
+//or simple an adapter pattern to convert to your preferred format. It simplifies usage and handles internals, nothing else.
+//This also means that ALL of these functions are used and are needed.
+
+
+    /** 2D vector class */
 class Vec2 {
 
-    // Publics
-    public var x:Float;
-    public var y:Float;
+        /** The x component */
+    public var x  : Float = 0;
+        /** The y component */
+    public var y  : Float = 0;
 
-    public function new(x:Float = 0, y:Float = 0) {
-        this.x = x;
-        this.y = y;
-    }
+        /** The length of the vector */
+    public var length ( get, set ) : Float;
+        /** The length, squared, of the vector */
+    public var lengthsq ( get, never ) : Float;
 
-    public function add(v:Vec2):Vec2 {
-        return new Vec2(this.x + v.x, this.y + v.y);
-    }
+    public function new( _x:Float = 0, _y:Float = 0 ) {
 
-    public function subtract(v:Vec2):Vec2 {
-        return new Vec2(this.x - v.x, this.y - v.y);
-    }
+        x = _x;
+        y = _y;
 
-    public function scale(s:Float):Vec2 {
-        return new Vec2(this.x * s, this.y * s);
-    }
+    } //new
 
-    public function dot(v:Vec2):Float {
-        return this.x * v.x + this.y * v.y;
-    }
+        /** Copy, returns a new vector instance from this vector. */
+    public inline function clone() : Vec2 {
 
-    public function length():Float {
-        return Math.sqrt(this.x * this.x + this.y * this.y);
-    }
+        return new Vec2(x, y);
 
-    public function normalize():Vec2 {
-        var len = length();
-        if (len == 0) return new Vec2(0, 0);
-        return new Vec2(this.x / len, this.y / len);
-    }
-}
+    } //clone
+
+        /** Sets the vector's length to 1. Returns this vector, modified. */
+    public function normalize() : Vec2 {
+
+        if(length == 0){
+            x = 1;
+            return this;
+        }
+
+        var len:Float = length;
+
+            x /= len;
+            y /= len;
+
+        return this;
+
+    } //normalize
+
+        /** Sets the length to fit under the given maximum value.
+            Nothing is done if the vector is already shorter.
+            Returns this vector, modified. */
+    public function truncate( max:Float ) : Vec2 {
+
+        length = Math.min(max, length);
+
+        return this;
+
+    } //truncate
+
+        /** Invert this vector. Returns this vector, modified. */
+    public function invert() : Vec2 {
+
+            x = -x;
+            y = -y;
+
+        return this;
+
+    } //invert
+
+        /** Return the dot product of this vector and another vector. */
+    public function dot( other:Vec2 ) : Float {
+
+        return x * other.x + y * other.y;
+
+    } //dot
+
+        /** Return the cross product of this vector and another vector. */
+    public function cross( other:Vec2 ) : Float {
+
+        return x * other.y - y * other.x;
+
+    } //cross
+
+        /** Add a vector to this vector. Returns this vector, modified. */
+    public function add(other:Vec2):Vec2 {
+
+            x += other.x;
+            y += other.y;
+
+        return this;
+
+    } //add
+
+        /** Subtract a vector from this one. Returns this vector, modified. */
+    public function subtract( other:Vec2 ) : Vec2 {
+
+            x -= other.x;
+            y -= other.y;
+
+        return this;
+
+    } //subtract
+
+        /** Return a string representation of this vector. */
+    public function toString() : String return "Vector x:" + x + ", y:" + y;
+
+//Internal
+
+
+    inline function set_length(value:Float) : Float {
+
+        var ep:Float = 0.00000001;
+        var _angle:Float = Math.atan2(y, x);
+
+            x = Math.cos(_angle) * value;
+            y = Math.sin(_angle) * value;
+
+        if(Math.abs(x) < ep) x = 0;
+        if(Math.abs(y) < ep) y = 0;
+
+        return value;
+
+    } //set_length
+
+    inline function get_length() : Float return Math.sqrt(lengthsq);
+    inline function get_lengthsq() : Float return x * x + y * y;
+
+
+} //Vector

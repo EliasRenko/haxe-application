@@ -13,7 +13,6 @@ import gui.TabControl;
 import gui.TabPage;
 import gui.Window;
 import loaders.FontLoader;
-import math.Vec2;
 import Scancode;
 
 /**
@@ -233,12 +232,12 @@ class MenuState extends State {
     //  Helpers
     // -------------------------------------------------------------------------
 
-    private function _resolutionFromLabel(label:String):Null<Vec2> {
+    private function _resolutionFromLabel(label:String):Null<{x:Float, y:Float}> {
         return switch (label) {
-            case "1920 x 1080": new Vec2(1920, 1080);
-            case "1280 x 720":  new Vec2(1280, 720);
-            case "1024 x 768":  new Vec2(1024, 768);
-            case "800 x 600":   new Vec2(800,  600);
+            case "1920 x 1080": {x: 1920, y: 1080};
+            case "1280 x 720":  {x: 1280, y: 720};
+            case "1024 x 768":  {x: 1024, y: 768};
+            case "800 x 600":   {x: 800,  y: 600};
             default: null;
         };
     }

@@ -1,6 +1,7 @@
 package differ.shapes;
 
 import differ.math.*;
+import math.Vec2;
 import differ.shapes.*;
 import differ.data.*;
 
@@ -17,7 +18,7 @@ class Shape {
         /** A list of tags to use for marking shapes with data for later use, by key/value */
     public var tags : Map<String, String>;
         /** The position of this shape */
-    public var position ( get, set ) : Vector;
+    public var position ( get, set ) : Vec2;
         /** The x position of this shape */
     public var x ( get, set ) : Float;
         /** The y position of this shape */
@@ -29,16 +30,16 @@ class Shape {
         /** The scale in the y direction of this shape */
     public var scaleY ( get, set ) : Float;
 
-    var _position : Vector;
+    var _position : Vec2;
     var _rotation : Float = 0;
     var _rotation_radians : Float = 0;
-    var _scale : Vector;
+    var _scale : Vec2;
 
     var _scaleX : Float = 1;
     var _scaleY : Float = 1;
 
     var _transformed : Bool = false;
-    var _transformMatrix : Matrix;
+    var _transformMatrix : Matrix2D;
 
 
 //Public API
@@ -49,14 +50,14 @@ class Shape {
 
         tags = new Map();
 
-        _position = new Vector(_x,_y);
-        _scale = new Vector(1,1);
+        _position = new Vec2(_x,_y);
+        _scale = new Vec2(1,1);
         _rotation = 0;
 
         _scaleX = 1;
         _scaleY = 1;
 
-        _transformMatrix = new Matrix();
+        _transformMatrix = new Matrix2D();
         _transformMatrix.makeTranslation( _position.x, _position.y );
 
     } //new
@@ -92,11 +93,11 @@ class Shape {
 
 //.position
 
-    function get_position() : Vector {
+    function get_position() : Vec2 {
         return _position;
     }
 
-    function set_position( v : Vector ) : Vector {
+    function set_position( v : Vec2 ) : Vec2 {
         _position = v;
         refresh_transform();
         return _position;

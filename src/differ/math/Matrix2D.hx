@@ -1,6 +1,7 @@
 package differ.math;
 
 import differ.math.*;
+import math.Vec2;
 import differ.shapes.*;
 import differ.data.*;
 
@@ -106,4 +107,15 @@ class Matrix2D  {
 
     } //toString
 
-} //Matrix
+    public function transformVector(v:Vec2):Vec2 {
+
+        var result = v.clone();
+
+        result.x = v.x * a + v.y * c + tx;
+        result.y = v.x * b + v.y * d + ty;
+
+        return result;
+
+    } //transformVector
+
+} //Matrix2D

@@ -456,12 +456,12 @@ class SAT2D {
         return (dX * (aY - bY) - dY * (aX - bX)) / udelta;
     } //rayU
 
-    static inline function findNormalAxisX(verts:Array<Vector>, index:Int) : Float {
+    static inline function findNormalAxisX(verts:Array<Vec2>, index:Int) : Float {
         var v2 = (index >= verts.length - 1) ? verts[0] : verts[index + 1];
         return -(v2.y - verts[index].y);
     }
 
-    static inline function findNormalAxisY(verts:Array<Vector>, index:Int) : Float {
+    static inline function findNormalAxisY(verts:Array<Vec2>, index:Int) : Float {
         var v2 = (index >= verts.length - 1) ? verts[0] : verts[index + 1];
         return (v2.x - verts[index].x);
     }
