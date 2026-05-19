@@ -16,6 +16,7 @@ class Main {
         app.addState(new GUITestState(app));
         #if cpp
         app.addState(new states.FontBakerState(app));
+        app.addState(new states.PackerState(app));
         #end
         app.run();
     }
