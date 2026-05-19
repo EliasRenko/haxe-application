@@ -56,7 +56,7 @@ class MenuState extends State {
             app.resources.getText("shaders/ui.frag"));
 
         var spriteTexture = renderer.uploadTexture(
-            app.resources.getTexture("textures/gui_debug.tga"));
+            app.resources.getTexture("textures/gui.tga"));
 
         var fontTexture = renderer.uploadTexture(
             app.resources.getTexture("textures/font_atlas.tga"));
@@ -161,16 +161,14 @@ class MenuState extends State {
         ddAspect.selectIndex(0);
         gfx.addControl(ddAspect);
 
-        var cbVsync = new Checkbox(false, 8, 170);
+        var cbVsync = new Checkbox(false, 8, 170, "VSync");
         gfx.addControl(cbVsync);
-        gfx.addControl(new Label("VSync", 44, 174));
 
         // ── Audio tab ─────────────────────────────────────────────────────
         var audio:TabPage = tabs.addTab("Audio");
 
-        var cbMute = new Checkbox(false, 8, 8);
+        var cbMute = new Checkbox(false, 8, 8, "Mute audio");
         audio.addControl(cbMute);
-        audio.addControl(new Label("Mute audio", 44, 12));
 
         // ── Close button ──────────────────────────────────────────────────
         var btnClose = new Button("Close", 80, Math.round((w - 80) / 2), h - 28 - 38);

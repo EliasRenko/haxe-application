@@ -6,8 +6,8 @@ import gui.ControlEventType;
 class Stamp extends Control {
 
     // Constants
-    public static inline var DEFAULT_TILE_WIDTH:Int = 28;
-    public static inline var DEFAULT_TILE_HEIGHT:Int = 28;
+    public static inline var DEFAULT_TILE_WIDTH:Int = 20;
+    public static inline var DEFAULT_TILE_HEIGHT:Int = 20;
 
     // Publics
     public var id(get, set):Int;
@@ -32,6 +32,7 @@ class Stamp extends Control {
         //__graphic.parent = ____canvas.tilemap;
 
         ____canvas.tilemap.addTileInstance(__graphic);
+        ____canvas.setTileNoTint(__graphic);
         __graphic.visible = visible;
 
         // __width = __graphic.width;

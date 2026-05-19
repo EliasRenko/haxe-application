@@ -98,15 +98,15 @@ class TabControl extends Container<Control> {
     // -------------------------------------------------------------------------
 
     private function __initGraphics():Void {
-        __nineSlice.get(0).regionId = ____canvas.sets.get('panel_1');
-        __nineSlice.get(1).regionId = ____canvas.sets.get('panel_2');
-        __nineSlice.get(2).regionId = ____canvas.sets.get('panel_3');
-        __nineSlice.get(3).regionId = ____canvas.sets.get('panel_4');
-        __nineSlice.get(4).regionId = ____canvas.sets.get('panel_5');
-        __nineSlice.get(5).regionId = ____canvas.sets.get('panel_6');
-        __nineSlice.get(6).regionId = ____canvas.sets.get('panel_7');
-        __nineSlice.get(7).regionId = ____canvas.sets.get('panel_8');
-        __nineSlice.get(8).regionId = ____canvas.sets.get('panel_9');
+        __nineSlice.get(0).regionId = ____canvas.sets.get('panel_0');
+        __nineSlice.get(1).regionId = ____canvas.sets.get('panel_1');
+        __nineSlice.get(2).regionId = ____canvas.sets.get('panel_2');
+        __nineSlice.get(3).regionId = ____canvas.sets.get('panel_3');
+        __nineSlice.get(4).regionId = ____canvas.sets.get('panel_4');
+        __nineSlice.get(5).regionId = ____canvas.sets.get('panel_5');
+        __nineSlice.get(6).regionId = ____canvas.sets.get('panel_6');
+        __nineSlice.get(7).regionId = ____canvas.sets.get('panel_7');
+        __nineSlice.get(8).regionId = ____canvas.sets.get('panel_8');
     }
 
     override function __setGraphicX():Void {
@@ -178,9 +178,9 @@ private class TabButton extends Control {
 
     private function __initGraphics():Void {
         if (__selected) {
-            __threeSlice.get(0).regionId = ____canvas.sets.get('strip_1');
-            __threeSlice.get(1).regionId = ____canvas.sets.get('strip_2');
-            __threeSlice.get(2).regionId = ____canvas.sets.get('strip_3');
+            __threeSlice.get(0).regionId = ____canvas.sets.get('strip_0');
+            __threeSlice.get(1).regionId = ____canvas.sets.get('strip_1');
+            __threeSlice.get(2).regionId = ____canvas.sets.get('strip_2');
         } else {
             __threeSlice.get(0).regionId = ____canvas.sets.get('button_0');
             __threeSlice.get(1).regionId = ____canvas.sets.get('button_1');

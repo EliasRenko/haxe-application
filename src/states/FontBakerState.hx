@@ -77,7 +77,7 @@ class FontBakerState extends State {
             app.resources.getText("shaders/textured.frag"));
 
         var spriteTexture = renderer.uploadTexture(
-            app.resources.getTexture("textures/gui_debug.tga"));
+            app.resources.getTexture("textures/gui.tga"));
 
         // Shared font atlas — all 3 faces live in this one texture
         var fontTexture = renderer.uploadTexture(

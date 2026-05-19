@@ -84,7 +84,7 @@ class PackerState extends State {
             app.resources.getText("shaders/textured.frag"));
 
         var spriteTexture = renderer.uploadTexture(
-            app.resources.getTexture("textures/gui_debug.tga"));
+            app.resources.getTexture("textures/gui.tga"));
         var fontTexture = renderer.uploadTexture(
             app.resources.getTexture("textures/font_atlas.tga"));
         var fontData = FontLoader.load(

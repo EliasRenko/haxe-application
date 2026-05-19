@@ -61,7 +61,7 @@ class GUITestState extends State {
             app.resources.getText("shaders/textured.frag"));
 
         var spriteTexture = renderer.uploadTexture(
-            app.resources.getTexture("textures/gui_debug.tga"));
+            app.resources.getTexture("textures/gui.tga"));
 
         // Shared font atlas — all 3 faces live in this one texture
         var fontTexture = renderer.uploadTexture(
@@ -146,10 +146,9 @@ class GUITestState extends State {
     }
 
     private function _showCheckbox(cx:Int, cy:Int):Void {
-        var chk = new Checkbox(false, cx - 50, cy - 14);
+        var chk = new Checkbox(false, cx - 50, cy - 14, "Toggle me");
         chk.addListener(function(c, _) trace("Checkbox: " + cast(c, Checkbox).value), LEFT_CLICK);
         _track(chk);
-        _track(new Label("Toggle me", cx - 14, cy - 8));
     }
 
     private function _showStrip(cx:Int, cy:Int):Void {
@@ -164,9 +163,8 @@ class GUITestState extends State {
         var btn = new Button("OK", 80, 8, 36);
         btn.addListener(function(_, __) trace("Panel OK clicked"), LEFT_CLICK);
         panel.addControl(btn);
-        var chk = new Checkbox(false, 8, 72);
+        var chk = new Checkbox(false, 8, 72, "Inner option");
         panel.addControl(chk);
-        panel.addControl(new Label("Inner option", 42, 76));
     }
 
     private function _showWindow(cx:Int, cy:Int):Void {
@@ -195,21 +193,18 @@ class GUITestState extends State {
 
         var page1:TabPage = tabs.addTab("General");
         page1.addControl(new Label("General settings", 8, 8));
-        var chk = new Checkbox(false, 8, 32);
+        var chk = new Checkbox(false, 8, 32, "Enable feature");
         page1.addControl(chk);
-        page1.addControl(new Label("Enable feature", 44, 36));
 
         var page2:TabPage = tabs.addTab("Audio");
         page2.addControl(new Label("Audio settings", 8, 8));
-        var chkMute = new Checkbox(false, 8, 32);
+        var chkMute = new Checkbox(false, 8, 32, "Mute");
         page2.addControl(chkMute);
-        page2.addControl(new Label("Mute", 44, 36));
 
         var page3:TabPage = tabs.addTab("Video");
         page3.addControl(new Label("Video settings", 8, 8));
-        var chkFs = new Checkbox(false, 8, 32);
+        var chkFs = new Checkbox(false, 8, 32, "Fullscreen");
         page3.addControl(chkFs);
-        page3.addControl(new Label("Fullscreen", 44, 36));
     }
 
     private function _showTextBox(cx:Int, cy:Int):Void {

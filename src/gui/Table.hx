@@ -175,7 +175,7 @@ private class TableRow extends Container<Control> {
             __bgTile.height   = Table.ROW_HEIGHT;
             __bgTile.x        = __x + ____offsetX;
             __bgTile.y        = __y + ____offsetY;
-            __bgTile.regionId = ____canvas.sets.get('panel_5');
+            __bgTile.regionId = ____canvas.sets.get('panel_4');
             ____canvas.tilemap.addTileInstance(__bgTile);
         }
         super.init();

@@ -133,10 +133,9 @@ class Canvas extends Entity {
         for (i in 0...data.regions.length) {
             var region = data.regions[i];
             var name:String = region.name;
-            var dim:Array<Int> = region.dim;
             
             // Define region in tileBatch
-            var regionId = tilemap.defineRegion(dim[0], dim[1], dim[2], dim[3]);
+            var regionId = tilemap.defineRegion(region.x, region.y, region.width, region.height);
             sets.set(name, regionId);
             count++;
         }
@@ -464,6 +463,14 @@ class Canvas extends Entity {
 
     public function destroyClipRect(handle:Int):Void {
         __clipRectHandles.remove(handle);
+    }
+
+    /**
+     * Pin a tile to white (1,1,1,1), exempting it from the canvas tint.
+     * Call this after addTileInstance for tiles that should never be tinted.
+     */
+    public function setTileNoTint(tile:Tile):Void {
+        if (__uiBatch != null) __uiBatch.setTileColor(tile, 1.0, 1.0, 1.0, 1.0);
     }
 
      private function get_markedControl():Control {

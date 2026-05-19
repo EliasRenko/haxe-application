@@ -72,9 +72,9 @@ class ProgressBar extends Control {
     // ── Graphics helpers ──────────────────────────────────────────────────────
 
     private function __initGraphics():Void {
-        __bgSlice.get(0).regionId   = ____canvas.sets.get('strip_1');
-        __bgSlice.get(1).regionId   = ____canvas.sets.get('strip_2');
-        __bgSlice.get(2).regionId   = ____canvas.sets.get('strip_3');
+        __bgSlice.get(0).regionId   = ____canvas.sets.get('strip_0');
+        __bgSlice.get(1).regionId   = ____canvas.sets.get('strip_1');
+        __bgSlice.get(2).regionId   = ____canvas.sets.get('strip_2');
 
         __fillSlice.get(0).regionId = ____canvas.sets.get('button_0');
         __fillSlice.get(1).regionId = ____canvas.sets.get('button_1');

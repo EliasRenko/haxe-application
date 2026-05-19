@@ -4,7 +4,7 @@
 
 # UI
 textures/gui.json
-textures/gui_debug.tga
+textures/gui.tga
 
 # Fonts
 fonts/gohu11.json
@@ -28,9 +28,9 @@ textures/nokiafc22.tga
 textures/gohu11.tga
 textures/gohu14.tga
 textures/nokia.tga
-textures/gui.tga
 textures/sky.tga
 textures/cat.tga
+textures/font_atlas.tga
 
 # Shaders
 shaders/basic.vert

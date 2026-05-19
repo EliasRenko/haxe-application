@@ -6,8 +6,8 @@ import input.MouseControl;
 
 class Window extends Container<Control> {
 
-    public static inline var DEFAULT_TILE_WIDTH:Int = 28;
-    public static inline var DEFAULT_TILE_HEIGHT:Int = 28;
+    public static inline var DEFAULT_TILE_WIDTH:Int = 24;
+    public static inline var DEFAULT_TILE_HEIGHT:Int = 24;
 
     // Privates
     private var __strip:WindowStrip;
@@ -100,22 +100,23 @@ class Window extends Container<Control> {
 
 private class WindowStrip extends Strip {
 
-    public static inline var DEFAULT_TILE_WIDTH:Int = 28;
-    public static inline var DEFAULT_TILE_HEIGHT:Int = 28;
+    // Constants
+    public static inline var DEFAULT_TILE_WIDTH:Int = 20;
+    public static inline var DEFAULT_TILE_HEIGHT:Int = 20;
+    public static inline var DEFAULT_STAMP_X_OFFSET:Int = -2;
+    public static inline var DEFAULT_STAMP_Y_OFFSET:Int = 2;
 
     // Publics
-
     public var label:Label;
     public var stamp_close:Stamp;
     public var stamp_fold:Stamp;
 
     public function new(title:String, width:Float) {
-        
         super(width, 0, 0);
 
-        label = new Label(title, 4, 2);
-        stamp_close = new Stamp(26, width - DEFAULT_TILE_WIDTH, 4);
-        stamp_fold = new Stamp(28, width - (2 * DEFAULT_TILE_WIDTH), 8);
+        label = new Label(title, 5, 5);
+        stamp_close = new Stamp(26, width - DEFAULT_TILE_WIDTH + DEFAULT_STAMP_X_OFFSET, DEFAULT_STAMP_Y_OFFSET);
+        stamp_fold = new Stamp(28, width - (2 * DEFAULT_TILE_WIDTH) + DEFAULT_STAMP_X_OFFSET, DEFAULT_STAMP_Y_OFFSET);
     }
 
     override function init():Void {
@@ -130,9 +131,9 @@ private class WindowStrip extends Strip {
 
     override function __initGraphics() {
 
-        __threeSlice.get(0).regionId = ____canvas.sets.get('strip_1');
-        __threeSlice.get(1).regionId = ____canvas.sets.get('strip_2');
-        __threeSlice.get(2).regionId = ____canvas.sets.get('strip_3');
+        __threeSlice.get(0).regionId = ____canvas.sets.get('windowStrip_0');
+        __threeSlice.get(1).regionId = ____canvas.sets.get('windowStrip_1');
+        __threeSlice.get(2).regionId = ____canvas.sets.get('windowStrip_2');
 
         stamp_close.id = ____canvas.sets.get('stamp_close');
         stamp_fold.id = ____canvas.sets.get('stamp_fold');
@@ -150,14 +151,14 @@ private class WindowPanel extends Panel {
     }
 
     override function __initGraphics() {
-        __nineSlice.get(0).regionId = ____canvas.sets.get('panel_1');
-        __nineSlice.get(1).regionId = ____canvas.sets.get('panel_2');
-        __nineSlice.get(2).regionId = ____canvas.sets.get('panel_3');
-        __nineSlice.get(3).regionId = ____canvas.sets.get('panel_4');
-        __nineSlice.get(4).regionId = ____canvas.sets.get('panel_5');
-        __nineSlice.get(5).regionId = ____canvas.sets.get('panel_6');
-        __nineSlice.get(6).regionId = ____canvas.sets.get('panel_7');
-        __nineSlice.get(7).regionId = ____canvas.sets.get('panel_8');
-        __nineSlice.get(8).regionId = ____canvas.sets.get('panel_9');
+        __nineSlice.get(0).regionId = ____canvas.sets.get('panel_3');
+        __nineSlice.get(1).regionId = ____canvas.sets.get('panel_4');
+        __nineSlice.get(2).regionId = ____canvas.sets.get('panel_5');
+        __nineSlice.get(3).regionId = ____canvas.sets.get('panel_3');
+        __nineSlice.get(4).regionId = ____canvas.sets.get('panel_4');
+        __nineSlice.get(5).regionId = ____canvas.sets.get('panel_5');
+        __nineSlice.get(6).regionId = ____canvas.sets.get('panel_6');
+        __nineSlice.get(7).regionId = ____canvas.sets.get('panel_7');
+        __nineSlice.get(8).regionId = ____canvas.sets.get('panel_8');
     }
 }

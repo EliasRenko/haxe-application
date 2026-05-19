@@ -6,8 +6,8 @@ import haxe.ds.Vector;
 @:forward(get)
 abstract NineSlice(Vector<Tile>) from Vector<Tile> to Vector<Tile> {
     
-    public static inline var DEFAULT_TILE_WIDTH:Int = 28;
-    public static inline var DEFAULT_TILE_HEIGHT:Int = 28;
+    public static inline var DEFAULT_TILE_WIDTH:Int = 24;
+    public static inline var DEFAULT_TILE_HEIGHT:Int = 24;
 
     public function new() {
         this = new Vector<Tile>(9);

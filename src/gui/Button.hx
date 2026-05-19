@@ -6,6 +6,7 @@ import gui.Control;
 class Button extends Control {
 
     // Constants
+    public static inline var DEFAULT_TEXT_Y_OFFSET:Int = 5;
     public static inline var DEFAULT_TILE_WIDTH:Int = 28;
     public static inline var DEFAULT_TILE_HEIGHT:Int = 28;
 
@@ -13,7 +14,6 @@ class Button extends Control {
     public var text(get, set):String;
 
     // Privates
-
     private var __bitmapText:Text;
     private var __threeSlice:ThreeSlice = new ThreeSlice();
     
@@ -74,12 +74,11 @@ class Button extends Control {
     }
 
     override function __setGraphicY():Void {
-        __bitmapText.y = __y + ____offsetY + 2;
+        __bitmapText.y = __y + ____offsetY + DEFAULT_TEXT_Y_OFFSET;
         __threeSlice.setY(__y + ____offsetY);
     }
 
     // Getters and setters
-
     override function set_visible(value:Bool):Bool {
         __threeSlice.iterate(function(tile) tile.visible = value);
         __bitmapText.visible = value;

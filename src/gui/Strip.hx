@@ -52,9 +52,9 @@ class Strip extends Container<Control> {
     }
 
     private function __initGraphics():Void {
-        __threeSlice.get(0).regionId = ____canvas.sets.get('strip_1');
-        __threeSlice.get(1).regionId = ____canvas.sets.get('strip_2');
-        __threeSlice.get(2).regionId = ____canvas.sets.get('strip_3');
+        __threeSlice.get(0).regionId = ____canvas.sets.get('strip_0');
+        __threeSlice.get(1).regionId = ____canvas.sets.get('strip_1');
+        __threeSlice.get(2).regionId = ____canvas.sets.get('strip_2');
     }
 
     override function __setGraphicX():Void {
