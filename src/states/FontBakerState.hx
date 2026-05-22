@@ -341,11 +341,14 @@ class FontBakerState extends State {
             return;
         }
         #if sys
+        var outDir = "export";
+        if (!sys.FileSystem.exists(outDir))
+            sys.FileSystem.createDirectory(outDir);
         var atlasName = _bakedFont.faces.length == 1
             ? _bakedFont.fontName + "_" + _bakedFont.fontSize
             : "font_atlas";
-        _bakedFont.exportAllFaces("res/fonts", atlasName);
-        _statusLabel.text = "Exported " + _bakedFont.faces.length + " face(s) to res/fonts/";
+        _bakedFont.exportAllFaces(outDir, atlasName);
+        _statusLabel.text = "Exported " + _bakedFont.faces.length + " face(s) to " + outDir + "/";
         #end
     }
 

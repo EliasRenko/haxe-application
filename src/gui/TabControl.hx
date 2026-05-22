@@ -24,7 +24,7 @@ import gui.ThreeSlice;
  */
 class TabControl extends Container<Control> {
 
-    public static inline var TAB_HEIGHT:Int = 28;
+    public static inline var TAB_HEIGHT:Int = 24;
     public static inline var TAB_WIDTH:Int  = 80;
 
     private var __nineSlice:NineSlice = new NineSlice();
@@ -71,8 +71,8 @@ class TabControl extends Container<Control> {
 
         __tabs.push({ button: btn, page: page });
 
-        __addControl(btn);
         __addControl(page);
+        __addControl(btn);
 
         // When added after init, hide non-first pages immediately
         if (____canvas != null) {
@@ -128,8 +128,6 @@ class TabControl extends Container<Control> {
     }
 }
 
-// -----------------------------------------------------------------------------
-
 private typedef TabEntry = { button:TabButton, page:TabPage };
 
 /**
@@ -138,7 +136,7 @@ private typedef TabEntry = { button:TabButton, page:TabPage };
  */
 private class TabButton extends Control {
 
-    public static inline var DEFAULT_TILE_HEIGHT:Int = 28;
+    public static inline var DEFAULT_TILE_HEIGHT:Int = 24;
 
     public var selected(get, set):Bool;
 
@@ -178,13 +176,13 @@ private class TabButton extends Control {
 
     private function __initGraphics():Void {
         if (__selected) {
-            __threeSlice.get(0).regionId = ____canvas.sets.get('strip_0');
-            __threeSlice.get(1).regionId = ____canvas.sets.get('strip_1');
-            __threeSlice.get(2).regionId = ____canvas.sets.get('strip_2');
+            __threeSlice.get(0).regionId = ____canvas.sets.get('tab_0');
+            __threeSlice.get(1).regionId = ____canvas.sets.get('tab_1');
+            __threeSlice.get(2).regionId = ____canvas.sets.get('tab_2');
         } else {
-            __threeSlice.get(0).regionId = ____canvas.sets.get('button_0');
-            __threeSlice.get(1).regionId = ____canvas.sets.get('button_1');
-            __threeSlice.get(2).regionId = ____canvas.sets.get('button_2');
+            __threeSlice.get(0).regionId = ____canvas.sets.get('tab_3');
+            __threeSlice.get(1).regionId = ____canvas.sets.get('tab_4');
+            __threeSlice.get(2).regionId = ____canvas.sets.get('tab_5');
         }
     }
 
@@ -194,7 +192,7 @@ private class TabButton extends Control {
     }
 
     override function __setGraphicY():Void {
-        __bitmapText.y = __y + ____offsetY + 2;
+        __bitmapText.y = __y + ____offsetY + 5;
         __threeSlice.setY(__y + ____offsetY);
     }
 

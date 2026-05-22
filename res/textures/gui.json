@@ -175,20 +175,62 @@
       "width": 24,
       "x": 0,
       "y": 96,
+      "height": 25,
+      "name": "tab_0"
+    },
+    {
+      "width": 24,
+      "x": 0,
+      "y": 121,
+      "height": 25,
+      "name": "tab_1"
+    },
+    {
+      "width": 24,
+      "x": 0,
+      "y": 146,
+      "height": 25,
+      "name": "tab_2"
+    },
+    {
+      "width": 24,
+      "x": 0,
+      "y": 171,
+      "height": 25,
+      "name": "tab_3"
+    },
+    {
+      "width": 24,
+      "x": 0,
+      "y": 196,
+      "height": 25,
+      "name": "tab_4"
+    },
+    {
+      "width": 24,
+      "x": 0,
+      "y": 221,
+      "height": 25,
+      "name": "tab_5"
+    },
+    {
+      "width": 24,
+      "x": 0,
+      "y": 246,
       "height": 24,
       "name": "windowStrip_0"
     },
     {
       "width": 24,
       "x": 0,
-      "y": 120,
+      "y": 270,
       "height": 24,
       "name": "windowStrip_1"
     },
     {
       "width": 24,
       "x": 0,
-      "y": 144,
+      "y": 294,
       "height": 24,
       "name": "windowStrip_2"
     }
