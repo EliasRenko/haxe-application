@@ -7,7 +7,7 @@ import gui.ControlEventType;
 import gui.Dropdown;
 import gui.ImageView;
 import gui.Label;
-import gui.List as GUIList;
+import gui.ScrollableContainer;
 import gui.TextField;
 import gui.Toolstripmenu;
 import gui.Window;
@@ -47,10 +47,11 @@ class PackerState extends State {
     private static inline var MENU_H:Int    = 24;
     private static inline var OPTIONS_W:Int = 240;
     private static inline var MARGIN:Int    = 4;
+    private static inline var LIST_ITEM_H:Int = 20;
 
     // ── GUI references ────────────────────────────────────────────────────────
     private var _canvas:Canvas;
-    private var _imageList:GUIList<Label>;
+    private var _listContainer:ScrollableContainer;
     private var _nameField:TextField;
     private var _atlasNameField:TextField;
     private var _atlasDropdown:Dropdown;
@@ -133,9 +134,8 @@ class PackerState extends State {
         _canvas.addControl(panel);
 
         // Scrollable list of added images
-        _imageList = new GUIList<Label>(OPTIONS_W - 16, 8, 26);
-        _imageList.addListener(_onListItemClick, ON_ITEM_CLICK);
-        panel.addControl(_imageList);
+        _listContainer = new ScrollableContainer(OPTIONS_W - 16, 82, 8, 26);
+        panel.addControl(_listContainer);
 
         // Add / Remove buttons
         var btnAdd = new Button("Add", 56, 8, 108);
@@ -248,19 +248,18 @@ class PackerState extends State {
     }
 
     private function _rebuildList():Void {
-        while (!_imageList.controls.isEmpty())
-            _imageList.removeControlAt(0);
-        for (e in _entries)
-            _imageList.addControl(new Label(e.name, 0, 0));
-    }
-
-    private function _onListItemClick(control:Control, type:UInt):Void {
-        var idx = 0;
-        for (c in _imageList.controls) {
-            if (c == control) { _selectEntry(idx); return; }
-            idx++;
+        while (!_listContainer.controls.isEmpty())
+            _listContainer.removeControl(_listContainer.controls.first());
+        for (i in 0..._entries.length) {
+            var e = _entries[i];
+            var lbl = new Label(e.name, 0, i * LIST_ITEM_H);
+            var capturedIdx = i;
+            lbl.addListener(function(_, _) { _selectEntry(capturedIdx); }, LEFT_CLICK);
+            _listContainer.addControl(lbl);
         }
     }
+
+
 
     // ── Pack ──────────────────────────────────────────────────────────────────
 

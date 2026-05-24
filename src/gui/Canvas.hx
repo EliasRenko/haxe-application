@@ -792,9 +792,8 @@ private class UIBatch extends ManagedTileBatch {
                 if (tile.visible) buildTile(tile);
             }
         } else {
-            @:privateAccess
-            for (tile in tiles) {
-                if (tile.visible) buildTile(tile);
+            for (item in __renderList) {
+                if (item.isTile && item.tile.visible) buildTile(item.tile);
             }
         }
 

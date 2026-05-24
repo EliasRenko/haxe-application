@@ -7,8 +7,7 @@ import gui.ControlEventType;
 import gui.Dropdown;
 import gui.ImageView;
 import gui.Label;
-import gui.List;
-import gui.ListItem;
+import gui.ScrollableContainer;
 import gui.TextField;
 import gui.Toolstripmenu;
 import gui.Window;
@@ -41,7 +40,7 @@ class FontBakerState extends State {
 
     // ── GUI ───────────────────────────────────────────────────────────────────
     private var _canvas:Canvas;
-    private var _fontList:List<Label>;
+    private var _listContainer:ScrollableContainer;
     private var _pathField:TextField;
     private var _sizeField:TextField;
     private var _nameField:TextField;
@@ -126,10 +125,9 @@ class FontBakerState extends State {
                                MARGIN, MENU_H + MARGIN);
         _canvas.addControl(panel);
 
-        // List of added fonts
-        _fontList = new List(OPTIONS_W - 16, 8, 26);
-        _fontList.addListener(_onListItemClick, ON_ITEM_CLICK);
-        panel.addControl(_fontList);
+        // Scrollable list of added fonts
+        _listContainer = new ScrollableContainer(OPTIONS_W - 16, 82, 8, 26);
+        panel.addControl(_listContainer);
 
         // Add / Remove buttons
         var btnAdd = new Button("Add", 56, 8, 108);
@@ -232,13 +230,15 @@ class FontBakerState extends State {
     }
 
     private function _rebuildList():Void {
-        // Remove all items and re-add them as labels.
-        while (!_fontList.controls.isEmpty()) {
-            _fontList.removeControlAt(0);
+        while (!_listContainer.controls.isEmpty()) {
+            _listContainer.removeControl(_listContainer.controls.first());
         }
-        for (e in _entries) {
-            var lbl = new Label(e.name + "  " + e.size + "px", 0, 0);
-            _fontList.addControl(lbl);
+        for (i in 0..._entries.length) {
+            var e = _entries[i];
+            var lbl = new Label(e.name + "  " + e.size + "px", 0, i * LIST_ITEM_H);
+            var capturedIdx = i;
+            lbl.addListener(function(_, _) { _selectEntry(capturedIdx); }, LEFT_CLICK);
+            _listContainer.addControl(lbl);
         }
     }
 
@@ -256,13 +256,7 @@ class FontBakerState extends State {
         _onBakeAll();
     }
 
-    private function _onListItemClick(control:Control, type:UInt):Void {
-        var idx = 0;
-        for (c in _fontList.controls) {
-            if (c == control) { _selectEntry(idx); return; }
-            idx++;
-        }
-    }
+
 
     // ── Actions ───────────────────────────────────────────────────────────────
 
