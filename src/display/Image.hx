@@ -60,6 +60,8 @@ class Image extends Transform {
 		// Initialize dimensions from texture
 		__width = texture.width;
 		__height = texture.height;
+
+		markBufferDirty();
 	}
 
 	public function centerOrigin():Void {
