@@ -315,11 +315,15 @@ class TileBatch extends DisplayObject {
             return;
         }
         
+        // Tile batches rebuild their vertex data each frame, so mark the buffer dirty
+        // before the renderer uploads it for this pass.
+        markBufferDirty();
+
         // Check if we actually have vertices to render
         if (__verticesToRender == 0 || __indicesToRender == 0) {
             return;
         }
-        
+
         // Update transformation matrix based on current properties
         updateTransform();
         

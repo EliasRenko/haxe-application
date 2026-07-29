@@ -100,7 +100,7 @@ class Image extends Transform {
 		
 		// Mark for buffer update on next render
 		if (active) {
-			needsBufferUpdate = true;
+			markBufferDirty();
 		}
 	}
 
@@ -138,7 +138,7 @@ class Image extends Transform {
 		
 		// Mark for buffer update on next render
 		if (active) {
-			needsBufferUpdate = true;
+			markBufferDirty();
 		}
 
 		return value;
@@ -156,7 +156,7 @@ class Image extends Transform {
 		
 		// Mark for buffer update on next render
 		if (active) {
-			needsBufferUpdate = true;
+			markBufferDirty();
 		}
 
 		return value;
