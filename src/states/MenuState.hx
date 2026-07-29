@@ -13,7 +13,7 @@ import gui.TabControl;
 import gui.TabPage;
 import gui.Window;
 import loaders.FontLoader;
-import Scancode;
+import ScanCode;
 
 /**
  * MenuState - Main menu screen
@@ -203,20 +203,20 @@ class MenuState extends State {
 
         var prevIndex = selectedIndex;
 
-        if (app.input.keyboard.released(Scancode.UP)) {
+        if (app.input.keyboard.released(ScanCode.UP)) {
             selectedIndex = (selectedIndex - 1 + ITEMS.length) % ITEMS.length;
         }
-        if (app.input.keyboard.released(Scancode.DOWN)) {
+        if (app.input.keyboard.released(ScanCode.DOWN)) {
             selectedIndex = (selectedIndex + 1) % ITEMS.length;
         }
 
-        if (app.input.keyboard.released(Scancode.RETURN)) {
+        if (app.input.keyboard.released(ScanCode.RETURN)) {
             onSelect(selectedIndex);
         }
-        if (app.input.keyboard.released(Scancode.ESCAPE)) {
+        if (app.input.keyboard.released(ScanCode.ESCAPE)) {
             onSelect(ITEMS.length - 1);
         }
-        if (app.input.keyboard.released(Scancode.GRAVE)) {
+        if (app.input.keyboard.released(ScanCode.GRAVE)) {
             console.visible = !console.visible;
         }
     }

@@ -13,7 +13,7 @@ import gui.Toolstripmenu;
 import gui.Window;
 import loaders.FontLoader;
 import loaders.TGAExporter;
-import Scancode;
+import ScanCode;
 import utils.NativeDialog;
 import utils.TexturePacker;
 
@@ -107,7 +107,7 @@ class PackerState extends State {
 
     override public function update(deltaTime:Float):Void {
         super.update(deltaTime);
-        if (app.input.keyboard.released(Scancode.ESCAPE))
+        if (app.input.keyboard.released(ScanCode.ESCAPE))
             app.switchToStateByName("Menu");
     }
 

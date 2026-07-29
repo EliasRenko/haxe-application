@@ -12,7 +12,7 @@ import gui.TextField;
 import gui.Toolstripmenu;
 import gui.Window;
 import loaders.FontLoader;
-import Scancode;
+import ScanCode;
 import utils.BakedFontData;
 import utils.FontBaker;
 import utils.NativeDialog;
@@ -99,7 +99,7 @@ class FontBakerState extends State {
 
     override public function update(deltaTime:Float):Void {
         super.update(deltaTime);
-        if (app.input.keyboard.released(Scancode.ESCAPE))
+        if (app.input.keyboard.released(ScanCode.ESCAPE))
             app.switchToStateByName("Menu");
     }
 
