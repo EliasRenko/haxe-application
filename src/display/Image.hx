@@ -14,8 +14,8 @@ class Image extends Transform {
 	
 	// Publics
 	public var angle(get, set):Float;
-	public var width(get, set):Float;
 	public var height(get, set):Float;
+	public var width(get, set):Float;
 	public var originX(get, set):Float;
 	public var originY(get, set):Float;
 
@@ -65,14 +65,11 @@ class Image extends Transform {
 	}
 
 	public function centerOrigin():Void {
-
 		originX = __width / 2;
-		
 		originY = __height / 2;
 	}
 
 	public function setTextures(textureObjects:Array<Texture>, width:Int, height:Int) {
-		
 		if (textureObjects.length == 0) {
 			trace("No textures to set!");
 			return;
