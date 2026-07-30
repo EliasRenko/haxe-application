@@ -344,8 +344,6 @@ class App extends Runtime {
         __input.postUpdate();
     }
 
-
-
     private function preload():Void {
 		resources.loadText("preload.txt").then(function(source:String) {
 			var files:Array<Promise<Dynamic>> = new Array<Promise<Dynamic>>();

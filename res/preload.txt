@@ -49,3 +49,5 @@ shaders/grid.vert
 shaders/grid.frag
 shaders/light.vert
 shaders/light.frag
+shaders/postprocess.vert
+shaders/postprocess.frag
