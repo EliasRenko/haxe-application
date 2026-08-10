@@ -310,28 +310,16 @@ class TileBatch extends DisplayObject {
      * Render the tile batch
      * Just sets uniforms - vertex data already updated in updateBuffers()
      */
-    override public function render(cameraMatrix:Matrix):Void {
-        if (!visible || !active || textures[0] == null) {
-            return;
-        }
-        
-        // Tile batches rebuild their vertex data each frame, so mark the buffer dirty
-        // before the renderer uploads it for this pass.
-        markBufferDirty();
+    override public function render(cameraMatrix:Matrix, cameraDirty:Bool):Void {
+        if (!visible || !active || textures[0] == null) return;
 
-        // Check if we actually have vertices to render
-        if (__verticesToRender == 0 || __indicesToRender == 0) {
-            return;
-        }
+        needsBufferUpdate = true;
 
-        // Update transformation matrix based on current properties
+        if (__verticesToRender == 0 || __indicesToRender == 0) return;
+
         updateTransform();
-        
-        // Create final matrix by combining object matrix with camera matrix
         var finalMatrix = Matrix.copy(matrix);
         finalMatrix.append(cameraMatrix);
-        
-        // Set uniforms for tile rendering
         uniforms.set("uMatrix", finalMatrix.data);
     }
 

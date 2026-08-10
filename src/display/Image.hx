@@ -61,7 +61,7 @@ class Image extends Transform {
 		__width = texture.width;
 		__height = texture.height;
 
-		markBufferDirty();
+		needsBufferUpdate = true;
 	}
 
 	public function centerOrigin():Void {
@@ -99,21 +99,19 @@ class Image extends Transform {
 		
 		// Mark for buffer update on next render
 		if (active) {
-			markBufferDirty();
+			needsBufferUpdate = true;
 		}
 	}
 
-	override function render(cameraMatrix:Matrix):Void {
+	override function render(cameraMatrix:Matrix, cameraDirty:Bool):Void {
 		if (!visible || !active) return;
-		
-		// Update transformation matrix based on current properties
+		if (!__transformDirty && !cameraDirty) return;
+
+		__transformDirty = false;
 		updateTransform();
-		
-		// Create final matrix by combining object matrix with camera matrix
+
 		var finalMatrix = Matrix.copy(matrix);
 		finalMatrix.append(cameraMatrix);
-		
-		// Set the transform matrix uniform (using correct uniform name for textured shader)
 		uniforms.set("uMatrix", finalMatrix.data);
 	}
 
@@ -121,7 +119,7 @@ class Image extends Transform {
 	
 	private function set_angle(value:Float):Float {
 		__angle = (value %= 360) >= 0 ? value : (value + 360);
-		//__shouldTransform = true;
+		markTransformDirty();
 		return value;
 	}
 
@@ -133,11 +131,11 @@ class Image extends Transform {
 		vertices.set(16, -(value * scaleY) - originY);
 		
 		__height = value;
-		//__shouldTransform = true;
+		markTransformDirty();
 		
 		// Mark for buffer update on next render
 		if (active) {
-			markBufferDirty();
+			needsBufferUpdate = true;
 		}
 
 		return value;
@@ -151,11 +149,11 @@ class Image extends Transform {
 		vertices.set(15, 0 - originX);
 		
 		__width = value;
-		//__shouldTransform = true;
+		markTransformDirty();
 		
 		// Mark for buffer update on next render
 		if (active) {
-			markBufferDirty();
+			needsBufferUpdate = true;
 		}
 
 		return value;
@@ -175,7 +173,6 @@ class Image extends Transform {
 
 	private function set_originX(value:Float):Float {
 		__originX = value;
-		//__shouldTransform = true;
 		width = __width;
 		return __originX;
 	}
@@ -186,7 +183,6 @@ class Image extends Transform {
 
 	private function set_originY(value:Float):Float {
 		__originY = value;
-		//__shouldTransform = true;
 		height = __height;
 		return __originY;
 	}

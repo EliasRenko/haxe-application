@@ -54,17 +54,13 @@ class LineBatch extends DisplayObject {
         needsBufferUpdate = false;
     }
 
-    /** Set uniforms and prepare for drawing */
-    override public function render(cameraMatrix:Matrix):Void {
+    override public function render(cameraMatrix:Matrix, cameraDirty:Bool):Void {
         if (!visible || !active) return;
-        
-        // Set MVP matrix for line shader
         updateTransform();
         var finalMatrix = Matrix.copy(matrix);
         finalMatrix.append(cameraMatrix);
         uniforms.set("uMatrix", finalMatrix.data);
-        
-        super.render(cameraMatrix);
+        super.render(cameraMatrix, cameraDirty);
     }
 
     override public function postRender():Void {

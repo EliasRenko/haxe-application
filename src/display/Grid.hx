@@ -58,21 +58,14 @@ class Grid extends Transform {
         depthWrite = false; // Don't write to depth buffer so other objects render on top
     }
     
-    /**
-     * Update grid uniforms before rendering
-     */
-    override public function render(cameraMatrix:Matrix):Void {
+    override public function render(cameraMatrix:Matrix, cameraDirty:Bool):Void {
         if (!visible) return;
-        
-        // Set uniforms for the grid shader
         uniforms.set("uGridSize", gridSize);
         uniforms.set("uSubGridSize", subGridSize);
         uniforms.set("uGridColor", gridColor);
         uniforms.set("uBackgroundColor", backgroundColor);
         uniforms.set("uFadeDistance", fadeDistance);
-        
-        // Call parent render - it will handle updateTransform and uMatrix
-        super.render(cameraMatrix);
+        super.render(cameraMatrix, cameraDirty);
     }
     
     /**

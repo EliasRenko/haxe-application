@@ -77,9 +77,8 @@ class LightMesh extends DisplayObject {
         needsBufferUpdate = true;
     }
 
-    /** Called by the renderer before each draw; sets light-specific uniforms. */
-    override public function render(cameraMatrix:Matrix):Void {
-        super.render(cameraMatrix); // sets uMatrix
+    override public function render(cameraMatrix:Matrix, cameraDirty:Bool):Void {
+        super.render(cameraMatrix, cameraDirty);
         uniforms.set("uLightPos", [lightX, lightY]);
         uniforms.set("uRadius",   lightRadius);
         uniforms.set("uColor",    [colorR, colorG, colorB, colorA]);

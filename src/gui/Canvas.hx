@@ -282,7 +282,7 @@ class Canvas extends Entity {
      * insertion order.  Accumulated tile segments are flushed before each
      * image hook, producing N+1 draw calls for N ImageViews.
      */
-    override public function render(renderer:Renderer, viewProjectionMatrix:Matrix):Void {
+    override public function render(renderer:Renderer, viewProjectionMatrix:Matrix, cameraDirty:Bool):Void {
         if (!active || !visible || __uiBatch == null) return;
 
         var renderList = __uiBatch.getRenderList();
@@ -295,7 +295,7 @@ class Canvas extends Entity {
 
         if (!hasHooks) {
             __uiBatch.segmentTiles = null;
-            renderer.renderDisplayObject(__uiBatch, viewProjectionMatrix);
+            renderer.renderDisplayObject(__uiBatch, viewProjectionMatrix, cameraDirty);
             return;
         }
 
@@ -308,21 +308,21 @@ class Canvas extends Entity {
                 // Flush accumulated tile segment.
                 if (segment.length > 0) {
                     __uiBatch.segmentTiles = segment;
-                    renderer.renderDisplayObject(__uiBatch, viewProjectionMatrix);
+                    renderer.renderDisplayObject(__uiBatch, viewProjectionMatrix, cameraDirty);
                     __uiBatch.segmentTiles = null;
                     segment = [];
                 }
                 // Draw the image.
                 var hook = item.hook;
                 if (hook.visible && hook.displayImage != null) {
-                    renderer.renderDisplayObject(hook.displayImage, viewProjectionMatrix);
+                    renderer.renderDisplayObject(hook.displayImage, viewProjectionMatrix, cameraDirty);
                 }
             }
         }
         // Flush any remaining tiles after the last hook.
         if (segment.length > 0) {
             __uiBatch.segmentTiles = segment;
-            renderer.renderDisplayObject(__uiBatch, viewProjectionMatrix);
+            renderer.renderDisplayObject(__uiBatch, viewProjectionMatrix, cameraDirty);
             __uiBatch.segmentTiles = null;
         }
     }
