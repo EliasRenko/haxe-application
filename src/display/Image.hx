@@ -131,7 +131,7 @@ class Image extends Transform {
 		vertices.set(16, -(value * scaleY) - originY);
 		
 		__height = value;
-		markTransformDirty();
+		//markTransformDirty();
 		
 		// Mark for buffer update on next render
 		if (active) {
@@ -149,7 +149,7 @@ class Image extends Transform {
 		vertices.set(15, 0 - originX);
 		
 		__width = value;
-		markTransformDirty();
+		//markTransformDirty();
 		
 		// Mark for buffer update on next render
 		if (active) {

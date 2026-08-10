@@ -65,6 +65,7 @@ class Grid extends Transform {
         uniforms.set("uGridColor", gridColor);
         uniforms.set("uBackgroundColor", backgroundColor);
         uniforms.set("uFadeDistance", fadeDistance);
+        updateTransform();
         super.render(cameraMatrix, cameraDirty);
     }
     

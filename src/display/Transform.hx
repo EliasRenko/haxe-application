@@ -28,14 +28,13 @@ class Transform extends DisplayObject {
         super(renderer, vertices, indices);
     }
 
-    override public function updateTransform():Void {
+    public function updateTransform():Void {
 		matrix.identity();
 		matrix.appendScale(__scaleX, __scaleY, 1);
 		matrix.appendRotationX(__rotationX);
 		matrix.appendRotationY(__rotationY);
 		matrix.appendRotationZ(-__rotationZ * Math.PI / 180.0);
 		matrix.appendTranslation(__x, __y, __z);
-		super.updateTransform();
 	}
 
 	private function get_x():Float      { return __x; }

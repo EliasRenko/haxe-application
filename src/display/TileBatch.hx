@@ -317,7 +317,6 @@ class TileBatch extends DisplayObject {
 
         if (__verticesToRender == 0 || __indicesToRender == 0) return;
 
-        updateTransform();
         var finalMatrix = Matrix.copy(matrix);
         finalMatrix.append(cameraMatrix);
         uniforms.set("uMatrix", finalMatrix.data);
