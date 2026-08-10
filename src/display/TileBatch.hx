@@ -311,7 +311,7 @@ class TileBatch extends DisplayObject {
      * Just sets uniforms - vertex data already updated in updateBuffers()
      */
     override public function render(cameraMatrix:Matrix, cameraDirty:Bool):Void {
-        if (!visible || !active || textures[0] == null) return;
+        if (!active || textures[0] == null) return;
 
         needsBufferUpdate = true;
 

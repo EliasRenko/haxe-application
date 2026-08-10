@@ -55,7 +55,7 @@ class LineBatch extends DisplayObject {
     }
 
     override public function render(cameraMatrix:Matrix, cameraDirty:Bool):Void {
-        if (!visible || !active) return;
+        if (!active) return;
         updateTransform();
         var finalMatrix = Matrix.copy(matrix);
         finalMatrix.append(cameraMatrix);

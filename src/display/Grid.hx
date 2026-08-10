@@ -59,7 +59,6 @@ class Grid extends Transform {
     }
     
     override public function render(cameraMatrix:Matrix, cameraDirty:Bool):Void {
-        if (!visible) return;
         uniforms.set("uGridSize", gridSize);
         uniforms.set("uSubGridSize", subGridSize);
         uniforms.set("uGridColor", gridColor);
