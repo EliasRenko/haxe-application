@@ -67,7 +67,7 @@ class TileBatch extends DisplayObject {
         
         // Premultiplied-alpha blending — pairs with TGALoader's premultiplication.
         // GL_ONE because RGB is already scaled by alpha in the texture data.
-        blendFactors = {
+        blending = {
             source: GL.ONE,
             //source: GL.ONE,
             destination: GL.ONE_MINUS_SRC_ALPHA

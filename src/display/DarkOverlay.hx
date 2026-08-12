@@ -29,7 +29,7 @@ class DarkOverlay extends DisplayObject {
         super(renderer, new Vertices([]));
         this.ambientDarkness = ambientDarkness;
         mode       = GL.TRIANGLES;
-        blendFactors = { source: GL.SRC_ALPHA, destination: GL.ONE_MINUS_SRC_ALPHA };
+        blending = { source: GL.SRC_ALPHA, destination: GL.ONE_MINUS_SRC_ALPHA };
         depthTest  = false;
         depthWrite = false;
     }

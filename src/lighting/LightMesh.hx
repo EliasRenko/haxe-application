@@ -42,7 +42,7 @@ class LightMesh extends DisplayObject {
         super(renderer, new Vertices([]));
         mode = GL.TRIANGLES;
         // Additive blend: GL_SRC_ALPHA=770, GL_ONE=1
-        blendFactors = { source: GL.SRC_ALPHA, destination: 1 };
+        blending = { source: GL.SRC_ALPHA, destination: 1 };
         depthTest  = false;
         depthWrite = false;
     }
