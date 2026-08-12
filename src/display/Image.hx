@@ -118,7 +118,7 @@ class Image extends Transform {
 	
 	private function set_angle(value:Float):Float {
 		__angle = (value %= 360) >= 0 ? value : (value + 360);
-		markTransformDirty();
+		__transformDirty = true;
 		return value;
 	}
 

@@ -24,6 +24,8 @@ class Transform extends DisplayObject {
 	private var __scaleX:Float = 1;
 	private var __scaleY:Float = 1;
 
+	private var __transformDirty:Bool = true;
+
 	public function new(renderer:Renderer, vertices:Vertices, indices:Indices) {
         super(renderer, vertices, indices);
     }
@@ -46,12 +48,12 @@ class Transform extends DisplayObject {
 	private function get_scaleX():Float { return __scaleX; }
 	private function get_scaleY():Float { return __scaleY; }
 
-	private function set_x(v:Float):Float      { __x = v;         markTransformDirty(); return v; }
-	private function set_y(v:Float):Float      { __y = v;         markTransformDirty(); return v; }
-	private function set_z(v:Float):Float      { __z = v;         markTransformDirty(); return v; }
-	private function set_rotationX(v:Float):Float { __rotationX = v; markTransformDirty(); return v; }
-	private function set_rotationY(v:Float):Float { __rotationY = v; markTransformDirty(); return v; }
-	private function set_rotationZ(v:Float):Float { __rotationZ = v; markTransformDirty(); return v; }
-	private function set_scaleX(v:Float):Float { __scaleX = v;    markTransformDirty(); return v; }
-	private function set_scaleY(v:Float):Float { __scaleY = v;    markTransformDirty(); return v; }
+	private function set_x(v:Float):Float      { __x = v;         __transformDirty = true; return v; }
+	private function set_y(v:Float):Float      { __y = v;         __transformDirty = true; return v; }
+	private function set_z(v:Float):Float      { __z = v;         __transformDirty = true; return v; }
+	private function set_rotationX(v:Float):Float { __rotationX = v; __transformDirty = true; return v; }
+	private function set_rotationY(v:Float):Float { __rotationY = v; __transformDirty = true; return v; }
+	private function set_rotationZ(v:Float):Float { __rotationZ = v; __transformDirty = true; return v; }
+	private function set_scaleX(v:Float):Float { __scaleX = v;    __transformDirty = true; return v; }
+	private function set_scaleY(v:Float):Float { __scaleY = v;    __transformDirty = true; return v; }
 }

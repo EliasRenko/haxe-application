@@ -56,11 +56,11 @@ class LineBatch extends DisplayObject {
 
     override public function render(cameraMatrix:Matrix, cameraDirty:Bool):Void {
         if (!active) return;
-        updateTransform();
-        var finalMatrix = Matrix.copy(matrix);
-        finalMatrix.append(cameraMatrix);
-        uniforms.set("uMatrix", finalMatrix.data);
-        super.render(cameraMatrix, cameraDirty);
+        if (cameraDirty) {
+			var finalMatrix = Matrix.copy(matrix);
+			finalMatrix.append(cameraMatrix);
+			uniforms.set("uMatrix", finalMatrix.data);
+		}
     }
 
     override public function postRender():Void {
