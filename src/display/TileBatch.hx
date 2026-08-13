@@ -288,7 +288,7 @@ class TileBatch extends DisplayObject {
         // Update vertices object for renderer
         //this.vertices = new Vertices(__vertexCache);
 
-        if (vbo != 0 && vertices.length > 0) {
+        if (vertices.length > 0) {
 
             // GL.bindBuffer(GL.ARRAY_BUFFER, vbo);
             

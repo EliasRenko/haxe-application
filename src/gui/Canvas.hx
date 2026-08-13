@@ -797,7 +797,7 @@ private class UIBatch extends ManagedTileBatch {
             }
         }
 
-        if (vbo != 0 && vertices.length > 0) {
+        if (vertices.length > 0) {
             renderer.orphanAndUploadData(this, MAX_TILES_UI * 4 * 10 * 4);
         }
 
