@@ -785,7 +785,7 @@ private class UIBatch extends ManagedTileBatch {
      * (e.g. when there are no ImageViews in the control tree).
      */
     override public function updateBuffers(renderer:Renderer):Void {
-        if (!active || textures[0] == null) return;
+        if (!__active || textures[0] == null) return;
 
         if (segmentTiles != null) {
             for (tile in segmentTiles) {

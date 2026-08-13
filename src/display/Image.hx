@@ -96,13 +96,13 @@ class Image extends Transform {
 		vertices.set(19, y + height);    // Bottom-left V
 		
 		// Mark for buffer update on next render
-		if (active) {
+		if (__active) {
 			needsBufferUpdate = true;
 		}
 	}
 
 	override function render(cameraMatrix:Matrix, cameraDirty:Bool):Void {
-		if (!active) return;
+		if (!__active) return;
 		if (__transformDirty || cameraDirty) {
 			__transformDirty = false;
 			updateTransform();
@@ -131,7 +131,7 @@ class Image extends Transform {
 		//markTransformDirty();
 		
 		// Mark for buffer update on next render
-		if (active) {
+		if (__active) {
 			needsBufferUpdate = true;
 		}
 
@@ -149,7 +149,7 @@ class Image extends Transform {
 		//markTransformDirty();
 		
 		// Mark for buffer update on next render
-		if (active) {
+		if (__active) {
 			needsBufferUpdate = true;
 		}
 
