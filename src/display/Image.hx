@@ -3,8 +3,6 @@ package display;
 import data.Indices;
 import data.Vertices;
 import GL;
-import DisplayObject;
-import ProgramInfo;
 import Renderer;
 import math.Matrix;
 import Texture;

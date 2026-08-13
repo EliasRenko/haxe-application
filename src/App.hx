@@ -5,15 +5,13 @@ import ds.SlotArray;
 
 class App extends Runtime {
     
-    // State Management
-    public var states:SlotArray<State> = new SlotArray<State>();
-    public var currentState:State = null;
-
     // Publics
     public var input(get, null):Input;
     public var resources(get, null):Resources;
     public var log(get, null):Log;
     public var renderer(get, null):Renderer;
+    public var states:SlotArray<State> = new SlotArray<State>();
+    public var currentState:State = null;
 
     // Privates
     private var __input:Input;

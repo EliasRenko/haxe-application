@@ -50,7 +50,7 @@ class TileBatch extends DisplayObject {
      * @param programInfo Shader program for rendering
      * @param texture Atlas texture for all tiles
      */
-    public function new(renderer:Renderer, programInfo:ProgramInfo, texture:Texture) {
+    public function new(renderer:Renderer, texture:Texture) {
         
         // Start with empty vertices but pre-generate indices for MAX_TILES
         var emptyVertices = new Vertices([]);
@@ -60,7 +60,7 @@ class TileBatch extends DisplayObject {
         // auto-resolve programInfo via getShaderName(). Only override with the
         // explicitly passed programInfo when one is provided.
         super(renderer, emptyVertices, indices);
-        if (programInfo != null) this.programInfo = programInfo;
+        //if (programInfo != null) this.programInfo = programInfo;
         
         // Set OpenGL properties
         mode = GL.TRIANGLES;

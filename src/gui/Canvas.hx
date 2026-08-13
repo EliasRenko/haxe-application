@@ -554,7 +554,7 @@ private class UIBatch extends ManagedTileBatch {
     private var __fontTexHeight:Int = 1;
 
     public function new(renderer:Renderer, spriteTexture:Texture, fontTexture:Texture) {
-        super(renderer, null, spriteTexture);   // @:shader("ui") resolves ProgramInfo
+        super(renderer, spriteTexture);   // @:shader("ui") resolves ProgramInfo
         addTexture(fontTexture);                // font atlas → texture unit 1
         __fontTexWidth  = fontTexture.width;
         __fontTexHeight = fontTexture.height;
