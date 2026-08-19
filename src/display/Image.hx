@@ -101,8 +101,9 @@ class Image extends Transform {
 		}
 	}
 
-	override function render(cameraMatrix:Matrix, cameraDirty:Bool):Void {
+	override function render(renderer:Renderer, cameraMatrix:Matrix, cameraDirty:Bool):Void {
 		if (!__active) return;
+
 		if (__transformDirty || cameraDirty) {
 			__transformDirty = false;
 			updateTransform();
@@ -110,6 +111,8 @@ class Image extends Transform {
 			finalMatrix.append(cameraMatrix);
 			uniforms.set("uMatrix", finalMatrix.data);
 		}
+
+		super.render(renderer, cameraMatrix, cameraDirty);
 	}
 
 	//** Getters and setters.

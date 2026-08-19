@@ -301,6 +301,8 @@ class TileBatch extends DisplayObject {
             
             // GL.bindBuffer(GL.ARRAY_BUFFER, 0);
             renderer.orphanAndUploadData(this, MAX_TILES * 4 * 5 * 4);
+
+            //renderer.uploadData(this);
         }
         
         needsBufferUpdate = false;
@@ -310,24 +312,31 @@ class TileBatch extends DisplayObject {
      * Render the tile batch
      * Just sets uniforms - vertex data already updated in updateBuffers()
      */
-    override public function render(cameraMatrix:Matrix, cameraDirty:Bool):Void {
+    override public function render(renderer:Renderer,cameraMatrix:Matrix, cameraDirty:Bool):Void {
         if (!__active || textures[0] == null) return;
 
+        vertices.dispose();
+        __verticesToRender = 0;
+        __indicesToRender = 0;
+
         needsBufferUpdate = true;
+        updateBuffers(renderer);
 
         if (__verticesToRender == 0 || __indicesToRender == 0) return;
 
         var finalMatrix = Matrix.copy(matrix);
         finalMatrix.append(cameraMatrix);
         uniforms.set("uMatrix", finalMatrix.data);
+
+        renderer.renderDisplayObject(this);
     }
 
     override public function postRender():Void {
         // Reset counts after rendering
-        __verticesToRender = 0;
-        __indicesToRender = 0;
+        // __verticesToRender = 0;
+        // __indicesToRender = 0;
 
-        vertices = [];
+        // vertices = [];
     }
     
     /**

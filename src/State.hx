@@ -142,7 +142,8 @@ class State {
 
     public function renderDisplayObject(renderer:Renderer, viewProjectionMatrix:Matrix, displayObject:DisplayObject):Void {
         if (displayObject.visible) {
-            renderer.renderDisplayObject(displayObject, viewProjectionMatrix, __cameraDirty);
+            //renderer.renderDisplayObject(displayObject, viewProjectionMatrix, __cameraDirty);
+            displayObject.render(renderer, viewProjectionMatrix, __cameraDirty);
         }
     }
     

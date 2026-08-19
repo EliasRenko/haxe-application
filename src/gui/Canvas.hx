@@ -295,7 +295,8 @@ class Canvas extends Entity {
 
         if (!hasHooks) {
             __uiBatch.segmentTiles = null;
-            renderer.renderDisplayObject(__uiBatch, viewProjectionMatrix, cameraDirty);
+            //renderer.renderDisplayObject(__uiBatch, viewProjectionMatrix, cameraDirty);
+            __uiBatch.render(renderer, viewProjectionMatrix, cameraDirty);
             return;
         }
 
@@ -308,21 +309,24 @@ class Canvas extends Entity {
                 // Flush accumulated tile segment.
                 if (segment.length > 0) {
                     __uiBatch.segmentTiles = segment;
-                    renderer.renderDisplayObject(__uiBatch, viewProjectionMatrix, cameraDirty);
+                    //renderer.renderDisplayObject(__uiBatch, viewProjectionMatrix, cameraDirty);
+                    __uiBatch.render(renderer, viewProjectionMatrix, cameraDirty);
                     __uiBatch.segmentTiles = null;
                     segment = [];
                 }
                 // Draw the image.
                 var hook = item.hook;
                 if (hook.visible && hook.displayImage != null) {
-                    renderer.renderDisplayObject(hook.displayImage, viewProjectionMatrix, cameraDirty);
+                    //renderer.renderDisplayObject(hook.displayImage, viewProjectionMatrix, cameraDirty);
+                    hook.displayImage.render(renderer, viewProjectionMatrix, cameraDirty);
                 }
             }
         }
         // Flush any remaining tiles after the last hook.
         if (segment.length > 0) {
             __uiBatch.segmentTiles = segment;
-            renderer.renderDisplayObject(__uiBatch, viewProjectionMatrix, cameraDirty);
+            //renderer.renderDisplayObject(__uiBatch, viewProjectionMatrix, cameraDirty);
+            __uiBatch.render(renderer, viewProjectionMatrix, cameraDirty);
             __uiBatch.segmentTiles = null;
         }
     }
@@ -787,6 +791,10 @@ private class UIBatch extends ManagedTileBatch {
     override public function updateBuffers(renderer:Renderer):Void {
         if (!__active || textures[0] == null) return;
 
+            // vertices.dispose();
+            // __verticesToRender = 0;
+            // __indicesToRender = 0;
+
         if (segmentTiles != null) {
             for (tile in segmentTiles) {
                 if (tile.visible) buildTile(tile);
@@ -797,9 +805,18 @@ private class UIBatch extends ManagedTileBatch {
             }
         }
 
+            trace(
+            "UIBatch UPLOAD: floats=" + vertices.length +
+            " vertices=" + __verticesToRender +
+            " indices=" + __indicesToRender
+        );
+
         if (vertices.length > 0) {
             renderer.orphanAndUploadData(this, MAX_TILES_UI * 4 * 10 * 4);
+            //renderer.uploadData(this);
         }
+
+        trace("UIBatch UPLOAD DONE");
 
         needsBufferUpdate = false;
     }

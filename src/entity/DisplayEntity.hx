@@ -29,7 +29,8 @@ class DisplayEntity extends Entity {
         if (!active || !visible || displayObject == null || !displayObject.visible) {
             return;
         }
-        renderer.renderDisplayObject(displayObject, viewProjectionMatrix, cameraDirty);
+        //renderer.renderDisplayObject(displayObject, viewProjectionMatrix, cameraDirty);
+        displayObject.render(renderer, viewProjectionMatrix, cameraDirty);
     }
 
     /**
