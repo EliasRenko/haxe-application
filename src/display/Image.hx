@@ -69,7 +69,6 @@ class Image extends Transform {
 
 	public function setTextures(textureObjects:Array<Texture>, width:Int, height:Int) {
 		if (textureObjects.length == 0) {
-			trace("No textures to set!");
 			return;
 		}
 

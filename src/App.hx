@@ -36,7 +36,7 @@ class App extends Runtime {
 
         __log.debug(LogCategory.APP, "App initialized in debug mode");
 
-        preload();
+        preloadResources();
 
         // Initialize timing
         __lastTime = getTicks() / 1000.0;
@@ -342,7 +342,7 @@ class App extends Runtime {
         __input.postUpdate();
     }
 
-    private function preload():Void {
+    private function preloadResources():Void {
 		resources.loadText("preload.txt").then(function(source:String) {
 			var files:Array<Promise<Dynamic>> = new Array<Promise<Dynamic>>();
 			var lines:Array<String> = source.split("\n");
