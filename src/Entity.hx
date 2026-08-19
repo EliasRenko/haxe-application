@@ -8,11 +8,10 @@ class Entity {
     
     // Entity properties
     public var active:Bool = true;
-    public var angle:Float = 0.0;
-    public var visible:Bool = true;
     public var id:String;
     public var state:State = null; // Reference to parent state
     public var hitbox:Rect; // Collision hitbox
+    public var visible:Bool = true;
     
     // Private entity counter for auto-generating IDs
     private static var __nextId:Int = 0;

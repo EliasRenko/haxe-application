@@ -11,9 +11,9 @@ class Input {
     public var mouse(get, null):Mouse;
 
     // Privates
+    private var __app:App;
     private var __keyboard:Keyboard;
     private var __mouse:Mouse;
-    private var __app:App;
 
     public function new(app:App) {
         __app = app;
@@ -22,12 +22,9 @@ class Input {
         __mouse = new Mouse();
     }
 
-    public function init():Void {
-        
-    }
-
     public function release():Void {
-        
+        __keyboard = null;
+        __mouse = null;
     }
 
     public function update():Void {

@@ -812,7 +812,7 @@ private class UIBatch extends ManagedTileBatch {
         );
 
         if (vertices.length > 0) {
-            renderer.orphanAndUploadData(__bufferId, programInfoName, vertices, indices, MAX_TILES_UI * 4 * 10 * 4);
+            renderer.orphanAndUploadData(__bufferId, vertices, indices, MAX_TILES_UI * 4 * 10 * 4);
             //renderer.uploadData(this);
         }
 

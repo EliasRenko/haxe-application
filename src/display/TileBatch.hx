@@ -300,7 +300,7 @@ class TileBatch extends DisplayObject {
             // GL.bufferFloatArray(GL.ARRAY_BUFFER, vertices, GL.STREAM_DRAW, vertices.length);
             
             // GL.bindBuffer(GL.ARRAY_BUFFER, 0);
-            renderer.orphanAndUploadData(__bufferId, programInfoName, vertices, indices, MAX_TILES * 4 * 5 * 4);
+            renderer.orphanAndUploadData(__bufferId, vertices, indices, MAX_TILES * 4 * 5 * 4);
             //renderer.uploadData(this);
         }
         
