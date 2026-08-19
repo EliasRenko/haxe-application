@@ -50,7 +50,7 @@ class LineBatch extends DisplayObject {
     /** Called by renderer to update GPU buffers */
     override public function updateBuffers(renderer:Renderer):Void {
         if (!active) return;
-        renderer.uploadData(this);
+        renderer.uploadData(__bufferId, programInfoName, vertices, indices);
         needsBufferUpdate = false;
     }
 
