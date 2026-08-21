@@ -34,8 +34,8 @@ class MenuState extends State {
     private static inline var MARGIN_BOTTOM:Float = 140.0;
 
     private var canvas:Canvas;
-    private var menuList:GUIList<Label>; 
-    private var menuLabels:Array<Label> = [];
+    private var menuList:MenuList;
+    private var menuLabels:Array<MenuLabel> = [];
     private var selectedIndex:Int = 0;
     private var optionsWindow:MenuOptionsWindow;
     private var newGameWindow:MenuNewGameWindow;
@@ -61,11 +61,12 @@ class MenuState extends State {
         var fontTexture = renderer.uploadTexture(
             app.resources.getTexture("textures/font_atlas.tga"));
         var fontData = FontLoader.load(
-            app.resources.getText("fonts/nokia.json"));
+            app.resources.getText("fonts/gohu14.json"));
 
         var ws = app.window.size;
         canvas = new Canvas(this, ws.x, ws.y);
         canvas.initializeGraphics(renderer, spriteTexture, fontTexture, fontData);
+        canvas.addFontFace(FontLoader.load(app.resources.getText("fonts/nokia.json")));
         canvas.setTint(0.588, 0.690, 0.518);  // HL1 olive-green tint
         canvas.importSets(app.resources.getText("textures/gui.json"));
         addEntity(canvas);
@@ -182,11 +183,11 @@ class MenuState extends State {
 
         var listY = app.WINDOW_HEIGHT - MARGIN_BOTTOM - (ITEMS.length - 1) * 28.0;
 
-        menuList = new GUIList<Label>(200, MARGIN_LEFT, listY);
+        menuList = new MenuList(200, MARGIN_LEFT, listY);
         menuList.addListener(_onItemClick, ON_ITEM_CLICK);
 
         for (item in ITEMS) {
-            var label = new Label(item, 0, 0);
+            var label = new MenuLabel(item, 0, 0);
             menuLabels.push(label);
             menuList.addControl(label);
         }
@@ -290,6 +291,33 @@ class MenuState extends State {
                 trace("MenuState: Quit");
                 @:privateAccess app.__active = false;
         }
+    }
+}
+
+/** A Label that uses the nokia font face (face index 1) instead of the canvas default. */
+private class MenuLabel extends Label {
+    public function new(text:String, x:Float = 0, y:Float = 0) {
+        super(text, x, y);
+    }
+
+    override function init():Void {
+        super.init();
+        __bitmapText.font = ____canvas.getFace(1);
+        __bitmapText.updateTiles();
+        __width = __bitmapText.width;
+        __height = __bitmapText.height;
+    }
+}
+
+/** A List pre-typed for MenuLabel items. */
+private class MenuList extends GUIList<MenuLabel> {
+    public function new(width:Float, x:Float, y:Float) {
+        super(width, x, y);
+    }
+
+    override function update():Void {
+        if (____canvas.hasModalFocus()) return;
+        super.update();
     }
 }
 

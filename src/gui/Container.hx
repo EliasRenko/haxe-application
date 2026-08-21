@@ -63,6 +63,16 @@ class Container<T:Control> extends Control {
 	}
 
     override function update():Void {
+        // Give priority to any control that has captured input (e.g. a window being dragged).
+        // Without this, a window earlier in the insertion order could steal the update
+        // and stop the drag mid-motion.
+        for (control in __controls) {
+            if (control.isCapturing()) {
+                control.update();
+                return;
+            }
+        }
+
         for (control in __controls) {
             if (control.hitTest()) {
                 control.update();

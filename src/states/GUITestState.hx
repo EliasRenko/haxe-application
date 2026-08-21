@@ -18,6 +18,7 @@ import gui.TextBox;
 import gui.TabControl;
 import gui.TabPage;
 import gui.Window;
+import gui.PropertyGrid;
 import loaders.FontLoader;
 
 /**
@@ -33,7 +34,7 @@ import loaders.FontLoader;
 class GUITestState extends State {
 
     private static final NAMES:Array<String> = [
-        "Label", "Button", "Checkbox", "Strip", "Panel", "Window", "Stamp", "ScrollableContainer", "TabControl", "Dropdown", "ProgressBar", "ImageView", "3 Windows", "Table", "TextBox"
+        "Label", "Button", "Checkbox", "Strip", "Panel", "Window", "Stamp", "ScrollableContainer", "TabControl", "Dropdown", "ProgressBar", "ImageView", "3 Windows", "Table", "TextBox", "PropertyGrid"
     ];
 
     private var canvas:Canvas;
@@ -132,6 +133,7 @@ class GUITestState extends State {
             case 12: _showThreeWindows(cx, cy);
             case 13: _showTable(cx, cy);
             case 14: _showTextBox(cx, cy);
+            case 15: _showPropertyGrid(cx, cy);
         }
     }
 
@@ -307,6 +309,22 @@ class GUITestState extends State {
         var pb = cast(_track(new ProgressBar(200, cx - 100, cy - 14)), ProgressBar);
         pb.value = 0.7;
         _track(new Label("70%", cx + 108, cy - 8));
+    }
+
+    private function _showPropertyGrid(cx:Int, cy:Int):Void {
+        var grid = cast(_track(new PropertyGrid(280, 200, cx - 140, cy - 100)), PropertyGrid);
+        grid.addString("Name",    "Player");
+        grid.addFloat("Speed",    5.5);
+        grid.addInt("Health",     100);
+        grid.addBool("Visible",   true);
+        grid.addEnum("Mode",      "Walk", ["Walk", "Run", "Fly"]);
+        grid.addBool("Collision", false);
+        grid.addString("Tag",     "hero");
+        grid.addFloat("Scale",    1.0);
+        grid.addListener(function(c, _) {
+            var g = cast(c, PropertyGrid);
+            trace("PropertyGrid: " + g.lastChangedName + " = " + Std.string(g.lastChangedValue));
+        }, ON_PROPERTY_CHANGE);
     }
 
     private function _showScrollableContainer(cx:Int, cy:Int):Void {

@@ -22,7 +22,7 @@ class Toolstrip extends Strip {
         __lineWidth = 4;
         for (control in __controls) {
             control.x = __lineWidth;
-            control.y = 2;
+            control.y = 5;
             __lineWidth += control.width + __spacing;
         }
     }
@@ -33,7 +33,7 @@ class Toolstrip extends Strip {
 
         control.x = __lineWidth;
 
-        control.y = 2;
+        control.y = 5;
 
         __lineWidth += control.width + __spacing;
 

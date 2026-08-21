@@ -81,6 +81,14 @@ class Dropdown extends Container<Control> {
         dispatchEvent(this, ON_ITEM_CLICK);
     }
 
+    // ── Called by DropdownPopup.release() (both internal and Canvas auto-dismiss) ─
+
+    @:noCompletion
+    public function __onPopupReleased():Void {
+        __open = false;
+        __popup = null;
+    }
+
     // ── Internals ────────────────────────────────────────────────────────────
 
     private function __onHeaderClick(control:Control, type:UInt):Void {
@@ -102,10 +110,11 @@ class Dropdown extends Container<Control> {
     }
 
     private function __closePopup():Void {
-        __open = false;
         if (__popup != null) {
             ____canvas.popFocus(__popup);
-            ____canvas.removeOverlay(__popup);
+            ____canvas.removeOverlay(__popup); // triggers __popup.release() → __onPopupReleased()
+            // Fallback: if the popup was already externally removed, ensure state is reset
+            __open = false;
             __popup = null;
         }
     }
@@ -124,6 +133,8 @@ class Dropdown extends Container<Control> {
 
 private class DropdownHeader extends Control {
 
+    // Constants
+    private static inline var DEFAULT_TEXT_Y_OFFSET:Int = 5;
     private static inline var ARROW_W:Int = 24;
 
     private var __threeSlice:ThreeSlice = new ThreeSlice();
@@ -185,7 +196,7 @@ private class DropdownHeader extends Control {
 
     override function __setGraphicY():Void {
         __threeSlice.setY(__y + ____offsetY);
-        __bitmapText.y = __y + ____offsetY + 2;
+        __bitmapText.y = __y + ____offsetY + DEFAULT_TEXT_Y_OFFSET;
         __arrow.y = __y + ____offsetY;
     }
 
@@ -230,6 +241,7 @@ private class DropdownPopup extends Container<DropdownRow> {
 
     override function release():Void {
         __nineSlice.iterate(function(tile) ____canvas.tilemap.removeTileInstance(tile));
+        __dropdown.__onPopupReleased();
         super.release();
     }
 

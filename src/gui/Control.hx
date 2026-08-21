@@ -6,7 +6,7 @@ import gui.ControlEventType;
 
 class Control extends EventDispacher<Control> {
 
-    // ** Publics.
+    // Publics
     public var active(get, null):Bool;
     public var canvas(get, null):Canvas;
     public var height(get, set):Float;
@@ -18,7 +18,7 @@ class Control extends EventDispacher<Control> {
     public var y(get, set):Float;
     public var z(get, set):Float;
 
-    // ** Privates.
+    // Privates
     private var __active:Bool = false;
     private var __focused:Bool = false;
     private var __height:Float;
@@ -31,7 +31,7 @@ class Control extends EventDispacher<Control> {
     private var __y:Float;
     private var __z:Float;
 
-    // ** Privates with access.
+    // Privates with access
     public var ____canvas:Canvas;
     @:noCompletion private var ____offsetX:Float = 0;
     @:noCompletion private var ____offsetY:Float = 0;
@@ -45,13 +45,9 @@ class Control extends EventDispacher<Control> {
     }
 
     public function init():Void {
-        
         __active = true;
-
         __setGraphicX();
-
         __setGraphicY();
-
         dispatchEvent(this, INIT);
     }
 
@@ -60,14 +56,18 @@ class Control extends EventDispacher<Control> {
         //clearEventListeners();
     }
 
+    /** Called every frame by Canvas regardless of mouse position. Override for time-based behaviour (e.g. caret blink). */
+    public function tick(dt:Float):Void {}
+
+    /** Returns true while this control has captured input and must keep receiving updates
+        regardless of mouse position (e.g. a window mid-drag). */
+    public function isCapturing():Bool { return false; }
+
     public function hitTest():Bool {
-        
+        // TODO: This should probably be checking against a hitbox instead of the control's rectangle, but for now it will do.
         if (__visible) {
-
             if (____canvas.mouseX > __x + ____offsetX && ____canvas.mouseY > __y + ____offsetY) {
-
                 if (____canvas.mouseX <= width + __x + ____offsetX && ____canvas.mouseY <= height + __y + ____offsetY) {
-
                     return true;
                 }
             }
@@ -77,7 +77,6 @@ class Control extends EventDispacher<Control> {
     }
 
     public function update():Void {
-        
         if (__hover) {
             onMouseHover();
         }
@@ -132,151 +131,115 @@ class Control extends EventDispacher<Control> {
     }
 
     public function onFocusGain():Void {
-        
         if (__focused) return;
 
         __focused = true;
-
         ____canvas.focusedControl = this;
     }
 
     public function onFocusLost():Void {
-        
         __focused = false;
     }
 
-    // ** Privates.
+    // Privates
 
     private function __setGraphicX():Void {}  
 
     private function __setGraphicY():Void {}
 
-    // ** Privates with access.
+    // Privates with access
 
     @:noCompletion
     private function ____setOffsetX(value:Float):Void {
-        
         ____offsetX = value;
-
         __setGraphicX();
     }
 
     @:noCompletion
     private function ____setOffsetY(value:Float):Void {
-        
         ____offsetY = value;
-
         __setGraphicY();
     }
 
     // ** Getters and setters.
 
     private function get_active():Bool {
-
 		return __active;
 	}
 	
 	private function set_active(value:Bool):Bool {
-        
         __active = value;
-
 		return value;
 	}
 
     private function get_canvas():Canvas {
-        
         return ____canvas;
     }
 
     private function get_height():Float {
-
 		return __height;
 	}
 	
 	private function set_height(value:Float):Float {
-        
         __height = value;
-
         onSizeChange();
-
 		return value;
     }
     
     private function get_parent():Control {
-
 		return ____parent;
     }
     
     private function get_type():String {
-        
         return __type;
     }
 
     private function get_visible():Bool {
-
 		return __visible;
 	}
 
 	private function set_visible(value:Bool):Bool {
-        
         __visible = value;
-
         onVisibilityChange();
-
 		return value;
     }
     
     private function get_width():Float {
-
 		return __width;
 	}
 	
 	private function set_width(value:Float):Float {
-        
         __width = value;
-
 		return value;
 	}
 
     private function get_x():Float {
-
 		return __x;
 	}
 	
 	private function set_x(value:Float):Float {
-
         __x = value;
-
         __setGraphicX();
-
         onLocationChange();
-
 		return value;
 	}
 	
 	private function get_y():Float {
-
 		return __y;
 	}
 	
 	private function set_y(value:Float):Float {
-
         __y = value;
-
         __setGraphicY();
-
         onLocationChange();
-
 		return value;
 	}
 	
 	private function get_z():Float {
-
 		return __z;
 	}
 	
 	private function set_z(value:Float):Float {
-		
 		return __z = value;
 	}
 }

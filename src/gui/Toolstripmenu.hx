@@ -41,9 +41,19 @@ class Toolstripmenu extends Container<Control> {
      * @param onSelect Called with the selected option text when the user picks one.
      */
     public function addItem(text:String, options:Array<String>, ?onSelect:String->Void):Void {
-        var lbl = new ToolstripLabel(text, options, onSelect, this, 0, 0);
+        var lbl = new ToolstripLabel(text, options, onSelect, this, 0, 10);
         __labels.push(lbl);
         __strip.addControl(lbl);
+    }
+
+    /** True while any top-level popup is open — used for hot-tracking. */
+    @:noCompletion public var __isMenuOpen:Bool = false;
+
+    /** Returns true if any label other than [exclude] has an open popup. */
+    @:noCompletion
+    public function __hasOpenExcept(exclude:ToolstripLabel):Bool {
+        for (lbl in __labels) if (lbl != exclude && lbl.__open) return true;
+        return false;
     }
 
     /** Close every open panel except [active]. Called by ToolstripLabel on open. */
@@ -71,7 +81,7 @@ private class ToolstripLabel extends Label {
     private var __onSelect:Null<String->Void>;
     private var __menu:Toolstripmenu;
     private var __popup:Null<ToolstripPanel> = null;
-    private var __open:Bool = false;
+    @:noCompletion public var __open:Bool = false;
 
     public function new(text:String, options:Array<String>, onSelect:Null<String->Void>,
                         menu:Toolstripmenu, x:Float, y:Float) {
@@ -97,6 +107,7 @@ private class ToolstripLabel extends Label {
 
     private function __openPopup():Void {
         __menu.__closeAllExcept(this);
+        __menu.__isMenuOpen = true;
         __open  = true;
         var absX = __x + ____offsetX;
         var absY = __y + ____offsetY + ROW_HEIGHT;
@@ -113,6 +124,16 @@ private class ToolstripLabel extends Label {
             ____canvas.popFocus(__popup);
             ____canvas.removeOverlay(__popup);
             __popup = null;
+        }
+        // Update the menu-open flag if no label is still open.
+        __menu.__isMenuOpen = __menu.__hasOpenExcept(this);
+    }
+
+    override function onMouseEnter():Void {
+        super.onMouseEnter();
+        // Hot-tracking: if another popup is already open, switch to this one on hover.
+        if (!__open && __menu.__isMenuOpen) {
+            __openPopup();
         }
     }
 

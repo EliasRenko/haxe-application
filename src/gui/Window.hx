@@ -53,6 +53,10 @@ class Window extends Container<Control> {
         __panel.clear();
     }
 
+    override function isCapturing():Bool {
+        return __dragging;
+    }
+
     override function hitTest():Bool {
         return __dragging || super.hitTest();
     }

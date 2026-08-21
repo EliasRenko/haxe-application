@@ -25,5 +25,6 @@ enum abstract ControlEventType(UInt) from UInt to UInt {
     var ON_FOCUS_GAIN = 21;
     var ON_FOCUS_LOST = 22;
     var ON_FILE_SELECT = 23;
+    var ON_PROPERTY_CHANGE = 24;
 }
 	

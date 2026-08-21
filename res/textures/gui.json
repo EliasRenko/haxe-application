@@ -1,7 +1,7 @@
 {
   "width": 512,
   "height": 512,
-  "atlas": "atlas.tga",
+  "atlas": "gui.tga",
   "regions": [
     {
       "width": 24,
@@ -32,120 +32,127 @@
       "name": "button0"
     },
     {
-      "width": 24,
+      "width": 2,
       "x": 96,
+      "y": 0,
+      "height": 24,
+      "name": "caret_0"
+    },
+    {
+      "width": 24,
+      "x": 98,
       "y": 0,
       "height": 24,
       "name": "checkbox_0"
     },
     {
       "width": 24,
-      "x": 120,
+      "x": 122,
       "y": 0,
       "height": 24,
       "name": "checkbox_1"
     },
     {
       "width": 24,
-      "x": 144,
+      "x": 146,
       "y": 0,
       "height": 24,
       "name": "empty"
     },
     {
       "width": 14,
-      "x": 168,
+      "x": 170,
       "y": 0,
       "height": 24,
       "name": "handle_0"
     },
     {
       "width": 24,
-      "x": 182,
+      "x": 184,
       "y": 0,
       "height": 24,
       "name": "panel_0"
     },
     {
       "width": 24,
-      "x": 206,
+      "x": 208,
       "y": 0,
       "height": 24,
       "name": "panel_1"
     },
     {
       "width": 24,
-      "x": 230,
+      "x": 232,
       "y": 0,
       "height": 24,
       "name": "panel_2"
     },
     {
       "width": 24,
-      "x": 254,
+      "x": 256,
       "y": 0,
       "height": 24,
       "name": "panel_3"
     },
     {
       "width": 24,
-      "x": 278,
+      "x": 280,
       "y": 0,
       "height": 24,
       "name": "panel_4"
     },
     {
       "width": 24,
-      "x": 302,
+      "x": 304,
       "y": 0,
       "height": 24,
       "name": "panel_5"
     },
     {
       "width": 24,
-      "x": 326,
+      "x": 328,
       "y": 0,
       "height": 24,
       "name": "panel_6"
     },
     {
       "width": 24,
-      "x": 350,
+      "x": 352,
       "y": 0,
       "height": 24,
       "name": "panel_7"
     },
     {
       "width": 24,
-      "x": 374,
+      "x": 376,
       "y": 0,
       "height": 24,
       "name": "panel_8"
     },
     {
       "width": 24,
-      "x": 398,
+      "x": 400,
       "y": 0,
       "height": 24,
       "name": "panel_dark_0"
     },
     {
       "width": 24,
-      "x": 422,
+      "x": 424,
       "y": 0,
       "height": 24,
       "name": "slider_0"
     },
     {
       "width": 24,
-      "x": 446,
+      "x": 448,
       "y": 0,
       "height": 24,
       "name": "slider_1"
     },
     {
       "width": 24,
-      "x": 470,
+      "x": 472,
       "y": 0,
       "height": 24,
       "name": "slider_2"

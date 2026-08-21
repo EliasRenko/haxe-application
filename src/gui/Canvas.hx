@@ -31,6 +31,7 @@ class Canvas extends Entity {
     public var font(get, null):IFontSource;
     public var width:Float = 640;
     public var height:Float = 480;
+    public var deltaTime:Float = 0;
     public var markedControl(get, set):Control; 
     public var focusedControl(get, set):Control;
     //public var dialog(get, set):Dialog;
@@ -65,7 +66,9 @@ class Canvas extends Entity {
     // The top entry is the only container that receives mouse input each frame.
     // Modal entries (Windows) block input behind them unconditionally.
     // Non-modal entries (Dropdown popups) auto-dismiss on an outside click.
-    private var __focusStack:Array<{control:Control, modal:Bool}> = [];
+    // modalParent: the modal control that was at the top of the stack when this
+    // non-modal entry was pushed; used to auto-dismiss it if the parent closes.
+    private var __focusStack:Array<{control:Control, modal:Bool, modalParent:Null<Control>}> = [];
     // Prevents the auto-dismiss logic from firing on the same frame a non-modal
     // overlay was pushed (avoids open→dismiss in one tick).
     private var __overlayAddedThisFrame:Bool = false;
@@ -167,7 +170,15 @@ class Canvas extends Entity {
      * Auto-dismissed when the user clicks outside it.
      */
     public function pushFocus(control:Control):Void {
-        __focusStack.push({control: control, modal: false});
+        // Record the current top modal so we can auto-dismiss this entry if that
+        // modal is popped (e.g. its window closes while the popup is still open).
+        var parent:Null<Control> = null;
+        var i = __focusStack.length - 1;
+        while (i >= 0) {
+            if (__focusStack[i].modal) { parent = __focusStack[i].control; break; }
+            i--;
+        }
+        __focusStack.push({control: control, modal: false, modalParent: parent});
         __overlayAddedThisFrame = true;
     }
 
@@ -176,17 +187,31 @@ class Canvas extends Entity {
      * Blocks all input behind it; must be explicitly dismissed.
      */
     public function pushModalFocus(control:Control):Void {
-        __focusStack.push({control: control, modal: true});
+        __focusStack.push({control: control, modal: true, modalParent: null});
     }
 
     /**
      * Remove a control from the focus stack (by reference, any position).
      */
     public function popFocus(control:Control):Void {
+        var foundIdx = -1;
         for (i in 0...__focusStack.length) {
-            if (__focusStack[i].control == control) {
-                __focusStack.splice(i, 1);
-                return;
+            if (__focusStack[i].control == control) { foundIdx = i; break; }
+        }
+        if (foundIdx < 0) return;
+        var wasModal = __focusStack[foundIdx].modal;
+        __focusStack.splice(foundIdx, 1);
+        // When a modal (Window) is popped, auto-dismiss any non-modal overlays
+        // (Dropdown popups) that were opened while it was the active modal scope.
+        if (wasModal) {
+            var j = __focusStack.length - 1;
+            while (j >= 0) {
+                var e = __focusStack[j];
+                if (!e.modal && e.modalParent == control) {
+                    __focusStack.splice(j, 1);
+                    removeOverlay(e.control);
+                }
+                j--;
             }
         }
     }
@@ -247,7 +272,12 @@ class Canvas extends Entity {
         @:privateAccess control.____offsetX = 0.0;
         @:privateAccess control.____offsetY = 0.0;
         @:privateAccess control.____parent  = null;
+        // Give the overlay a group tag so we can always re-raise it above windows.
+        var tag = __nextGroupTag++;
+        __controlGroupTags.set(control, tag);
+        __uiBatch.pendingGroupTag = tag;
         control.init();
+        __uiBatch.pendingGroupTag = 0;
         __overlayControls.push(control);
     }
 
@@ -257,6 +287,7 @@ class Canvas extends Entity {
      */
     public function removeOverlay(control:Control):Void {
         if (__overlayControls.remove(control)) {
+            __controlGroupTags.remove(control);
             control.release();
         }
     }
@@ -329,10 +360,14 @@ class Canvas extends Entity {
 
     override public function update(deltaTime:Float):Void {
         __overlayAddedThisFrame = false;
+        this.deltaTime = deltaTime;
 
-        // Click-to-raise: when the user clicks somewhere other than the topmost
-        // window, check if another (background) window was hit and bring it forward.
-        if (__focusStack.length > 0 && parentState.app.input.mouse.pressed(0)) {
+        // Click-to-raise: when the user clicks on a background window, bring it
+        // forward. Only runs when no non-modal overlay (Dropdown popup) owns input —
+        // while a popup is open it has exclusive focus and raising a window behind it
+        // would incorrectly put that window's tiles above the popup's tiles.
+        var hasNonModalOverlay = __focusStack.length > 0 && !__focusStack[__focusStack.length - 1].modal;
+        if (!hasNonModalOverlay && __focusStack.length > 0 && parentState.app.input.mouse.pressed(0)) {
             var topEntry = __focusStack[__focusStack.length - 1];
             if (!topEntry.control.hitTest()) {
                 var i = __focusStack.length - 2;
@@ -342,6 +377,8 @@ class Canvas extends Entity {
                         __focusStack.splice(i, 1);
                         __focusStack.push(e);
                         raiseControlToTop(e.control);
+                        // Re-raise all overlays so they stay on top of any raised window.
+                        for (oc in __overlayControls) raiseControlToTop(oc);
                         break;
                     }
                     i--;
@@ -349,32 +386,62 @@ class Canvas extends Entity {
             }
         }
 
-        // Always update the full control tree.
-        // Modal windows (Window) live inside __container and receive their update
-        // naturally via Container's hit-test loop, so they never block the toolstrip.
-        __container.update();
-
-        // Non-modal overlay controls (e.g. Dropdown popups) are NOT in __container;
-        // they need an explicit update and must be dismissed on outside click.
+        // Non-modal overlays (e.g. Dropdown popups) get exclusive input while open.
+        // Handle them BEFORE the normal control tree so that an outside click is
+        // consumed by the dismiss logic and cannot also fire controls behind the popup.
+        var nonModalActive = false;
         if (__focusStack.length > 0) {
             var entry = __focusStack[__focusStack.length - 1];
             if (!entry.modal) {
+                nonModalActive = true;
                 if (entry.control.hitTest()) {
                     entry.control.update();
-                } else if (leftClick && !__overlayAddedThisFrame) {
-                    var ctrl = entry.control;
-                    popFocus(ctrl);
-                    removeOverlay(ctrl);
+                } else {
+                    // Mouse is outside the overlay — clear hover on the last highlighted
+                    // child (e.g. a panel row) so it doesn't stay selected.
+                    if (__markedControl != __container) {
+                        __markedControl.onMouseLeave();
+                        __markedControl = __container;
+                    }
+                    // Close on an outside click.
+                    if (leftClick && !__overlayAddedThisFrame) {
+                        var ctrl = entry.control;
+                        popFocus(ctrl);
+                        removeOverlay(ctrl);
+                    }
+                    // Let the container receive input so that hovering/clicking a
+                    // sibling control (e.g. another menubar label) works immediately
+                    // without requiring a second click.
+                    __container.update();
                 }
             }
         }
+
+        // Update the normal control tree — skipped while a non-modal overlay is active
+        // so that controls behind the overlay cannot receive the same input event.
+        if (!nonModalActive) {
+            __container.update();
+        }
+
+        // Tick the focused control every frame for time-based effects (e.g. caret blink).
+        if (__focusedControl != null) __focusedControl.tick(deltaTime);
     }
     
+    /** Called after the canvas is resized. Receives the new width and height. */
+    public var onResize:Null<Int->Int->Void> = null;
+
     public function resize(width:Int, height:Int) {
         this.width = width;
         this.height = height;
 
         __container.resize(width, height);
+
+        if (onResize != null) onResize(width, height);
+    }
+
+    /** True when a modal control (Window) is at the top of the focus stack. */
+    public function hasModalFocus():Bool {
+        return __focusStack.length > 0 && __focusStack[__focusStack.length - 1].modal;
     }
 
     // Getters
