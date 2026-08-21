@@ -6,6 +6,7 @@ import Renderer;
 import data.Vertices;
 import GL;
 import math.Matrix;
+import ShaderMacro;
 
 /**
  * A full-viewport black quad drawn between world tiles and light meshes.

@@ -805,18 +805,10 @@ private class UIBatch extends ManagedTileBatch {
             }
         }
 
-            trace(
-            "UIBatch UPLOAD: floats=" + vertices.length +
-            " vertices=" + __verticesToRender +
-            " indices=" + __indicesToRender
-        );
-
         if (vertices.length > 0) {
             renderer.orphanAndUploadData(__bufferId, vertices, indices, MAX_TILES_UI * 4 * 10 * 4);
             //renderer.uploadData(this);
         }
-
-        trace("UIBatch UPLOAD DONE");
 
         needsBufferUpdate = false;
     }

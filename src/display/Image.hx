@@ -130,7 +130,6 @@ class Image extends Transform {
 		vertices.set(16, -(value * scaleY) - originY);
 		
 		__height = value;
-		//markTransformDirty();
 		
 		// Mark for buffer update on next render
 		if (__active) {

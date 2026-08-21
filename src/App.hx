@@ -27,9 +27,10 @@ class App extends Runtime {
     }
 
     override function init():Void {
+        __log = new Log(this #if debug , true #end);
+        
         super.init();
 
-        __log = new Log(this #if debug , true #end);
         __resources = new Resources(this);
         __input = new Input(this);
         __renderer = new Renderer(this);
