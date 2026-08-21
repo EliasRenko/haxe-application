@@ -313,7 +313,7 @@ class Canvas extends Entity {
      * insertion order.  Accumulated tile segments are flushed before each
      * image hook, producing N+1 draw calls for N ImageViews.
      */
-    override public function render(renderer:Renderer, viewProjectionMatrix:Matrix):Void {
+    override public function render(renderer:Renderer, viewProjectionMatrix:Matrix, cameraDirty:Bool):Void {
         if (!active || !visible || __uiBatch == null) return;
 
         var renderList = __uiBatch.getRenderList();
@@ -326,7 +326,8 @@ class Canvas extends Entity {
 
         if (!hasHooks) {
             __uiBatch.segmentTiles = null;
-            renderer.renderDisplayObject(__uiBatch, viewProjectionMatrix);
+            //renderer.renderDisplayObject(__uiBatch, viewProjectionMatrix, cameraDirty);
+            __uiBatch.render(renderer, viewProjectionMatrix, cameraDirty);
             return;
         }
 
@@ -339,21 +340,24 @@ class Canvas extends Entity {
                 // Flush accumulated tile segment.
                 if (segment.length > 0) {
                     __uiBatch.segmentTiles = segment;
-                    renderer.renderDisplayObject(__uiBatch, viewProjectionMatrix);
+                    //renderer.renderDisplayObject(__uiBatch, viewProjectionMatrix, cameraDirty);
+                    __uiBatch.render(renderer, viewProjectionMatrix, cameraDirty);
                     __uiBatch.segmentTiles = null;
                     segment = [];
                 }
                 // Draw the image.
                 var hook = item.hook;
                 if (hook.visible && hook.displayImage != null) {
-                    renderer.renderDisplayObject(hook.displayImage, viewProjectionMatrix);
+                    //renderer.renderDisplayObject(hook.displayImage, viewProjectionMatrix, cameraDirty);
+                    hook.displayImage.render(renderer, viewProjectionMatrix, cameraDirty);
                 }
             }
         }
         // Flush any remaining tiles after the last hook.
         if (segment.length > 0) {
             __uiBatch.segmentTiles = segment;
-            renderer.renderDisplayObject(__uiBatch, viewProjectionMatrix);
+            //renderer.renderDisplayObject(__uiBatch, viewProjectionMatrix, cameraDirty);
+            __uiBatch.render(renderer, viewProjectionMatrix, cameraDirty);
             __uiBatch.segmentTiles = null;
         }
     }
@@ -621,7 +625,7 @@ private class UIBatch extends ManagedTileBatch {
     private var __fontTexHeight:Int = 1;
 
     public function new(renderer:Renderer, spriteTexture:Texture, fontTexture:Texture) {
-        super(renderer, null, spriteTexture);   // @:shader("ui") resolves ProgramInfo
+        super(renderer, spriteTexture);   // @:shader("ui") resolves ProgramInfo
         addTexture(fontTexture);                // font atlas → texture unit 1
         __fontTexWidth  = fontTexture.width;
         __fontTexHeight = fontTexture.height;
@@ -852,7 +856,11 @@ private class UIBatch extends ManagedTileBatch {
      * (e.g. when there are no ImageViews in the control tree).
      */
     override public function updateBuffers(renderer:Renderer):Void {
-        if (!active || textures[0] == null) return;
+        if (!__active || textures[0] == null) return;
+
+            // vertices.dispose();
+            // __verticesToRender = 0;
+            // __indicesToRender = 0;
 
         if (segmentTiles != null) {
             for (tile in segmentTiles) {
@@ -864,8 +872,9 @@ private class UIBatch extends ManagedTileBatch {
             }
         }
 
-        if (vbo != 0 && vertices.length > 0) {
-            renderer.orphanAndUploadData(this, MAX_TILES_UI * 4 * 10 * 4);
+        if (vertices.length > 0) {
+            renderer.orphanAndUploadData(__bufferId, vertices, indices, MAX_TILES_UI * 4 * 10 * 4);
+            //renderer.uploadData(this);
         }
 
         needsBufferUpdate = false;

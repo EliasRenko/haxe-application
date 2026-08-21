@@ -106,20 +106,15 @@ class Cube extends DisplayObject {
         }
     }
     
-    // Custom render method for cube
-    public override function render(cameraMatrix:Matrix):Void {
-        if (!visible || !active) {
-            return;
-        }
-        
-        // Update transformation matrix based on current properties
+    public override function render(cameraMatrix:Matrix, cameraDirty:Bool):Void {
+        if (!visible || !active) return;
+        if (!__transformDirty && !cameraDirty) return;
+
+        __transformDirty = false;
         updateTransform();
-        
-        // Create final matrix by combining object matrix with camera matrix
+
         var finalMatrix = Matrix.copy(matrix);
         finalMatrix.append(cameraMatrix);
-        
-        // Set uniforms and delegate rendering to renderer
         uniforms.set("uMatrix", finalMatrix.data);
     }
 }

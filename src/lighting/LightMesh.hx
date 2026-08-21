@@ -42,7 +42,7 @@ class LightMesh extends DisplayObject {
         super(renderer, new Vertices([]));
         mode = GL.TRIANGLES;
         // Additive blend: GL_SRC_ALPHA=770, GL_ONE=1
-        blendFactors = { source: GL.SRC_ALPHA, destination: 1 };
+        blending = { source: GL.SRC_ALPHA, destination: 1 };
         depthTest  = false;
         depthWrite = false;
     }
@@ -77,12 +77,12 @@ class LightMesh extends DisplayObject {
         needsBufferUpdate = true;
     }
 
-    /** Called by the renderer before each draw; sets light-specific uniforms. */
-    override public function render(cameraMatrix:Matrix):Void {
-        super.render(cameraMatrix); // sets uMatrix
+    override public function render(renderer:Renderer, cameraMatrix:Matrix, cameraDirty:Bool):Void {
         uniforms.set("uLightPos", [lightX, lightY]);
         uniforms.set("uRadius",   lightRadius);
         uniforms.set("uColor",    [colorR, colorG, colorB, colorA]);
+
+        super.render(renderer, cameraMatrix, cameraDirty);
     }
 
     private inline function pushVert(x:Float, y:Float):Void {

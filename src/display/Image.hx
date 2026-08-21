@@ -3,8 +3,6 @@ package display;
 import data.Indices;
 import data.Vertices;
 import GL;
-import DisplayObject;
-import ProgramInfo;
 import Renderer;
 import math.Matrix;
 import Texture;
@@ -14,8 +12,8 @@ class Image extends Transform {
 	
 	// Publics
 	public var angle(get, set):Float;
-	public var width(get, set):Float;
 	public var height(get, set):Float;
+	public var width(get, set):Float;
 	public var originX(get, set):Float;
 	public var originY(get, set):Float;
 
@@ -60,19 +58,17 @@ class Image extends Transform {
 		// Initialize dimensions from texture
 		__width = texture.width;
 		__height = texture.height;
+
+		needsBufferUpdate = true;
 	}
 
 	public function centerOrigin():Void {
-
 		originX = __width / 2;
-		
 		originY = __height / 2;
 	}
 
 	public function setTextures(textureObjects:Array<Texture>, width:Int, height:Int) {
-		
 		if (textureObjects.length == 0) {
-			trace("No textures to set!");
 			return;
 		}
 
@@ -99,30 +95,30 @@ class Image extends Transform {
 		vertices.set(19, y + height);    // Bottom-left V
 		
 		// Mark for buffer update on next render
-		if (active) {
+		if (__active) {
 			needsBufferUpdate = true;
 		}
 	}
 
-	override function render(cameraMatrix:Matrix):Void {
-		if (!visible || !active) return;
-		
-		// Update transformation matrix based on current properties
-		updateTransform();
-		
-		// Create final matrix by combining object matrix with camera matrix
-		var finalMatrix = Matrix.copy(matrix);
-		finalMatrix.append(cameraMatrix);
-		
-		// Set the transform matrix uniform (using correct uniform name for textured shader)
-		uniforms.set("uMatrix", finalMatrix.data);
+	override function render(renderer:Renderer, cameraMatrix:Matrix, cameraDirty:Bool):Void {
+		if (!__active) return;
+
+		if (__transformDirty || cameraDirty) {
+			__transformDirty = false;
+			updateTransform();
+			var finalMatrix = Matrix.copy(matrix);
+			finalMatrix.append(cameraMatrix);
+			uniforms.set("uMatrix", finalMatrix.data);
+		}
+
+		super.render(renderer, cameraMatrix, cameraDirty);
 	}
 
 	//** Getters and setters.
 	
 	private function set_angle(value:Float):Float {
 		__angle = (value %= 360) >= 0 ? value : (value + 360);
-		//__shouldTransform = true;
+		__transformDirty = true;
 		return value;
 	}
 
@@ -134,10 +130,9 @@ class Image extends Transform {
 		vertices.set(16, -(value * scaleY) - originY);
 		
 		__height = value;
-		//__shouldTransform = true;
 		
 		// Mark for buffer update on next render
-		if (active) {
+		if (__active) {
 			needsBufferUpdate = true;
 		}
 
@@ -152,10 +147,10 @@ class Image extends Transform {
 		vertices.set(15, 0 - originX);
 		
 		__width = value;
-		//__shouldTransform = true;
+		//markTransformDirty();
 		
 		// Mark for buffer update on next render
-		if (active) {
+		if (__active) {
 			needsBufferUpdate = true;
 		}
 
@@ -176,7 +171,6 @@ class Image extends Transform {
 
 	private function set_originX(value:Float):Float {
 		__originX = value;
-		//__shouldTransform = true;
 		width = __width;
 		return __originX;
 	}
@@ -187,7 +181,6 @@ class Image extends Transform {
 
 	private function set_originY(value:Float):Float {
 		__originY = value;
-		//__shouldTransform = true;
 		height = __height;
 		return __originY;
 	}

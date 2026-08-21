@@ -3,17 +3,17 @@ package input;
 import haxe.ds.Vector;
 
 class Keyboard {
+    //Publics
+    public var textInput(get, null):String;
 
     // Privates
     private var __checkControls:Vector<Bool>;
-    public var __checkCount:Int = 0;
+    private var __checkCount:Int = 0;
     private var __pressControls:Array<Int>;
     private var __pressCount:Int = 0;
 	private var __releaseControls:Array<Int>;
 	private var __releaseCount:Int = 0;
-
-    /** Characters typed this frame, populated by App.onTextInput. Cleared each postUpdate. */
-    public var textInput:String = "";
+    private var __textInput:String = "";
 
     public function new() {
         __checkControls = new Vector<Bool>(312);
@@ -21,9 +21,7 @@ class Keyboard {
         __releaseControls = [];
     }
 
-    public static function init():Void {
-
-    }
+    public static function init():Void {}
 
     public function check(control:Int):Bool{
 		return control < 0 ? __checkCount > 0 : __checkControls[control];
@@ -37,9 +35,7 @@ class Keyboard {
         return keyCode < 0 ? __releaseCount > 0 : __releaseControls.indexOf(keyCode) >= 0;
     }
 
-    public function update():Void {
-        
-    }
+    public function update():Void {}
 
     public function postUpdate():Void {
         // Clear pressed/released arrays for next frame
@@ -47,7 +43,7 @@ class Keyboard {
         __pressCount = 0;
         __releaseControls = [];
         __releaseCount = 0;
-        textInput = "";
+        __textInput = "";
     }
 
     private function onKeyDown(key:UInt, repeat:Bool, mod:Int):Void {
@@ -65,6 +61,15 @@ class Keyboard {
 		__checkCount--;
 		__releaseControls.push(key);
 		__releaseCount++;
+    }
+
+    private function onTextInput(text:String) {
+        __textInput = text;
+    }
+
+    // Getters and setters
+    private function get_textInput() {
+        return __textInput;
     }
 }
 

@@ -34,10 +34,8 @@ class BitmapFont extends ManagedTileBatch implements IFontSource {
      * Pre-register it in the state with renderer.createProgramInfo("mono", ...).
      */
     public function new(renderer:Renderer, texture:Texture, fontData:FontData) {
-        super(renderer, null, texture);
+        super(renderer, texture);
         this.fontData = fontData;
-        
-        trace("BitmapFont: Created font '" + fontData.name + "' size=" + fontData.size);
         
         // Define regions for all font characters
         defineCharacterRegions();

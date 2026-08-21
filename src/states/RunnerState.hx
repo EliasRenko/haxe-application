@@ -155,7 +155,7 @@ class RunnerState extends State {
             var texture = renderer.uploadTexture(textureData);
             textureWidths.set(tsName, texture.width);
 
-            var batch = new ManagedTileBatch(renderer, programInfo, texture);
+            var batch = new ManagedTileBatch(renderer, texture);
             batch.debugName = "tileset_" + tsName;
 
             tileBatches.set(tsName, batch);

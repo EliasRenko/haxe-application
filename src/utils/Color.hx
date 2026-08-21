@@ -3,7 +3,6 @@ package utils;
 class Color {
 
 	// Publics
-	
 	public var a:Float;
 	public var b:Float;
 	public var g:Float;
@@ -11,7 +10,6 @@ class Color {
 	public var hexValue(get, set):Int;
 	
 	// Privates
-	
 	private var __hexValue:Int;
 	
 	public function new(value:Int) {
@@ -35,7 +33,6 @@ class Color {
 	}
 	
 	// Getters and setters
-	
 	private function get_hexValue():Int {
 		return __hexValue;
 	}

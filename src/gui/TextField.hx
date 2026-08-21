@@ -2,7 +2,7 @@ package gui;
 
 import display.Text;
 import display.Tile;
-import Scancode;
+import ScanCode;
 
 class TextField extends Control {
 
@@ -80,7 +80,7 @@ class TextField extends Control {
                 onTextInput();
             }
 
-            if (keyboard.released(Scancode.BACKSPACE) && text.length > 0) {
+            if (keyboard.released(ScanCode.BACKSPACE) && text.length > 0) {
                 text = text.substring(0, text.length - 1);
                 onTextInput();
             }

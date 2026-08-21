@@ -50,21 +50,17 @@ class LineBatch extends DisplayObject {
     /** Called by renderer to update GPU buffers */
     override public function updateBuffers(renderer:Renderer):Void {
         if (!active) return;
-        renderer.uploadData(this);
+        renderer.uploadData(__bufferId, vertices, indices);
         needsBufferUpdate = false;
     }
 
-    /** Set uniforms and prepare for drawing */
-    override public function render(cameraMatrix:Matrix):Void {
-        if (!visible || !active) return;
-        
-        // Set MVP matrix for line shader
-        updateTransform();
-        var finalMatrix = Matrix.copy(matrix);
-        finalMatrix.append(cameraMatrix);
-        uniforms.set("uMatrix", finalMatrix.data);
-        
-        super.render(cameraMatrix);
+    override public function render(cameraMatrix:Matrix, cameraDirty:Bool):Void {
+        if (!active) return;
+        if (cameraDirty) {
+			var finalMatrix = Matrix.copy(matrix);
+			finalMatrix.append(cameraMatrix);
+			uniforms.set("uMatrix", finalMatrix.data);
+		}
     }
 
     override public function postRender():Void {

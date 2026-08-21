@@ -6,6 +6,7 @@ import Renderer;
 import data.Vertices;
 import GL;
 import math.Matrix;
+import ShaderMacro;
 
 /**
  * A full-viewport black quad drawn between world tiles and light meshes.
@@ -29,7 +30,7 @@ class DarkOverlay extends DisplayObject {
         super(renderer, new Vertices([]));
         this.ambientDarkness = ambientDarkness;
         mode       = GL.TRIANGLES;
-        blendFactors = { source: GL.SRC_ALPHA, destination: GL.ONE_MINUS_SRC_ALPHA };
+        blending = { source: GL.SRC_ALPHA, destination: GL.ONE_MINUS_SRC_ALPHA };
         depthTest  = false;
         depthWrite = false;
     }

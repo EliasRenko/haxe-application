@@ -5,15 +5,13 @@ import ds.SlotArray;
 
 class App extends Runtime {
     
-    // State Management
-    public var states:SlotArray<State> = new SlotArray<State>();
-    public var currentState:State = null;
-
     // Publics
     public var input(get, null):Input;
     public var resources(get, null):Resources;
     public var log(get, null):Log;
     public var renderer(get, null):Renderer;
+    public var states:SlotArray<State> = new SlotArray<State>();
+    public var currentState:State = null;
 
     // Privates
     private var __input:Input;
@@ -29,16 +27,17 @@ class App extends Runtime {
     }
 
     override function init():Void {
+        __log = new Log(this #if debug , true #end);
+        
         super.init();
 
-        __log = new Log(this #if debug , true #end);
         __resources = new Resources(this);
         __input = new Input(this);
         __renderer = new Renderer(this);
 
         __log.debug(LogCategory.APP, "App initialized in debug mode");
 
-        preload();
+        preloadResources();
 
         // Initialize timing
         __lastTime = getTicks() / 1000.0;
@@ -271,11 +270,11 @@ class App extends Runtime {
 
     #if js
     override function onTextInput(text:String, timestamp:Float):Void {
-        __input.keyboard.textInput += text;
+        @:privateAccess __input.keyboard.onTextInput(text);
     }
     #else
     override function onTextInput(text:String, timestamp:Float, windowId:Int):Void {
-        __input.keyboard.textInput += text;
+        @:privateAccess __input.keyboard.onTextInput(text);
     }
     #end
 
@@ -306,14 +305,12 @@ class App extends Runtime {
         @:privateAccess __input.mouse.onMouseWheel(y);
     }
 
-    /** Enable OS text-input mode (required on native for SDL_EVENT_TEXT_INPUT). */
     public function enableTextInput():Void {
         #if !js
         startTextInput(window.ptr);
         #end
     }
 
-    /** Disable OS text-input mode. */
     public function disableTextInput():Void {
         #if !js
         stopTextInput(window.ptr);
@@ -344,9 +341,7 @@ class App extends Runtime {
         __input.postUpdate();
     }
 
-
-
-    private function preload():Void {
+    private function preloadResources():Void {
 		resources.loadText("preload.txt").then(function(source:String) {
 			var files:Array<Promise<Dynamic>> = new Array<Promise<Dynamic>>();
 			var lines:Array<String> = source.split("\n");

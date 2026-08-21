@@ -23,7 +23,7 @@ class State {
     // Privates
     private var __app:App;
     private static var __nextId:Int = 0;
-
+    private var __cameraDirty:Bool = true;
     private var cameraDebug:Bool = true;
     
     public function new(name:String, app:App) {
@@ -126,26 +126,23 @@ class State {
      */
     public function render(renderer:Renderer):Void {
         if (!active) return;
-        
-        // Calculate camera matrix for this state's world
-        // This creates the View + Projection matrix
 
         var size = app.window.size;
-        camera.renderMatrix(size.x, size.y);
+        camera.viewWidth = size.x;
+        camera.viewHeight = size.y;
+        __cameraDirty = camera.renderMatrix();
         var viewProjectionMatrix = camera.getMatrix();
         
-        // Render all active and visible entities in this state with the camera matrix
         for (entity in entities) {
             if (entity != null && entity.active && entity.visible) {
-                entity.render(renderer, viewProjectionMatrix);
+                entity.render(renderer, viewProjectionMatrix, __cameraDirty);
             }
         }
     }
 
     public function renderDisplayObject(renderer:Renderer, viewProjectionMatrix:Matrix, displayObject:DisplayObject):Void {
         if (displayObject.visible) {
-            displayObject.render(viewProjectionMatrix);
-            renderer.renderDisplayObject(displayObject, viewProjectionMatrix);
+            displayObject.render(renderer, viewProjectionMatrix, __cameraDirty);
         }
     }
     

@@ -52,9 +52,6 @@ private class __Log {
             enablePriorityForCategory(LogCategory.RESOURCES, LogPriority.DEBUG);
         }
     }
-    
-    public function init():Void {
-    }
 
     public function release():Void {
         __app.resetLogPriorities();

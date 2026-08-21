@@ -50,7 +50,7 @@ class TileBatch extends DisplayObject {
      * @param programInfo Shader program for rendering
      * @param texture Atlas texture for all tiles
      */
-    public function new(renderer:Renderer, programInfo:ProgramInfo, texture:Texture) {
+    public function new(renderer:Renderer, texture:Texture) {
         
         // Start with empty vertices but pre-generate indices for MAX_TILES
         var emptyVertices = new Vertices([]);
@@ -60,14 +60,14 @@ class TileBatch extends DisplayObject {
         // auto-resolve programInfo via getShaderName(). Only override with the
         // explicitly passed programInfo when one is provided.
         super(renderer, emptyVertices, indices);
-        if (programInfo != null) this.programInfo = programInfo;
+        //if (programInfo != null) this.programInfo = programInfo;
         
         // Set OpenGL properties
         mode = GL.TRIANGLES;
         
         // Premultiplied-alpha blending — pairs with TGALoader's premultiplication.
         // GL_ONE because RGB is already scaled by alpha in the texture data.
-        blendFactors = {
+        blending = {
             source: GL.ONE,
             //source: GL.ONE,
             destination: GL.ONE_MINUS_SRC_ALPHA
@@ -271,7 +271,7 @@ class TileBatch extends DisplayObject {
      * Called BEFORE render to update vertex data
      */
     override public function updateBuffers(renderer:Renderer):Void {
-        if (!active || textures[0] == null) return;
+        if (!__active || textures[0] == null) return;
 
         //__verticesToRender = 0;
         //__indicesToRender = 0;
@@ -288,7 +288,7 @@ class TileBatch extends DisplayObject {
         // Update vertices object for renderer
         //this.vertices = new Vertices(__vertexCache);
 
-        if (vbo != 0 && vertices.length > 0) {
+        if (vertices.length > 0) {
 
             // GL.bindBuffer(GL.ARRAY_BUFFER, vbo);
             
@@ -300,7 +300,8 @@ class TileBatch extends DisplayObject {
             // GL.bufferFloatArray(GL.ARRAY_BUFFER, vertices, GL.STREAM_DRAW, vertices.length);
             
             // GL.bindBuffer(GL.ARRAY_BUFFER, 0);
-            renderer.orphanAndUploadData(this, MAX_TILES * 4 * 5 * 4);
+            renderer.orphanAndUploadData(__bufferId, vertices, indices, MAX_TILES * 4 * 5 * 4);
+            //renderer.uploadData(this);
         }
         
         needsBufferUpdate = false;
@@ -310,33 +311,31 @@ class TileBatch extends DisplayObject {
      * Render the tile batch
      * Just sets uniforms - vertex data already updated in updateBuffers()
      */
-    override public function render(cameraMatrix:Matrix):Void {
-        if (!visible || !active || textures[0] == null) {
-            return;
-        }
-        
-        // Check if we actually have vertices to render
-        if (__verticesToRender == 0 || __indicesToRender == 0) {
-            return;
-        }
-        
-        // Update transformation matrix based on current properties
-        updateTransform();
-        
-        // Create final matrix by combining object matrix with camera matrix
+    override public function render(renderer:Renderer,cameraMatrix:Matrix, cameraDirty:Bool):Void {
+        if (!__active || textures[0] == null) return;
+
+        vertices.dispose();
+        __verticesToRender = 0;
+        __indicesToRender = 0;
+
+        needsBufferUpdate = true;
+        updateBuffers(renderer);
+
+        if (__verticesToRender == 0 || __indicesToRender == 0) return;
+
         var finalMatrix = Matrix.copy(matrix);
         finalMatrix.append(cameraMatrix);
-        
-        // Set uniforms for tile rendering
         uniforms.set("uMatrix", finalMatrix.data);
+
+        renderer.renderDisplayObject(this);
     }
 
     override public function postRender():Void {
         // Reset counts after rendering
-        __verticesToRender = 0;
-        __indicesToRender = 0;
+        // __verticesToRender = 0;
+        // __indicesToRender = 0;
 
-        vertices = [];
+        // vertices = [];
     }
     
     /**
