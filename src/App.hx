@@ -1,5 +1,6 @@
 package;
 
+import math.Matrix;
 import Log.LogCategory;
 import ds.SlotArray;
 
@@ -44,6 +45,8 @@ class App extends Runtime {
         
         // Initialize post-processing framebuffer
         __renderer.initializePostProcessing();
+
+        
         __renderer.usePostProcessing = true; // Enable post-processing by default
     }
 
@@ -222,7 +225,8 @@ class App extends Runtime {
         __renderer.render();
         if (__renderer.usePostProcessing) {
             // STEP 1: Render scene to framebuffer
-            __renderer.bindFramebuffer();
+            //__renderer.bindFramebuffer(); // BIND FRAMEBUFFER DISPLAY OBJECT
+            __renderer.bindFramebuffer(__renderer.postProcessDisplayObject.framebufferId);
             __renderer.clearScreen();
             //GL.glClear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
             __renderer.initializeRenderState();
@@ -232,10 +236,11 @@ class App extends Runtime {
             }
             
             // STEP 2: Render framebuffer to screen with post-processing
-            __renderer.unbindFramebuffer();
+            __renderer.unbindFramebuffer(__renderer.postProcessDisplayObject.framebufferId); // UNBIND FRAMEBUFFER DISPLAY OBJECT
             __renderer.clearScreen(); // Clear the screen framebuffer
             
-            __renderer.renderToScreen();
+            //__renderer.renderToScreen(); // RENDER FRAMEBUFFER DISPLAY OBJECT TO SCREEN WITH POST-PROCESSING
+            __renderer.postProcessDisplayObject.render(__renderer, new Matrix(), true);
         } else {
             // Direct rendering (no post-processing)
             __renderer.clearScreen();
