@@ -5,7 +5,13 @@ uniform sampler2D uScreenTexture;
 
 void main() {
     vec4 color = texture(uScreenTexture, TexCoord);
-    vec3 inverted = 1.0 - color.rgb;
-    vec3 tinted = mix(inverted, vec3(0.15, 0.35, 0.95), 0.25);
-    FragColor = vec4(tinted, color.a);
+    
+    // Scanline effect
+    float scanline = sin(TexCoord.y * 480.0 * 2.0) * 0.1 + 0.9;
+    
+    // Vignette effect
+    vec2 center = TexCoord - 0.5;
+    float vignette = 1.0 - dot(center, center) * 0.5;
+    
+    FragColor = vec4(color.rgb * scanline * vignette, color.a);
 }
