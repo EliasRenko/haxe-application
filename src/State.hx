@@ -130,21 +130,21 @@ class State {
         var size = app.window.size;
         camera.viewWidth = size.x;
         camera.viewHeight = size.y;
-        __cameraDirty = camera.renderMatrix();
-        var viewProjectionMatrix = camera.getMatrix();
+        __cameraDirty = camera.getProjectionMatrix(); // TODO: Kinda weird, must improve
+        renderer.matrix = camera.getMatrix(); // TODO: Make better and more elegant 
         
         for (entity in entities) {
             if (entity != null && entity.active && entity.visible) {
-                entity.render(renderer, viewProjectionMatrix, __cameraDirty);
+                entity.render(renderer);
             }
         }
     }
 
-    public function renderDisplayObject(renderer:Renderer, viewProjectionMatrix:Matrix, displayObject:DisplayObject):Void {
-        if (displayObject.visible) {
-            displayObject.render(renderer, viewProjectionMatrix, __cameraDirty);
-        }
-    }
+    // public function renderDisplayObject(renderer:Renderer, viewProjectionMatrix:Matrix, displayObject:DisplayObject):Void {
+    //     if (displayObject.visible) {
+    //         displayObject.render(renderer, viewProjectionMatrix, __cameraDirty);
+    //     }
+    // }
     
     /**
      * Add an entity to this state

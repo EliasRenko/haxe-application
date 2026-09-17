@@ -41,7 +41,7 @@ class Camera {
     public function new() {}
 
     // Returns true if the matrix was rebuilt this frame.
-    public function renderMatrix():Bool {
+    public function getProjectionMatrix():Bool {
         if (!__dirty) return false;
         __dirty = false;
 

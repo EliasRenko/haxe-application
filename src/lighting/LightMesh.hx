@@ -77,12 +77,12 @@ class LightMesh extends DisplayObject {
         needsBufferUpdate = true;
     }
 
-    override public function render(renderer:Renderer, cameraMatrix:Matrix, cameraDirty:Bool):Void {
+    override public function render(renderer:Renderer):Void {
         uniforms.set("uLightPos", [lightX, lightY]);
         uniforms.set("uRadius",   lightRadius);
         uniforms.set("uColor",    [colorR, colorG, colorB, colorA]);
 
-        super.render(renderer, cameraMatrix, cameraDirty);
+        super.render(renderer);
     }
 
     private inline function pushVert(x:Float, y:Float):Void {

@@ -240,7 +240,7 @@ class App extends Runtime {
             __renderer.clearScreen(); // Clear the screen framebuffer
             
             //__renderer.renderToScreen(); // RENDER FRAMEBUFFER DISPLAY OBJECT TO SCREEN WITH POST-PROCESSING
-            __renderer.postProcessDisplayObject.render(__renderer, new Matrix(), true);
+            __renderer.postProcessDisplayObject.render(__renderer);
         } else {
             // Direct rendering (no post-processing)
             __renderer.clearScreen();

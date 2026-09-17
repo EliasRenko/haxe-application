@@ -39,7 +39,7 @@ class Entity {
      * Called every frame to render this entity
      * Now accepts the view-projection matrix from the State's camera
      */
-    public function render(renderer:Renderer, viewProjectionMatrix:math.Matrix, cameraDirty:Bool):Void {
+    public function render(renderer:Renderer):Void {
         if (!active || !visible) {
             return;
         }
