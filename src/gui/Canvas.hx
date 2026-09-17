@@ -583,6 +583,8 @@ class Canvas extends Entity {
 @:shader("ui")
 private class UIBatch extends ManagedTileBatch {
 
+    public var fontTexture:Texture;
+
     private static inline var MAX_TILES_UI:Int = 1000;
 
     // Maps Tile reference → texIndex (only entries with value 1.0 are stored)
@@ -624,7 +626,7 @@ private class UIBatch extends ManagedTileBatch {
 
     public function new(renderer:Renderer, spriteTexture:Texture, fontTexture:Texture) {
         super(renderer, spriteTexture);   // @:shader("ui") resolves ProgramInfo
-        addTexture(fontTexture);                // font atlas → texture unit 1
+        this.fontTexture = fontTexture;                // font atlas → texture unit 1
         __fontTexWidth  = fontTexture.width;
         __fontTexHeight = fontTexture.height;
     }
@@ -854,11 +856,7 @@ private class UIBatch extends ManagedTileBatch {
      * (e.g. when there are no ImageViews in the control tree).
      */
     override public function updateBuffers(renderer:Renderer):Void {
-        if (!__active || textures[0] == null) return;
-
-            // vertices.dispose();
-            // __verticesToRender = 0;
-            // __indicesToRender = 0;
+        if (!__active || texture == null) return;
 
         if (segmentTiles != null) {
             for (tile in segmentTiles) {
@@ -876,6 +874,45 @@ private class UIBatch extends ManagedTileBatch {
         }
 
         needsBufferUpdate = false;
+    }
+
+    override public function render(renderer:Renderer):Void {
+        if (!__active || texture == null) return;
+
+        vertices.dispose();
+        __verticesToRender = 0;
+        __indicesToRender = 0;
+
+        needsBufferUpdate = true;
+        updateBuffers(renderer);
+
+        if (__verticesToRender == 0 || __indicesToRender == 0) return;
+
+        var finalMatrix = Matrix.copy(__matrix);
+        finalMatrix.append(renderer.matrix);
+        uniforms.set("uMatrix", finalMatrix.data);
+
+        // 1. Get the program info for the current shader program
+		var programInfo = renderer.getProgramInfo(getShaderName());
+
+		// 2. Use the shader program (binds the program and VAO)
+		renderer.useProgram(programInfo);
+
+		// 3. Bind the buffers (VAO) for this object
+		renderer.bindBuffers(__bufferId, programInfo.vertexStride);
+
+		// 4. Set the blending factors for transparency
+		renderer.setBlendFunction(blending.source, blending.destination);
+
+		// 5. Set the uniform values for the shader program
+		renderer.renderUniforms(programInfo, this);
+
+		// 6. Set the textures for the shader program
+		renderer.bindTexture(programInfo, texture, 0);
+		renderer.bindTexture(programInfo, fontTexture, 1);
+
+		// 7. Draw the object using the specified mode and count
+		renderer.drawElements(mode, __indicesToRender);
     }
 }
 

@@ -79,7 +79,7 @@ class ImageView extends Control {
             __imgH = h;
         } else {
             // Same dimensions: just swap the GPU texture handle.
-            __displayImage.setTexture(texture);
+            __displayImage.texture = texture;
         }
 
         __hook.displayImage = __displayImage;
