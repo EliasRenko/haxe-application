@@ -120,11 +120,7 @@ class State {
         // }
     }
     
-    /**
-     * Called every frame to render state entities
-     * Override in subclasses for custom rendering order/effects
-     */
-    public function render(renderer:Renderer):Void {
+    public function preRender(renderer:Renderer):Void {
         if (!active) return;
 
         var size = app.window.size;
@@ -132,6 +128,14 @@ class State {
         camera.viewHeight = size.y;
         __cameraDirty = camera.getProjectionMatrix(); // TODO: Kinda weird, must improve
         renderer.matrix = camera.getMatrix(); // TODO: Make better and more elegant 
+    }
+
+    /**
+     * Called every frame to render state entities
+     * Override in subclasses for custom rendering order/effects
+     */
+    public function render(renderer:Renderer):Void {
+        if (!active) return;
         
         for (entity in entities) {
             if (entity != null && entity.active && entity.visible) {
@@ -139,12 +143,6 @@ class State {
             }
         }
     }
-
-    // public function renderDisplayObject(renderer:Renderer, viewProjectionMatrix:Matrix, displayObject:DisplayObject):Void {
-    //     if (displayObject.visible) {
-    //         displayObject.render(renderer, viewProjectionMatrix, __cameraDirty);
-    //     }
-    // }
     
     /**
      * Add an entity to this state

@@ -232,6 +232,7 @@ class App extends Runtime {
             __renderer.initializeRenderState();
             
             if (currentState != null && currentState.active) {
+                currentState.preRender(__renderer);
                 currentState.render(__renderer);
             }
             
