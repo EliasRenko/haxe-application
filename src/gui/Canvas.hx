@@ -857,8 +857,6 @@ private class UIBatch extends ManagedTileBatch {
      * (e.g. when there are no ImageViews in the control tree).
      */
     override public function updateBuffers(renderer:Renderer):Void {
-        if (!__active || texture == null) return;
-
         if (segmentTiles != null) {
             for (tile in segmentTiles) {
                 if (tile.visible) buildTile(tile);
@@ -881,8 +879,6 @@ private class UIBatch extends ManagedTileBatch {
     }
 
     override public function render(renderer:Renderer):Void {
-        if (!__active || texture == null) return;
-
         vertices.dispose();
         __verticesToRender = 0;
         __indicesToRender = 0;
@@ -897,7 +893,7 @@ private class UIBatch extends ManagedTileBatch {
         uniforms.set("uMatrix", finalMatrix.data);
 
         // 1. Get the program info for the current shader program
-		var programInfo = renderer.getProgramInfo(getShaderName());
+		var programInfo = renderer.getProgramInfo(getProgramInfoName());
 
 		// 2. Use the shader program (binds the program and VAO)
 		renderer.useProgram(programInfo);

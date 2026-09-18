@@ -57,7 +57,7 @@ class LightMesh extends DisplayObject {
      */
     public function rebuild(center:Point, output:Array<Point>):Void {
         vertices           = new Vertices([]);
-        __verticesToRender = 0;
+        //__verticesToRender = 0;
 
         lightX = center.x;
         lightY = center.y;
@@ -70,7 +70,7 @@ class LightMesh extends DisplayObject {
             pushVert(cx,            cy           );
             pushVert(output[i].x,   output[i].y  );
             pushVert(output[i+1].x, output[i+1].y);
-            __verticesToRender += 3;
+            //__verticesToRender += 3;
             i += 2;
         }
 

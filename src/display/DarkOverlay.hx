@@ -48,7 +48,7 @@ class DarkOverlay extends DisplayObject {
     public function rebuild(worldLeft:Float, worldTop:Float,
                             worldRight:Float, worldBottom:Float):Void {
         vertices           = new Vertices([]);
-        __verticesToRender = 0;
+        //__verticesToRender = 0;
 
         var a = ambientDarkness;
 
@@ -61,7 +61,7 @@ class DarkOverlay extends DisplayObject {
         pushVert(worldRight, worldBottom, a);
         pushVert(worldLeft,  worldBottom, a);
 
-        __verticesToRender = 6;
+        //__verticesToRender = 6;
         __needsBufferUpdate  = true;
     }
 
