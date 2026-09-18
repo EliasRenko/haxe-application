@@ -627,6 +627,7 @@ private class UIBatch extends ManagedTileBatch {
     public function new(renderer:Renderer, spriteTexture:Texture, fontTexture:Texture) {
         super(renderer, spriteTexture);   // @:shader("ui") resolves ProgramInfo
         this.fontTexture = fontTexture;                // font atlas → texture unit 1
+
         __fontTexWidth  = fontTexture.width;
         __fontTexHeight = fontTexture.height;
     }
@@ -870,10 +871,13 @@ private class UIBatch extends ManagedTileBatch {
 
         if (vertices.length > 0) {
             renderer.orphanAndUploadData(__bufferId, vertices, indices, MAX_TILES_UI * 4 * 10 * 4);
-            //renderer.uploadData(this);
         }
 
-        needsBufferUpdate = false;
+        __needsBufferUpdate = false;
+    }
+
+    public function markDirty() {
+        __needsBufferUpdate = true;
     }
 
     override public function render(renderer:Renderer):Void {
@@ -883,7 +887,7 @@ private class UIBatch extends ManagedTileBatch {
         __verticesToRender = 0;
         __indicesToRender = 0;
 
-        needsBufferUpdate = true;
+        __needsBufferUpdate = true;
         updateBuffers(renderer);
 
         if (__verticesToRender == 0 || __indicesToRender == 0) return;
@@ -908,8 +912,8 @@ private class UIBatch extends ManagedTileBatch {
 		renderer.renderUniforms(programInfo, this);
 
 		// 6. Set the textures for the shader program
-		renderer.bindTexture(programInfo, texture, 0);
-		renderer.bindTexture(programInfo, fontTexture, 1);
+		renderer.bindTexture(texture.id, 0);
+		renderer.bindTexture(fontTexture.id, 1);
 
 		// 7. Draw the object using the specified mode and count
 		renderer.drawElements(mode, __indicesToRender);
@@ -985,7 +989,7 @@ private class UIFontFace implements IFontSource {
         return lines * fontData.lineHeight;
     }
 
-    public function markDirty():Void { __batch.needsBufferUpdate = true; }
+    public function markDirty():Void { __batch.markDirty(); }
 }
 
 // =============================================================================

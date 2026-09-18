@@ -62,7 +62,7 @@ class DarkOverlay extends DisplayObject {
         pushVert(worldLeft,  worldBottom, a);
 
         __verticesToRender = 6;
-        needsBufferUpdate  = true;
+        __needsBufferUpdate  = true;
     }
 
     private inline function pushVert(x:Float, y:Float, a:Float):Void {

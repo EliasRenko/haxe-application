@@ -74,7 +74,7 @@ class LightMesh extends DisplayObject {
             i += 2;
         }
 
-        needsBufferUpdate = true;
+        __needsBufferUpdate = true;
     }
 
     override public function render(renderer:Renderer):Void {
