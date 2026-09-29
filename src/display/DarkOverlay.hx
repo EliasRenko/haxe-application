@@ -75,4 +75,8 @@ class DarkOverlay extends DisplayObject {
         vertices.push(0.0);
         vertices.push(a);
     }
+
+    public function render(renderer:Renderer):Void {
+        //super.render(renderer);
+    }
 }

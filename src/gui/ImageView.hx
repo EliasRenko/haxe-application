@@ -92,11 +92,11 @@ class ImageView extends Control {
     // ── Graphic position ──────────────────────────────────────────────────────
 
     override function __setGraphicX():Void {
-        if (__displayImage != null) __displayImage.x = ____offsetX + __x;
+        if (__displayImage != null) __displayImage.transform.x = ____offsetX + __x;
     }
 
     override function __setGraphicY():Void {
-        if (__displayImage != null) __displayImage.y = ____offsetY + __y;
+        if (__displayImage != null) __displayImage.transform.y = ____offsetY + __y;
     }
 
     // ── Getters / setters ─────────────────────────────────────────────────────

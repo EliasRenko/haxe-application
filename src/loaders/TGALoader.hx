@@ -320,7 +320,7 @@ class TGALoader {
 		trace("TGA converted: " + width + "x" + height + ", " + pixelDepth + " -> " + (outputBytesPerPixel * 8) + " bits, " + outputBytesPerPixel
 			+ " BPP output");
 
-		return new TextureData(pixelData, outputBytesPerPixel, width, height, hasAlpha);
+		return new TextureData(pixelData, outputBytesPerPixel, width, height, hasAlpha, src);
 	}
 
 	public static function saveToTGA(tex:TextureData, filename:String):Void {

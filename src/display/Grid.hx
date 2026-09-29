@@ -64,10 +64,10 @@ class Grid extends Transform {
         uniforms.set("uGridColor", gridColor);
         uniforms.set("uBackgroundColor", backgroundColor);
         uniforms.set("uFadeDistance", fadeDistance);
-        if (__transformDirty || cameraDirty) {
-			__transformDirty = false;
-			updateTransform();
-			var finalMatrix = Matrix.copy(matrix);
+        if (transform.dirty || cameraDirty) {
+			transform.dirty = false;
+			transform.updateTransform();
+			var finalMatrix = Matrix.copy(transform.matrix);
 			finalMatrix.append(cameraMatrix);
 			uniforms.set("uMatrix", finalMatrix.data);
 		}

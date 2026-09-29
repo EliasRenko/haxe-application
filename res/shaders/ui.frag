@@ -6,7 +6,7 @@ in vec4 Color;
 
 out vec4 FragColor;
 
-uniform sampler2D uGraphics;
+uniform sampler2D uTexture;
 uniform sampler2D uFont;
 
 void main() {
@@ -14,7 +14,7 @@ void main() {
 
     if (TexIndex < 0.5) {
         // Sprite atlas (texture unit 0)
-        color = texture(uGraphics, TexCoord);
+        color = texture(uTexture, TexCoord);
     } else {
         // Font atlas (texture unit 1) — same alpha-mask decode as text.frag
         vec4 s = texture(uFont, TexCoord);

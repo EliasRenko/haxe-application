@@ -1,0 +1,6 @@
+-cp src
+--main MainMacro
+--interp
+-debug
+
+-lib haxe-native

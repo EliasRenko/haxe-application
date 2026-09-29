@@ -2,3 +2,4 @@
 #build/build-web.hxml
 build/build-native.hxml
 #build/build-android.hxml
+#build/build-macro.hxml
