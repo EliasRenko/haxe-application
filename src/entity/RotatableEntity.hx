@@ -28,7 +28,7 @@ class RotatableEntity extends TileEntity {
         }
     );
 
-    public var rotation:Float      = 0.0;
+    public var rotation:Float = 0.0;
     public var rotationSpeed:Float = 20.0; // degrees per second
 
     public function new() {
