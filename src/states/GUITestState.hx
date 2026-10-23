@@ -53,13 +53,13 @@ class GUITestState extends State {
 
         var renderer = app.renderer;
 
-        renderer.createProgramInfo("ui", null,
-            app.resources.getText("shaders/ui.frag"));
+        // renderer.createProgramInfo("ui", null,
+        //     app.resources.getText("shaders/ui.frag"));
 
         // Required by ImageView (uses the textured shader for image draw calls).
-        renderer.createProgramInfo("textured",
-            app.resources.getText("shaders/textured.vert"),
-            app.resources.getText("shaders/textured.frag"));
+        // renderer.createProgramInfo("textured",
+        //     app.resources.getText("shaders/textured.vert"),
+        //     app.resources.getText("shaders/textured.frag"));
 
         var spriteTexture = renderer.uploadTexture(
             app.resources.getTexture("textures/gui.tga"));

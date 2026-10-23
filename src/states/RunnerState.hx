@@ -94,7 +94,7 @@ class RunnerState extends State {
         // Shared shader program for all tile batches
         var vertShader   = app.resources.getText("shaders/textured.vert");
         var fragShader   = app.resources.getText("shaders/textured.frag");
-        var programInfo  = renderer.createProgramInfo("textured", vertShader, fragShader);
+        //var programInfo  = renderer.createProgramInfo("textured", vertShader, fragShader);
 
         // -- 3. Build lookup maps from the project file ------------------------
 
@@ -189,16 +189,16 @@ class RunnerState extends State {
         // Dark overlay sits between the tile batches and the light meshes so
         // that additive light polygons punch through the darkness.
         // Pre-register the "line" shader so DarkOverlay's constructor finds it cached.
-        var lineVertShader = app.resources.getText("shaders/line.vert");
-        var lineFragShader = app.resources.getText("shaders/line.frag");
-        renderer.createProgramInfo("line", lineVertShader, lineFragShader);
+        //var lineVertShader = app.resources.getText("shaders/line.vert");
+        //var lineFragShader = app.resources.getText("shaders/line.frag");
+        //renderer.createProgramInfo("line", lineVertShader, lineFragShader);
         _darkOverlay = new DarkOverlay(renderer, ambientDarkness);
         addEntity(new DisplayEntity(_darkOverlay, "dark_overlay"));
 
         // Pre-register the "light" shader so LightMesh's constructor finds it cached.
-        var lightVertShader = app.resources.getText("shaders/light.vert");
-        var lightFragShader = app.resources.getText("shaders/light.frag");
-        renderer.createProgramInfo("light", lightVertShader, lightFragShader);
+        //var lightVertShader = app.resources.getText("shaders/light.vert");
+        //var lightFragShader = app.resources.getText("shaders/light.frag");
+        //renderer.createProgramInfo("light", lightVertShader, lightFragShader);
 
         // Place a warm-white test light at the centre of the map.
         // Radius is half the shorter map dimension so it covers a meaningful area.

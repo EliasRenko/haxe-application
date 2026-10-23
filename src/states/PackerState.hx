@@ -78,11 +78,11 @@ class PackerState extends State {
         camera.ortho = true;
 
         var renderer = app.renderer;
-        renderer.createProgramInfo("ui", null,
-            app.resources.getText("shaders/ui.frag"));
-        renderer.createProgramInfo("textured",
-            app.resources.getText("shaders/textured.vert"),
-            app.resources.getText("shaders/textured.frag"));
+        // renderer.createProgramInfo("ui", null,
+        //     app.resources.getText("shaders/ui.frag"));
+        // renderer.createProgramInfo("textured",
+        //     app.resources.getText("shaders/textured.vert"),
+        //     app.resources.getText("shaders/textured.frag"));
 
         var spriteTexture = renderer.uploadTexture(
             app.resources.getTexture("textures/gui.tga"));

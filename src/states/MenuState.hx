@@ -14,6 +14,7 @@ import gui.TabPage;
 import gui.Window;
 import loaders.FontLoader;
 import ScanCode;
+import entity.DisplayEntity;
 
 /**
  * MenuState - Main menu screen
@@ -52,8 +53,8 @@ class MenuState extends State {
 
         var renderer = app.renderer;
 
-        renderer.createProgramInfo("ui", null,
-            app.resources.getText("shaders/ui.frag"));
+        // renderer.createProgramInfo("ui", null,
+        //     app.resources.getText("shaders/ui.frag"));
 
         var spriteTexture = renderer.uploadTexture(
             app.resources.getTexture("textures/gui.tga"));
@@ -77,6 +78,9 @@ class MenuState extends State {
         console.visible = false;
 
         trace("MenuState: initialized");
+
+        var image = new display.Image(app.renderer, spriteTexture);
+        addEntity(new DisplayEntity(image));
     }
 
     // -------------------------------------------------------------------------

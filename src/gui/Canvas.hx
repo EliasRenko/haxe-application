@@ -14,6 +14,7 @@ import math.Matrix;
 import Texture;
 import gui.ImageHook;
 import haxe.Json;
+import shaders.UiShader;
 
 /**
  * Canvas - Unified UI container for GUI elements
@@ -624,8 +625,12 @@ private class UIBatch extends ManagedTileBatch {
     private var __fontTexWidth:Int  = 1;
     private var __fontTexHeight:Int = 1;
 
+    var uiShader:UiShader = new UiShader();
+
     public function new(renderer:Renderer, spriteTexture:Texture, fontTexture:Texture) {
         super(renderer, spriteTexture);   // @:shader("ui") resolves ProgramInfo
+        __bufferId = renderer.createBuffers(uiShader.programInfoIndex);
+
         this.fontTexture = fontTexture;                // font atlas → texture unit 1
 
         __fontTexWidth  = fontTexture.width;
@@ -890,10 +895,12 @@ private class UIBatch extends ManagedTileBatch {
 
         var finalMatrix = Matrix.copy(__matrix);
         finalMatrix.append(renderer.matrix);
-        uniforms.set("uMatrix", finalMatrix.data);
+        //uniforms.set("uMatrix", finalMatrix.data);
+        uiShader.matrix.value = finalMatrix;
 
         // 1. Get the program info for the current shader program
-		var programInfo = renderer.getProgramInfo(getProgramInfoName());
+		//var programInfo = renderer.getProgramInfo(getProgramInfoName());
+        var programInfo = renderer.programInfosGen[uiShader.programInfoIndex];
 
 		// 2. Use the shader program (binds the program and VAO)
 		renderer.useProgram(programInfo);
@@ -905,7 +912,12 @@ private class UIBatch extends ManagedTileBatch {
 		renderer.setBlendFunction(blending.source, blending.destination);
 
 		// 5. Set the uniform values for the shader program
-		renderer.renderUniforms(programInfo, this);
+		//renderer.renderUniforms(programInfo, this);
+
+        var matrixU = programInfo.getUniformAt(uiShader.matrix.index);
+		if (matrixU != null) {
+			matrixU.setter(uiShader.matrix.value.data);
+		}
 
 		// 6. Set the textures for the shader program
 		renderer.bindTexture(texture.id, 0);
