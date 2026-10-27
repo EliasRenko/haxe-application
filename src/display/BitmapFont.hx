@@ -1,129 +1,116 @@
 package display;
 
-import ProgramInfo;
 import Texture;
 import display.IFontSource;
 import loaders.FontData;
-import display.ManagedTileBatch;
+import data.TileBatch;
 
 /**
- * BitmapFont - Manages a bitmap font atlas and shared rendering
- * 
- * Extends TileBatch to batch multiple Text instances using the same font.
- * Handles font atlas regions and character metrics.
+ * BitmapFont - Manages a bitmap font atlas and character metrics.
  *
- * Uses @:shader("mono") so the renderer auto-resolves the ProgramInfo.
- * The owning state must pre-register the mono shader before constructing
- * any BitmapFont instance.
+ * Uses TileBatch to manage atlas regions. Rendering is handled separately.
  */
-@:shader("text")
-class BitmapFont extends ManagedTileBatch implements IFontSource {
-    
+class BitmapFont implements IFontSource {
+
     public var fontData:FontData;
+    public var tileBatch(default, null):TileBatch;
+
     private var charCodeToRegion:Map<Int, Int> = new Map();
 
-    public function markDirty():Void { needsBufferUpdate = true; }  // Map character code to region ID
-    
     /**
-     * Create a new BitmapFont
-     * @param renderer Renderer instance
+     * Create a new BitmapFont.
      * @param texture Font texture atlas
      * @param fontData Font data loaded by FontLoader
-     *
-     * The "mono" ProgramInfo is resolved automatically via @:shader("mono").
-     * Pre-register it in the state with renderer.createProgramInfo("mono", ...).
      */
-    public function new(renderer:Renderer, texture:Texture, fontData:FontData) {
-        super(renderer, texture);
+    public function new(texture:Texture, fontData:FontData) {
         this.fontData = fontData;
-        
-        // Define regions for all font characters
+        this.tileBatch = new TileBatch(texture.width, texture.height);
+
         defineCharacterRegions();
     }
-    
+
     /**
-     * Define atlas regions for all characters in the font
+     * Define atlas regions for all characters in the font.
      */
     private function defineCharacterRegions():Void {
         var regionCount = 0;
-        
+
         for (charCode in fontData.chars.keys()) {
             var fontChar = fontData.chars.get(charCode);
-            
-            // Define region for this character
-            var regionId = defineRegion(
+
+            var regionId = tileBatch.defineRegion(
                 fontChar.x,
                 fontChar.y,
                 fontChar.width,
                 fontChar.height
             );
-            
-            // Map character code to region ID for fast lookup
+
             charCodeToRegion.set(charCode, regionId);
-            
             regionCount++;
         }
-        
+
         trace("BitmapFont: Defined " + regionCount + " character regions");
     }
-    
+
     /**
-     * Get the region ID for a character code
-     * @param charCode Character code
-     * @return Region ID, or -1 if not found
+     * Get the region ID for a character code.
+     * Returns -1 if the character is not defined.
      */
     public function getRegionForChar(charCode:Int):Int {
         var regionId = charCodeToRegion.get(charCode);
         return regionId != null ? regionId : -1;
     }
-    
+
     /**
-     * Get character data for a character code
-     * @param charCode Character code
-     * @return FontChar data, or null if not found
+     * Get character data for a character code.
      */
     public function getCharData(charCode:Int):loaders.FontData.FontChar {
         return fontData.chars.get(charCode);
     }
-    
+
     /**
-     * Calculate the width of a text string using this font
-     * @param text Text string
-     * @return Width in pixels
+     * Calculate the width of a text string using this font.
      */
     public function measureTextWidth(text:String):Float {
         var width:Float = 0;
         var currentLineWidth:Float = 0;
-        
+
         for (i in 0...text.length) {
             var charCode = text.charCodeAt(i);
-            
-            if (charCode == 10) { // '\n'
-                if (currentLineWidth > width) width = currentLineWidth;
+
+            if (charCode == 10) {
+                if (currentLineWidth > width) {
+                    width = currentLineWidth;
+                }
                 currentLineWidth = 0;
                 continue;
             }
-            
+
             var fontChar = fontData.chars.get(charCode);
             if (fontChar != null) {
                 currentLineWidth += fontChar.xadvance;
             }
         }
-        
-        if (currentLineWidth > width) width = currentLineWidth;
+
+        if (currentLineWidth > width) {
+            width = currentLineWidth;
+        }
+
         return width;
     }
-    
+
     /**
-     * Calculate the height of a text string using this font
-     * @param text Text string
-     * @return Height in pixels
+     * Calculate the height of a text string using this font.
      */
     public function measureTextHeight(text:String):Float {
         var lines = 1;
+
         for (i in 0...text.length) {
-            if (text.charCodeAt(i) == 10) lines++;
+            if (text.charCodeAt(i) == 10) {
+                lines++;
+            }
         }
+
         return lines * fontData.lineHeight;
     }
 }

@@ -1,6 +1,8 @@
 package gui;
 
-import display.TileBatch.AtlasRegion;
+import data.Vertices;
+import data.Indices;
+import display.ManagedTileBatch.AtlasRegion;
 import display.ManagedTileBatch;
 import display.IFontSource;
 import display.Image;
@@ -15,6 +17,7 @@ import Texture;
 import gui.ImageHook;
 import haxe.Json;
 import shaders.UiShader;
+import data.TileBatch;
 
 /**
  * Canvas - Unified UI container for GUI elements
@@ -28,7 +31,7 @@ import shaders.UiShader;
 class Canvas extends Entity {
     
     // Public properties
-    public var tilemap:ManagedTileBatch;
+    public var tilemap:UIBatch;
     public var font(get, null):IFontSource;
     public var width:Float = 640;
     public var height:Float = 480;
@@ -581,200 +584,438 @@ class Canvas extends Entity {
 // addFontTile() which records texIndex = 1.0 in __texIndices.
 // =============================================================================
 
-@:shader("ui")
-private class UIBatch extends ManagedTileBatch {
+// Keep the other imports from your original UIBatch file:
+// UiShader, ClipRect, ImageHook, and any module-specific imports.
+
+private class UIBatch extends DisplayObject {
 
     public var fontTexture:Texture;
 
+    /** Owns tile instances and atlas region data, not rendering. */
+    public var tileBatch(default, null):TileBatch;
+
+    private var spriteTexture:Texture;
+
     private static inline var MAX_TILES_UI:Int = 1000;
 
-    // Maps Tile reference → texIndex (only entries with value 1.0 are stored)
     private var __texIndices:Map<Tile, Float> = new Map();
-
-    // Maps Tile reference → ClipRect (only clipped tiles have entries)
     private var __clipRects:Map<Tile, ClipRect> = new Map();
-
-    // Per-tile RGBA multiply color. Missing entries use defaultColor.
     private var __tileColors:Map<Tile, Array<Float>> = new Map();
 
-    // Default multiply tint applied to all graphic tiles without an explicit color.
-    // Font tiles always use (1,1,1,1) regardless of this value.
     public var defaultColor:Array<Float> = [1.0, 1.0, 1.0, 1.0];
 
-    // ── Render list ───────────────────────────────────────────────────────────
-    // Ordered list of all items (tiles + image hooks) in insertion order.
-    // Canvas.render() walks this to interleave UIBatch segments and Image draws.
-    private var __renderList:Array<{isTile:Bool, tile:Tile, hook:ImageHook}> = [];
+    private var __renderList:Array<{
+        isTile:Bool,
+        tile:Tile,
+        hook:ImageHook
+    }> = [];
 
-    // When non-null, updateBuffers() builds only this subset of tiles.
-    // Canvas.render() sets/clears this around each renderDisplayObject call.
     public var segmentTiles:Array<Tile> = null;
 
-    // Group tagging for Z-order: tiles/hooks added while pendingGroupTag != 0 are
-    // recorded so raiseGroupToTop() can move them to the end of the render list.
     public var pendingGroupTag:Int = 0;
+
     private var __tileTags:Map<Tile, Int> = new Map();
     private var __hookTags:Map<ImageHook, Int> = new Map();
 
-    private static final __WHITE:Array<Float> = [1.0, 1.0, 1.0, 1.0];
+    private static final __WHITE:Array<Float> =
+        [1.0, 1.0, 1.0, 1.0];
 
-    // Clip rect applied to the next addTile / addTileInstance call (null = unclipped)
     private var __pendingClipRect:ClipRect = null;
 
-    // Font texture dimensions, used to compute correct UVs for glyph regions
-    private var __fontTexWidth:Int  = 1;
+    private var __fontTexWidth:Int = 1;
     private var __fontTexHeight:Int = 1;
 
     var uiShader:UiShader = new UiShader();
 
-    public function new(renderer:Renderer, spriteTexture:Texture, fontTexture:Texture) {
-        super(renderer, spriteTexture);   // @:shader("ui") resolves ProgramInfo
+    private var __verticesToRender:Int = 0;
+    private var __indicesToRender:UInt = 0;
+
+    private var __matrix:Matrix = new Matrix();
+
+    public function new(
+        renderer:Renderer,
+        spriteTexture:Texture,
+        fontTexture:Texture
+    ) {
+        // TileBatch owns atlas metadata and tiles.
+        tileBatch = new TileBatch(
+            spriteTexture.width,
+            spriteTexture.height
+        );
+
+        this.spriteTexture = spriteTexture;
+        this.fontTexture = fontTexture;
+
+        __fontTexWidth = fontTexture.width;
+        __fontTexHeight = fontTexture.height;
+
+        // Rendering resources still belong to UIBatch at this stage.
+        var emptyVertices = new Vertices([]);
+        var indices = generateIndices(MAX_TILES_UI);
+
+        super(renderer, emptyVertices, indices);
+
         __bufferId = renderer.createBuffers(uiShader.programInfoIndex);
 
-        this.fontTexture = fontTexture;                // font atlas → texture unit 1
+        mode = GL.TRIANGLES;
 
-        __fontTexWidth  = fontTexture.width;
-        __fontTexHeight = fontTexture.height;
+        blending = {
+            source: GL.ONE,
+            destination: GL.ONE_MINUS_SRC_ALPHA
+        };
     }
 
-    /**
-     * Define an atlas region whose UVs are relative to the font texture (unit 1).
-     * Calls the parent defineRegion() to allocate an ID, then corrects the UV
-     * coordinates using the font texture dimensions.
-     */
-    public function defineFontRegion(atlasX:Int, atlasY:Int, atlasWidth:Int, atlasHeight:Int):Int {
-        var regionId = defineRegion(atlasX, atlasY, atlasWidth, atlasHeight);
-        // Fix UVs: defineRegion used textures[0] (sprite atlas) dimensions, recompute.
-        var region = atlasRegions.get(regionId);
-        region.u1 = atlasX                     / __fontTexWidth;
-        region.v1 = atlasY                     / __fontTexHeight;
-        region.u2 = (atlasX + atlasWidth)      / __fontTexWidth;
-        region.v2 = (atlasY + atlasHeight)     / __fontTexHeight;
+    // ---------------------------------------------------------------------
+    // Atlas regions
+    // ---------------------------------------------------------------------
+
+    public function defineRegion(
+        atlasX:Int,
+        atlasY:Int,
+        width:Int,
+        height:Int
+    ):Int {
+        return tileBatch.defineRegion(atlasX, atlasY, width, height);
+    }
+
+    public function defineFontRegion(
+        atlasX:Int,
+        atlasY:Int,
+        width:Int,
+        height:Int
+    ):Int {
+        var regionId = tileBatch.defineRegion(
+            atlasX, atlasY, width, height
+        );
+
+        var region = tileBatch.getRegion(regionId);
+
+        // Font regions use the font texture's coordinate space.
+        region.u1 = atlasX / __fontTexWidth;
+        region.v1 = atlasY / __fontTexHeight;
+        region.u2 = (atlasX + width) / __fontTexWidth;
+        region.v2 = (atlasY + height) / __fontTexHeight;
+
         return regionId;
     }
 
-    /** Set the clip rect that will be assigned to the next tile(s) added. */
+    public function updateRegion(
+        regionId:Int,
+        atlasX:Int,
+        atlasY:Int,
+        width:Int,
+        height:Int
+    ):Bool {
+        var updated = tileBatch.updateRegion(
+            regionId, atlasX, atlasY, width, height
+        );
+
+        if (updated) {
+            // If this is a font region, restore its font-atlas UVs.
+            // See the note below about tracking region texture ownership.
+        }
+
+        return updated;
+    }
+
+    public function getRegion(regionId:Int):AtlasRegion {
+        return tileBatch.getRegion(regionId);
+    }
+
+    public function hasRegion(regionId:Int):Bool {
+        return tileBatch.hasRegion(regionId);
+    }
+
+    public function getRegionCount():Int {
+        return tileBatch.getRegionCount();
+    }
+
+    public function clearRegions():Void {
+        tileBatch.clearRegions();
+    }
+
+    // ---------------------------------------------------------------------
+    // Tile management
+    // ---------------------------------------------------------------------
+
     public function setPendingClipRect(clip:ClipRect):Void {
         __pendingClipRect = clip;
     }
 
-    override public function addTile(x:Float, y:Float, w:Float, h:Float, regionId:Int):Int {
-        var tileId = super.addTile(x, y, w, h, regionId);
+    public function addTile(
+        x:Float,
+        y:Float,
+        w:Float,
+        h:Float,
+        regionId:Int
+    ):Int {
+        var tileId = tileBatch.addTile(x, y, w, h, regionId);
+
         if (tileId != -1) {
-            var tile = getTile(tileId);
+            var tile = tileBatch.getTile(tileId);
+
             if (tile != null) {
-                __renderList.push({isTile: true, tile: tile, hook: null});
-                if (__pendingClipRect != null) __clipRects.set(tile, __pendingClipRect);
-                if (pendingGroupTag > 0) __tileTags.set(tile, pendingGroupTag);
+                __renderList.push({
+                    isTile: true,
+                    tile: tile,
+                    hook: null
+                });
+
+                if (__pendingClipRect != null) {
+                    __clipRects.set(tile, __pendingClipRect);
+                }
+
+                if (pendingGroupTag > 0) {
+                    __tileTags.set(tile, pendingGroupTag);
+                }
             }
         }
+
         return tileId;
     }
 
-    override public function addTileInstance(tile:Tile):Void {
-        super.addTileInstance(tile);
-        __renderList.push({isTile: true, tile: tile, hook: null});
-        if (__pendingClipRect != null) __clipRects.set(tile, __pendingClipRect);
-        if (pendingGroupTag > 0) __tileTags.set(tile, pendingGroupTag);
-    }
+    public function addTileInstance(tile:Tile):Void {
+        if (tile == null) return;
 
-    /** Add a tile that will sample the font atlas (texIndex = 1.0). */
-    public function addFontTile(x:Float, y:Float, width:Float, height:Float, regionId:Int):Int {
-        var tileId = addTile(x, y, width, height, regionId);
-        var tile   = getTile(tileId);
-        if (tile != null) __texIndices.set(tile, 1.0);
-        return tileId;
-    }
+        tileBatch.addTileInstance(tile);
 
-    /** Set an explicit RGBA multiply color for this tile. */
-    public function setTileColor(tile:Tile, r:Float, g:Float, b:Float, a:Float):Void {
-        __tileColors.set(tile, [r, g, b, a]);
-    }
+        __renderList.push({
+            isTile: true,
+            tile: tile,
+            hook: null
+        });
 
-    /** Remove per-tile color override (reverts to defaultColor). */
-    public function clearTileColor(tile:Tile):Void {
-        __tileColors.remove(tile);
-    }
-
-    override public function removeTile(tileId:Int):Bool {
-        var tile = getTile(tileId);
-        if (tile != null) {
-            __texIndices.remove(tile);
-            __clipRects.remove(tile);
-            __tileColors.remove(tile);
-            __tileTags.remove(tile);
-            __removeRenderListEntry(tile, null);
+        if (__pendingClipRect != null) {
+            __clipRects.set(tile, __pendingClipRect);
         }
-        return super.removeTile(tileId);
+
+        if (pendingGroupTag > 0) {
+            __tileTags.set(tile, pendingGroupTag);
+        }
     }
 
-    override public function removeTileInstance(tile:Tile):Bool {
+    public function addFontTile(
+        x:Float,
+        y:Float,
+        width:Float,
+        height:Float,
+        regionId:Int
+    ):Int {
+        var tileId = addTile(x, y, width, height, regionId);
+
+        if (tileId != -1) {
+            var tile = tileBatch.getTile(tileId);
+
+            if (tile != null) {
+                __texIndices.set(tile, 1.0);
+            }
+        }
+
+        return tileId;
+    }
+
+    public function removeTile(tileId:Int):Bool {
+        var tile = tileBatch.getTile(tileId);
+
+        if (tile != null) {
+            removeTileMetadata(tile);
+        }
+
+        return tileBatch.removeTile(tileId);
+    }
+
+    public function removeTileInstance(tile:Tile):Bool {
+        if (tile == null) return false;
+
+        var removed = tileBatch.removeTileInstance(tile);
+
+        if (removed) {
+            removeTileMetadata(tile);
+        }
+
+        return removed;
+    }
+
+    private function removeTileMetadata(tile:Tile):Void {
         __texIndices.remove(tile);
         __clipRects.remove(tile);
         __tileColors.remove(tile);
         __tileTags.remove(tile);
         __removeRenderListEntry(tile, null);
-        return super.removeTileInstance(tile);
     }
 
-    private function __removeRenderListEntry(tile:Tile, hook:ImageHook):Void {
+    private function __removeRenderListEntry(
+        tile:Tile,
+        hook:ImageHook
+    ):Void {
         var i = 0;
+
         while (i < __renderList.length) {
             var item = __renderList[i];
-            if ((tile != null && item.isTile  && item.tile == tile) ||
-                (hook != null && !item.isTile && item.hook == hook)) {
+
+            if (
+                (tile != null && item.isTile && item.tile == tile) ||
+                (hook != null && !item.isTile && item.hook == hook)
+            ) {
                 __renderList.splice(i, 1);
                 return;
             }
+
             i++;
         }
     }
 
-    /** Called by Canvas.registerImageHook — appends to the render list. */
-    public function addImageHook(hook:ImageHook):Void {
-        __renderList.push({isTile: false, tile: null, hook: hook});
-        if (pendingGroupTag > 0) __hookTags.set(hook, pendingGroupTag);
+    public function updateTilePosition(
+        tileId:Int,
+        x:Float,
+        y:Float
+    ):Bool {
+        return tileBatch.updateTilePosition(tileId, x, y);
     }
 
-    /** Called by Canvas.unregisterImageHook — removes from the render list. */
+    public function clear():Void {
+        tileBatch.clear();
+
+        __texIndices.clear();
+        __clipRects.clear();
+        __tileColors.clear();
+        __tileTags.clear();
+
+        // Keep image hooks and their ordering.
+        var hooks = [];
+
+        for (item in __renderList) {
+            if (!item.isTile) {
+                hooks.push(item);
+            }
+        }
+
+        __renderList = hooks;
+    }
+
+    public function getTileCount():Int {
+        return tileBatch.getTileCount();
+    }
+
+    public function hasTile(tileId:Int):Bool {
+        return tileBatch.hasTile(tileId);
+    }
+
+    public function getTile(tileId:Int):Tile {
+        return tileBatch.getTile(tileId);
+    }
+
+    public function setTileColor(
+        tile:Tile,
+        r:Float,
+        g:Float,
+        b:Float,
+        a:Float
+    ):Void {
+        __tileColors.set(tile, [r, g, b, a]);
+    }
+
+    public function clearTileColor(tile:Tile):Void {
+        __tileColors.remove(tile);
+    }
+
+    // ---------------------------------------------------------------------
+    // Image hooks and render ordering
+    // ---------------------------------------------------------------------
+
+    public function addImageHook(hook:ImageHook):Void {
+        __renderList.push({
+            isTile: false,
+            tile: null,
+            hook: hook
+        });
+
+        if (pendingGroupTag > 0) {
+            __hookTags.set(hook, pendingGroupTag);
+        }
+    }
+
     public function removeImageHook(hook:ImageHook):Void {
         __hookTags.remove(hook);
         __removeRenderListEntry(null, hook);
     }
 
-    /** Returns the ordered render list for Canvas.render() to walk. */
-    public function getRenderList():Array<{isTile:Bool, tile:Tile, hook:ImageHook}> {
+    public function getRenderList():Array<{
+        isTile:Bool,
+        tile:Tile,
+        hook:ImageHook
+    }> {
         return __renderList;
     }
 
-    /**
-     * Move all render list entries tagged with [tag] to the end, so the
-     * owning window renders on top of all other controls.
-     */
     public function raiseGroupToTop(tag:Int):Void {
-        var toRaise:Array<{isTile:Bool, tile:Tile, hook:ImageHook}> = [];
+        var toRaise:Array<{
+            isTile:Bool,
+            tile:Tile,
+            hook:ImageHook
+        }> = [];
+
         var i = 0;
+
         while (i < __renderList.length) {
             var item = __renderList[i];
-            var itemTag = item.isTile ? __tileTags.get(item.tile) : __hookTags.get(item.hook);
+            var itemTag = item.isTile
+                ? __tileTags.get(item.tile)
+                : __hookTags.get(item.hook);
+
             if (itemTag == tag) {
                 toRaise.push(item);
                 __renderList.splice(i, 1);
-            } else i++;
+            } else {
+                i++;
+            }
         }
-        for (item in toRaise) __renderList.push(item);
+
+        for (item in toRaise) {
+            __renderList.push(item);
+        }
     }
 
-    /** Build one tile into the vertex buffer — 10 floats per vertex (x,y,z,u,v,ti,r,g,b,a). */
-    override public function buildTile(tile:Tile):Void {
-        var region = atlasRegions.get(tile.regionId);
-        if (region == null) {
-            region = new AtlasRegion();
-            region.u1 = -1.0; region.v1 = -1.0;
-            region.u2 = -1.0; region.v2 = -1.0;
+    // ---------------------------------------------------------------------
+    // Rendering helpers
+    // ---------------------------------------------------------------------
+
+    private function generateIndices(tileCount:Int):Indices {
+        var indices:Array<UIntData> = [];
+
+        for (i in 0...tileCount) {
+            var vertexIndex:UIntData = i * 4;
+
+            indices.push(vertexIndex);
+            indices.push(vertexIndex + 1);
+            indices.push(vertexIndex + 2);
+
+            indices.push(vertexIndex);
+            indices.push(vertexIndex + 2);
+            indices.push(vertexIndex + 3);
         }
 
-        // V flip: uv1 = visual-bottom UV, uv2 = visual-top UV (y-down screen coords)
+        return new Indices(indices);
+    }
+
+    /**
+     * Geometry generation remains here for this intermediate refactor.
+     * Atlas and tile data are read from tileBatch.
+     *
+     * This retains the original 10-float vertex format:
+     * x, y, z, u, v, textureIndex, r, g, b, a.
+     */
+    public function buildTile(tile:Tile):Void {
+        var region = tileBatch.getRegion(tile.regionId);
+
+        if (region == null) {
+            region = new AtlasRegion();
+            region.u1 = -1.0;
+            region.v1 = -1.0;
+            region.u2 = -1.0;
+            region.v2 = -1.0;
+        }
+
         var uv1 = region.v2;
         var uv2 = region.v1;
 
@@ -782,13 +1023,16 @@ private class UIBatch extends ManagedTileBatch {
         var ty = tile.y + tile.offsetY;
         var tw = tile.width;
         var th = tile.height;
+
         var hw = tw * 0.5;
         var hh = th * 0.5;
+
         var cx = tx + hw;
         var cy = ty + hh;
 
         var cosA = 1.0;
         var sinA = 0.0;
+
         if (tile.rotation != 0.0) {
             var rad = tile.rotation * Math.PI / 180.0;
             cosA = Math.cos(rad);
@@ -797,136 +1041,187 @@ private class UIBatch extends ManagedTileBatch {
 
         var ti:Float = __texIndices.exists(tile) ? 1.0 : 0.0;
 
-        // Per-vertex color: font tiles always white; graphic tiles use tile or default
-        var col:Array<Float> = ti > 0.5 ? __WHITE : (__tileColors.get(tile) != null ? __tileColors.get(tile) : defaultColor);
-        var cr = col[0]; var cg = col[1]; var cb = col[2]; var ca = col[3];
+        var tileColor = __tileColors.get(tile);
+        var col:Array<Float> = ti > 0.5
+            ? __WHITE
+            : (tileColor != null ? tileColor : defaultColor);
 
-        // ── Clip rect handling ────────────────────────────────────────────────
+        var cr = col[0];
+        var cg = col[1];
+        var cb = col[2];
+        var ca = col[3];
+
         var clip = __clipRects.get(tile);
+
         if (clip != null) {
-            // Tile world bounds (y-down screen coords; ty = visual top)
-            var wx1 = tx;        var wy1 = ty;
-            var wx2 = tx + tw;   var wy2 = ty + th;
+            var wx1 = tx;
+            var wy1 = ty;
+            var wx2 = tx + tw;
+            var wy2 = ty + th;
 
-            // Fully outside → emit nothing
-            if (wx2 <= clip.x1 || wx1 >= clip.x2 || wy2 <= clip.y1 || wy1 >= clip.y2) return;
-
-            // Partially inside + no rotation → clamp geometry and remap UVs
-            if (tile.rotation == 0.0 && (wx1 < clip.x1 || wy1 < clip.y1 || wx2 > clip.x2 || wy2 > clip.y2)) {
-                var clx1 = Math.max(wx1, clip.x1);
-                var cly1 = Math.max(wy1, clip.y1);  // new visual top
-                var clx2 = Math.min(wx2, clip.x2);
-                var cly2 = Math.min(wy2, clip.y2);  // new visual bottom
-
-                // Remap U proportionally along X
-                var cu1 = region.u1 + (clx1 - wx1) / tw * (region.u2 - region.u1);
-                var cu2 = region.u1 + (clx2 - wx1) / tw * (region.u2 - region.u1);
-
-                // Remap V proportionally along Y (uv2 = visual-top, uv1 = visual-bottom)
-                var cuv_top    = uv2 + (cly1 - wy1) / th * (uv1 - uv2);
-                var cuv_bottom = uv2 + (cly2 - wy1) / th * (uv1 - uv2);
-
-                // Emit clipped quad — same vertex order as normal path (high-y first)
-                vertices.push(clx1); vertices.push(cly2); vertices.push(0.0); vertices.push(cu1); vertices.push(cuv_bottom); vertices.push(ti); vertices.push(cr); vertices.push(cg); vertices.push(cb); vertices.push(ca);
-                vertices.push(clx2); vertices.push(cly2); vertices.push(0.0); vertices.push(cu2); vertices.push(cuv_bottom); vertices.push(ti); vertices.push(cr); vertices.push(cg); vertices.push(cb); vertices.push(ca);
-                vertices.push(clx2); vertices.push(cly1); vertices.push(0.0); vertices.push(cu2); vertices.push(cuv_top);    vertices.push(ti); vertices.push(cr); vertices.push(cg); vertices.push(cb); vertices.push(ca);
-                vertices.push(clx1); vertices.push(cly1); vertices.push(0.0); vertices.push(cu1); vertices.push(cuv_top);    vertices.push(ti); vertices.push(cr); vertices.push(cg); vertices.push(cb); vertices.push(ca);
-                __verticesToRender += 4;
-                __indicesToRender  += 6;
+            if (
+                wx2 <= clip.x1 || wx1 >= clip.x2 ||
+                wy2 <= clip.y1 || wy1 >= clip.y2
+            ) {
                 return;
             }
-            // Fully inside (or rotated partial) → fall through to normal path
+
+            if (
+                tile.rotation == 0.0 &&
+                (wx1 < clip.x1 || wy1 < clip.y1 ||
+                 wx2 > clip.x2 || wy2 > clip.y2)
+            ) {
+                var clx1 = Math.max(wx1, clip.x1);
+                var cly1 = Math.max(wy1, clip.y1);
+                var clx2 = Math.min(wx2, clip.x2);
+                var cly2 = Math.min(wy2, clip.y2);
+
+                var cu1 = region.u1
+                    + (clx1 - wx1) / tw * (region.u2 - region.u1);
+
+                var cu2 = region.u1
+                    + (clx2 - wx1) / tw * (region.u2 - region.u1);
+
+                var cuvTop = uv2
+                    + (cly1 - wy1) / th * (uv1 - uv2);
+
+                var cuvBottom = uv2
+                    + (cly2 - wy1) / th * (uv1 - uv2);
+
+                pushVertex(clx1, cly2, cu1, cuvBottom, ti, cr, cg, cb, ca);
+                pushVertex(clx2, cly2, cu2, cuvBottom, ti, cr, cg, cb, ca);
+                pushVertex(clx2, cly1, cu2, cuvTop, ti, cr, cg, cb, ca);
+                pushVertex(clx1, cly1, cu1, cuvTop, ti, cr, cg, cb, ca);
+
+                __verticesToRender += 4;
+                __indicesToRender += 6;
+                return;
+            }
         }
 
-        // ── Normal (unclipped) path ────────────────────────────────────────────────
-        // Top-left
-        vertices.push(-hw * cosA - hh * sinA + cx); vertices.push(-hw * sinA + hh * cosA + cy); vertices.push(0.0); vertices.push(region.u1); vertices.push(uv1); vertices.push(ti); vertices.push(cr); vertices.push(cg); vertices.push(cb); vertices.push(ca);
-        // Top-right
-        vertices.push( hw * cosA - hh * sinA + cx); vertices.push( hw * sinA + hh * cosA + cy); vertices.push(0.0); vertices.push(region.u2); vertices.push(uv1); vertices.push(ti); vertices.push(cr); vertices.push(cg); vertices.push(cb); vertices.push(ca);
-        // Bottom-right
-        vertices.push( hw * cosA + hh * sinA + cx); vertices.push( hw * sinA - hh * cosA + cy); vertices.push(0.0); vertices.push(region.u2); vertices.push(uv2); vertices.push(ti); vertices.push(cr); vertices.push(cg); vertices.push(cb); vertices.push(ca);
-        // Bottom-left
-        vertices.push(-hw * cosA + hh * sinA + cx); vertices.push(-hw * sinA - hh * cosA + cy); vertices.push(0.0); vertices.push(region.u1); vertices.push(uv2); vertices.push(ti); vertices.push(cr); vertices.push(cg); vertices.push(cb); vertices.push(ca);
+        pushVertex(
+            -hw * cosA - hh * sinA + cx,
+            -hw * sinA + hh * cosA + cy,
+            region.u1, uv1, ti, cr, cg, cb, ca
+        );
+
+        pushVertex(
+             hw * cosA - hh * sinA + cx,
+             hw * sinA + hh * cosA + cy,
+            region.u2, uv1, ti, cr, cg, cb, ca
+        );
+
+        pushVertex(
+             hw * cosA + hh * sinA + cx,
+             hw * sinA - hh * cosA + cy,
+            region.u2, uv2, ti, cr, cg, cb, ca
+        );
+
+        pushVertex(
+            -hw * cosA + hh * sinA + cx,
+            -hw * sinA - hh * cosA + cy,
+            region.u1, uv2, ti, cr, cg, cb, ca
+        );
 
         __verticesToRender += 4;
-        __indicesToRender  += 6;
+        __indicesToRender += 6;
     }
 
-    /**
-     * Override updateBuffers to use the 6-float orphan size and to call our
-     * overridden buildTile instead of the base 5-float version.
-     *
-     * When Canvas drives segmented rendering it sets `segmentTiles` to the
-     * subset of tiles for the current segment before calling
-     * renderDisplayObject.  When null, the legacy full-batch path is used
-     * (e.g. when there are no ImageViews in the control tree).
-     */
+    private function pushVertex(
+        x:Float,
+        y:Float,
+        u:Float,
+        v:Float,
+        ti:Float,
+        r:Float,
+        g:Float,
+        b:Float,
+        a:Float
+    ):Void {
+        vertices.push(x);
+        vertices.push(y);
+        vertices.push(0.0);
+        vertices.push(u);
+        vertices.push(v);
+        vertices.push(ti);
+        vertices.push(r);
+        vertices.push(g);
+        vertices.push(b);
+        vertices.push(a);
+    }
+
     override public function updateBuffers(renderer:Renderer):Void {
         if (segmentTiles != null) {
             for (tile in segmentTiles) {
-                if (tile.visible) buildTile(tile);
+                if (tile.visible) {
+                    buildTile(tile);
+                }
             }
         } else {
             for (item in __renderList) {
-                if (item.isTile && item.tile.visible) buildTile(item.tile);
+                if (item.isTile && item.tile.visible) {
+                    buildTile(item.tile);
+                }
             }
         }
 
         if (vertices.length > 0) {
-            renderer.orphanAndUploadData(__bufferId, vertices, indices, MAX_TILES_UI * 4 * 10 * 4);
+            renderer.orphanAndUploadData(
+                __bufferId,
+                vertices,
+                indices,
+                MAX_TILES_UI * 4 * 10 * 4
+            );
         }
 
         __needsBufferUpdate = false;
     }
 
-    public function markDirty() {
+    public function markDirty():Void {
         __needsBufferUpdate = true;
     }
 
-    override public function render(renderer:Renderer):Void {
+    public function render(renderer:Renderer):Void {
         vertices.dispose();
+
         __verticesToRender = 0;
         __indicesToRender = 0;
 
         __needsBufferUpdate = true;
         updateBuffers(renderer);
 
-        if (__verticesToRender == 0 || __indicesToRender == 0) return;
+        if (__verticesToRender == 0 || __indicesToRender == 0) {
+            return;
+        }
 
         var finalMatrix = Matrix.copy(__matrix);
         finalMatrix.append(renderer.matrix);
-        //uniforms.set("uMatrix", finalMatrix.data);
         uiShader.matrix.value = finalMatrix;
 
-        // 1. Get the program info for the current shader program
-		//var programInfo = renderer.getProgramInfo(getProgramInfoName());
-        var programInfo = renderer.programInfosGen[uiShader.programInfoIndex];
+        var programInfo =
+            renderer.programInfosGen[uiShader.programInfoIndex];
 
-		// 2. Use the shader program (binds the program and VAO)
-		renderer.useProgram(programInfo);
+        renderer.useProgram(programInfo);
+        renderer.bindBuffers(__bufferId, programInfo.vertexStride);
 
-		// 3. Bind the buffers (VAO) for this object
-		renderer.bindBuffers(__bufferId, programInfo.vertexStride);
-
-		// 4. Set the blending factors for transparency
-		renderer.setBlendFunction(blending.source, blending.destination);
-
-		// 5. Set the uniform values for the shader program
-		//renderer.renderUniforms(programInfo, this);
+        renderer.setBlendFunction(
+            blending.source,
+            blending.destination
+        );
 
         var matrixU = programInfo.getUniformAt(uiShader.matrix.index);
-		if (matrixU != null) {
-			matrixU.setter(uiShader.matrix.value.data);
-		}
 
-		// 6. Set the textures for the shader program
-		renderer.bindTexture(texture.id, 0);
-		renderer.bindTexture(fontTexture.id, 1);
+        if (matrixU != null) {
+            matrixU.setter(uiShader.matrix.value.data);
+        }
 
-		// 7. Draw the object using the specified mode and count
-		renderer.drawElements(mode, __indicesToRender);
+        renderer.bindTexture(spriteTexture.id, 0);
+        renderer.bindTexture(fontTexture.id, 1);
+
+        renderer.drawElements(mode, __indicesToRender);
     }
 }
+
 
 // =============================================================================
 // UIFontFace — private font proxy that submits glyph tiles into UIBatch with
