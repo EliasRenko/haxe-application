@@ -625,8 +625,6 @@ private class UIBatch extends DisplayObject {
     private var __fontTexWidth:Int = 1;
     private var __fontTexHeight:Int = 1;
 
-    var uiShader:UiShader = new UiShader();
-
     private var __verticesToRender:Int = 0;
     private var __indicesToRender:UInt = 0;
 
@@ -654,8 +652,9 @@ private class UIBatch extends DisplayObject {
         var indices = generateIndices(MAX_TILES_UI);
 
         super(renderer, emptyVertices, indices);
+        shader = new UiShader();
 
-        __bufferId = renderer.createBuffers(uiShader.programInfoIndex);
+        __bufferId = renderer.createBuffers(shader.programInfoIndex);
 
         mode = GL.TRIANGLES;
 
@@ -1196,10 +1195,10 @@ private class UIBatch extends DisplayObject {
 
         var finalMatrix = Matrix.copy(__matrix);
         finalMatrix.append(renderer.matrix);
-        uiShader.matrix.value = finalMatrix;
+        shader.setUniform("uMatrix", finalMatrix.data);
 
         var programInfo =
-            renderer.programInfosGen[uiShader.programInfoIndex];
+            renderer.programInfosGen[shader.programInfoIndex];
 
         renderer.useProgram(programInfo);
         renderer.bindBuffers(__bufferId, programInfo.vertexStride);
@@ -1209,11 +1208,7 @@ private class UIBatch extends DisplayObject {
             blending.destination
         );
 
-        var matrixU = programInfo.getUniformAt(uiShader.matrix.index);
-
-        if (matrixU != null) {
-            matrixU.setter(uiShader.matrix.value.data);
-        }
+        renderer.renderUniforms(programInfo, this);
 
         renderer.bindTexture(spriteTexture.id, 0);
         renderer.bindTexture(fontTexture.id, 1);
