@@ -1,5 +1,6 @@
 package gui;
 
+import data.Shader;
 import data.Vertices;
 import data.Indices;
 import display.ManagedTileBatch.AtlasRegion;
@@ -652,9 +653,8 @@ private class UIBatch extends DisplayObject {
         var indices = generateIndices(MAX_TILES_UI);
 
         super(renderer, emptyVertices, indices);
-        shader = new UiShader();
 
-        __bufferId = renderer.createBuffers(shader.programInfoIndex);
+        //__bufferId = renderer.createBuffers(shader.programInfoIndex);
 
         mode = GL.TRIANGLES;
 
@@ -663,6 +663,10 @@ private class UIBatch extends DisplayObject {
             destination: GL.ONE_MINUS_SRC_ALPHA
         };
     }
+
+    override private function assignShader():Shader {
+		return new UiShader();
+	}
 
     // ---------------------------------------------------------------------
     // Atlas regions
