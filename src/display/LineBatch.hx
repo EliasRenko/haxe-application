@@ -2,8 +2,9 @@ package display;
 
 import DisplayObject;
 import Renderer;
-import math.Matrix;
 import data.Vertices;
+import data.Shader;
+import shaders.LineShader;
 
 /**
  * LineBatch - Batches colored lines for efficient OpenGL debug drawing
@@ -17,6 +18,9 @@ class LineBatch extends DisplayObject {
     private var lineCount:Int = 0;
     private var persistent:Bool = false;
 
+    private var __verticesToRender:Int = 0;
+    public var needsBufferUpdate:Bool = true;
+
     /**
      * Create a new LineBatch
      * @param programInfo Shader program for rendering
@@ -28,7 +32,6 @@ class LineBatch extends DisplayObject {
         super(renderer, emptyVertices, null); // No indices, GL_LINES
         mode = 0x0001; // GL.LINES
         this.persistent = persistent;
-        this.vertices = [];
         lineCount = 0;
         __verticesToRender = 0;
     }
@@ -49,25 +52,29 @@ class LineBatch extends DisplayObject {
 
     /** Called by renderer to update GPU buffers */
     override public function updateBuffers(renderer:Renderer):Void {
-        if (!active) return;
         renderer.uploadData(__bufferId, vertices, indices);
         needsBufferUpdate = false;
     }
 
-    override public function render(cameraMatrix:Matrix, cameraDirty:Bool):Void {
-        if (!active) return;
-        if (cameraDirty) {
-			var finalMatrix = Matrix.copy(matrix);
-			finalMatrix.append(cameraMatrix);
-			uniforms.set("uMatrix", finalMatrix.data);
-		}
+    private function assignShader():Shader {
+        return new LineShader();
     }
 
-    override public function postRender():Void {
-        // Reset for next frame if not persistent
+    public function render(renderer:Renderer):Void {
+        if (!visible || __verticesToRender == 0) return;
+        if (needsBufferUpdate) updateBuffers(renderer);
+
+        shader.setUniform("uMatrix", renderer.matrix.data);
+        var programInfo = renderer.programInfosGen[shader.programInfoIndex];
+        renderer.useProgram(programInfo);
+        renderer.bindBuffers(__bufferId, programInfo.vertexStride);
+        renderer.setBlendFunction(blending.source, blending.destination);
+        renderer.renderUniforms(programInfo, this);
+        renderer.drawArrays(mode, 0, __verticesToRender);
+
         if (!persistent) {
             lineCount = 0;
-            vertices = [];
+            replaceVertices(new Vertices([]));
             __verticesToRender = 0;
             needsBufferUpdate = true;
         }
@@ -76,7 +83,7 @@ class LineBatch extends DisplayObject {
     /** Clear all batched lines (manual) */
     public function clear() {
         lineCount = 0;
-        vertices = [];
+        replaceVertices(new Vertices([]));
         __verticesToRender = 0;
         needsBufferUpdate = true;
     }

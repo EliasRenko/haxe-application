@@ -39,7 +39,7 @@ class Canvas extends Entity {
     public var deltaTime:Float = 0;
     public var markedControl(get, set):Control; 
     public var focusedControl(get, set):Control;
-    //public var dialog(get, set):Dialog;
+    public var dialog(get, set):Dialog;
     
     // UI element texture regions
     public var sets:Map<String, Int> = new Map();
@@ -57,6 +57,7 @@ class Canvas extends Entity {
     public var renderer(get, null):Renderer;
 
     private var __container:RootContainer;
+    private var __dialog:Dialog;
     private var __fontFaces:Array<UIFontFace> = [];
     private var __uiBatch:UIBatch;
     private var __markedControl:Control;
@@ -99,7 +100,6 @@ class Canvas extends Entity {
         @:privateAccess __container.____canvas = this;
         __markedControl = __container;
         __focusedControl = __container;
-        //dialog = new Dialog('Intro', 256, 256);
 
 
         trace("Canvas: Created with size " + width + "x" + height);
@@ -161,6 +161,27 @@ class Canvas extends Entity {
             return result;
         }
         return __container.addControl(control);
+    }
+
+    private function get_dialog():Dialog {
+        return __dialog;
+    }
+
+    private function set_dialog(value:Dialog):Dialog {
+        if (__dialog == value) {
+            if (value != null) value.visible = true;
+            return value;
+        }
+
+        if (__dialog != null) __dialog.visible = false;
+        __dialog = value;
+
+        if (value != null) {
+            value.visible = false;
+            if (!value.active) addControl(value);
+            value.visible = true;
+        }
+        return value;
     }
 
     public function removeControl(control:Control):Void {
@@ -664,7 +685,7 @@ private class UIBatch extends DisplayObject {
         };
     }
 
-    override private function assignShader():Shader {
+    private function assignShader():Shader {
 		return new UiShader();
 	}
 

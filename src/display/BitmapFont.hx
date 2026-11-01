@@ -1,30 +1,35 @@
 package display;
 
 import Texture;
-import display.IFontSource;
+import Renderer;
 import loaders.FontData;
-import data.TileBatch;
+import display.IFontSource;
+import display.ManagedTileBatch;
+import display.Tile;
+import display.ManagedTileBatch.AtlasRegion;
 
 /**
  * BitmapFont - Manages a bitmap font atlas and character metrics.
  *
- * Uses TileBatch to manage atlas regions. Rendering is handled separately.
+ * Uses a ManagedTileBatch to manage atlas regions, glyph tiles, and rendering.
  */
 class BitmapFont implements IFontSource {
 
     public var fontData:FontData;
-    public var tileBatch(default, null):TileBatch;
+    public var tileBatch(default, null):ManagedTileBatch;
+    public var atlasRegions(get, never):Map<Int, AtlasRegion>;
 
     private var charCodeToRegion:Map<Int, Int> = new Map();
 
     /**
      * Create a new BitmapFont.
+     * @param renderer Renderer used to create the glyph batch
      * @param texture Font texture atlas
      * @param fontData Font data loaded by FontLoader
      */
-    public function new(texture:Texture, fontData:FontData) {
+    public function new(renderer:Renderer, texture:Texture, fontData:FontData) {
         this.fontData = fontData;
-        this.tileBatch = new TileBatch(texture.width, texture.height);
+        this.tileBatch = new ManagedTileBatch(renderer, texture);
 
         defineCharacterRegions();
     }
@@ -66,6 +71,38 @@ class BitmapFont implements IFontSource {
      */
     public function getCharData(charCode:Int):loaders.FontData.FontChar {
         return fontData.chars.get(charCode);
+    }
+
+    public function markDirty():Void {
+        tileBatch.markDirty();
+    }
+
+    public function addTile(x:Float, y:Float, width:Float, height:Float, regionId:Int):Int {
+        return tileBatch.addTile(x, y, width, height, regionId);
+    }
+
+    public function removeTile(tileId:Int):Bool {
+        return tileBatch.removeTile(tileId);
+    }
+
+    public function getTile(tileId:Int):Tile {
+        return tileBatch.getTile(tileId);
+    }
+
+    public function clear():Void {
+        tileBatch.clear();
+    }
+
+    public function getTileCount():Int {
+        return tileBatch.getTileCount();
+    }
+
+    public function render(renderer:Renderer):Void {
+        tileBatch.render(renderer);
+    }
+
+    private function get_atlasRegions():Map<Int, AtlasRegion> {
+        return tileBatch.atlasRegions;
     }
 
     /**
