@@ -1222,8 +1222,7 @@ private class UIBatch extends DisplayObject {
         finalMatrix.append(renderer.matrix);
         shader.setUniform("uMatrix", finalMatrix.data);
 
-        var programInfo =
-            renderer.programInfosGen[shader.programInfoIndex];
+        var programInfo = renderer.getProgramInfo(shader.programInfoIndex);
 
         renderer.useProgram(programInfo);
         renderer.bindBuffers(__bufferId, programInfo.vertexStride);
