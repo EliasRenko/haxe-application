@@ -2,6 +2,7 @@ package;
 
 import Log.LogCategory;
 import ds.SlotArray;
+import KeyCode.Keycode;
 
 class App extends Runtime {
     
@@ -208,7 +209,6 @@ class App extends Runtime {
         if (__input != null) {
             __input.update();
         }
-        
         // Update current state if one is active
         if (currentState != null && currentState.active) {
             currentState.update(deltaTime);
