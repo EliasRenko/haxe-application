@@ -678,6 +678,8 @@ private class UIBatch extends DisplayObject {
         //__bufferId = renderer.createBuffers(shader.programInfoIndex);
 
         mode = GL.TRIANGLES;
+        shader.setUniform("uTexture", spriteTexture);
+        shader.setUniform("uFont", fontTexture);
 
         blending = {
             source: GL.ONE,
@@ -1233,9 +1235,6 @@ private class UIBatch extends DisplayObject {
         );
 
         renderer.renderUniforms(programInfo, this);
-
-        renderer.bindTexture(spriteTexture.id, 0);
-        renderer.bindTexture(fontTexture.id, 1);
 
         renderer.drawElements(mode, __indicesToRender);
     }
