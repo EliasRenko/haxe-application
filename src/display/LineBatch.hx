@@ -65,11 +65,11 @@ class LineBatch extends DisplayObject {
         if (needsBufferUpdate) updateBuffers(renderer);
 
         shader.setUniform("uMatrix", renderer.matrix.data);
-        var programInfo = renderer.programInfosGen[shader.programInfoIndex];
+        var programInfo = renderer.getProgramInfo(shader.programInfoIndex);
         renderer.useProgram(programInfo);
         renderer.bindBuffers(__bufferId, programInfo.vertexStride);
         renderer.setBlendFunction(blending.source, blending.destination);
-        renderer.renderUniforms(programInfo, this);
+        renderer.renderUniforms(programInfo, shader);
         renderer.drawArrays(mode, 0, __verticesToRender);
 
         if (!persistent) {

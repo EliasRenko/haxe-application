@@ -1234,7 +1234,7 @@ private class UIBatch extends DisplayObject {
             blending.destination
         );
 
-        renderer.renderUniforms(programInfo, this);
+        renderer.renderUniforms(programInfo, shader);
 
         renderer.drawElements(mode, __indicesToRender);
     }
