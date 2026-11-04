@@ -24,7 +24,7 @@ enum abstract LogCategory(Int) from Int to Int {
     var RESOURCES = 20;   // SDL_LOG_CATEGORY_CUSTOM + 1
 }
 
-private class __Log {
+class Log {
     
     // Publics
     public var active:Bool = true;
@@ -39,7 +39,6 @@ private class __Log {
         __app = app;
 
         if (debugMode) {
-            // Enable DEBUG priority for all categories
             enablePriorityForCategory(LogCategory.APP, LogPriority.DEBUG);
             enablePriorityForCategory(LogCategory.ASSERT, LogPriority.DEBUG);
             enablePriorityForCategory(LogCategory.SYSTEM, LogPriority.DEBUG);
@@ -136,5 +135,3 @@ private class __Log {
 		return __logHistory;
 	}
 }
-
-typedef Log = __Log;

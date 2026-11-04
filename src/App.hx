@@ -228,7 +228,7 @@ class App extends Runtime {
             __renderer.bindFramebuffer(__renderer.postProcessDisplayObject.framebufferId);
             __renderer.clearScreen();
             //GL.glClear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
-            __renderer.initializeRenderState();
+            //__renderer.initializeRenderState();
             
             if (currentState != null && currentState.active) {
                 currentState.preRender(__renderer);
@@ -244,7 +244,7 @@ class App extends Runtime {
         } else {
             // Direct rendering (no post-processing)
             __renderer.clearScreen();
-            __renderer.initializeRenderState();
+            //__renderer.initializeRenderState();
             
             if (currentState != null && currentState.active) {
                 currentState.preRender(__renderer);
@@ -392,19 +392,19 @@ class App extends Runtime {
 	}
 
     // Getters and setters
-    public function get_input():Input {
+    private function get_input():Input {
         return __input;
     }
 
-    public function get_resources():Resources {
+    private function get_resources():Resources {
         return __resources;
     }
 
-    public function get_log():Log {
+    private function get_log():Log {
         return __log;
     }
 
-    public function get_renderer():Renderer {
+    private function get_renderer():Renderer {
         return __renderer;
     }
 }
