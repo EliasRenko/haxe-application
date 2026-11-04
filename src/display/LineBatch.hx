@@ -74,7 +74,8 @@ class LineBatch extends DisplayObject {
 
         if (!persistent) {
             lineCount = 0;
-            replaceVertices(new Vertices([]));
+            //replaceVertices(new Vertices([]));
+            __vertices = new Vertices([]);
             __verticesToRender = 0;
             needsBufferUpdate = true;
         }
@@ -83,7 +84,8 @@ class LineBatch extends DisplayObject {
     /** Clear all batched lines (manual) */
     public function clear() {
         lineCount = 0;
-        replaceVertices(new Vertices([]));
+        //replaceVertices(new Vertices([]));
+        __vertices = new Vertices([]);
         __verticesToRender = 0;
         needsBufferUpdate = true;
     }
