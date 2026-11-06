@@ -2,7 +2,6 @@ package;
 
 import Log.LogCategory;
 import ds.SlotArray;
-import KeyCode.Keycode;
 
 class App extends Runtime {
     
@@ -11,7 +10,7 @@ class App extends Runtime {
     public var resources(get, null):Resources;
     public var log(get, null):Log;
     public var renderer(get, null):Renderer;
-    public var states:SlotArray<State> = new SlotArray<State>();
+    public var states(get, null):SlotArray<State>;
     public var currentState:State = null;
 
     // Privates
@@ -20,6 +19,7 @@ class App extends Runtime {
     private var __renderer:Renderer;
     private var __log:Log;
 
+    private var __states:SlotArray<State> = new SlotArray<State>();
     private var __lastTime:Float = 0.0;
     private var __currentTime:Float = 0.0;
 
@@ -46,7 +46,6 @@ class App extends Runtime {
         // Initialize post-processing framebuffer
         __renderer.initializePostProcessing();
 
-        
         __renderer.usePostProcessing = true; // Enable post-processing by default
     }
 
@@ -137,7 +136,6 @@ class App extends Runtime {
      */
     public function switchToState(state:State):Bool {
         if (state == null) {
-            trace("Warning: Attempted to switch to null state");
             return false;
         }
         
@@ -406,5 +404,9 @@ class App extends Runtime {
 
     private function get_renderer():Renderer {
         return __renderer;
+    }
+
+    private function get_states():SlotArray<State> {
+        return __states;
     }
 }

@@ -4,7 +4,6 @@ import Log.LogCategory;
 import Entity;
 import Camera;
 import App;
-import math.Matrix;
 
 /**
  * Base class for game states (worlds/scenes/levels)
@@ -24,13 +23,14 @@ class State {
     private var __app:App;
     private static var __nextId:Int = 0;
     private var __cameraDirty:Bool = true;
-    private var cameraDebug:Bool = true;
+    private var __cameraDebug:Bool = true;
     
     public function new(name:String, app:App) {
         this.name = name;
+        this.__app = app;
+
         this.id = __nextId++;
         this.entities = [];
-        this.__app = app;
         
         // Initialize camera for this state
         this.camera = new Camera();
@@ -76,8 +76,8 @@ class State {
 
         // Debug control: Toggle camera debug mode with 'C' key
         // if (app.input.keyboard.released(Scancode.C)) {
-        //     cameraDebug = !cameraDebug;
-        //     app.log.debug(LogCategory.SYSTEM, "Camera debug mode: " + (cameraDebug ? "ON" : "OFF"));
+        //     __cameraDebug = !__cameraDebug;
+        //     app.log.debug(LogCategory.SYSTEM, "Camera debug mode: " + (__cameraDebug ? "ON" : "OFF"));
         // }
 
         // if (app.input.keyboard.released(Scancode.R)) {
@@ -86,7 +86,7 @@ class State {
         // }
 
         // // If camera debug mode is active, allow camera movement with arrow keys
-        // if (cameraDebug) {
+        // if (__cameraDebug) {
             
         //     var moveSpeed:Float = 1000.0 * deltaTime;
         //     if (app.input.keyboard.check(Scancode.A)) {
@@ -149,14 +149,13 @@ class State {
      */
     public function addEntity(entity:Entity):Entity {
         if (entity == null) {
-            trace("Warning: Attempted to add null entity to state '" + name + "'");
             return null;
         }
         
         entities.push(entity);
         entity.state = this;
         
-        trace("Added entity '" + entity.id + "' to state '" + name + "'");
+        app.log.debug(LogCategory.STATE, "Added entity '" + entity.id + "' to state '" + name + "'");
         return entity;
     }
     
@@ -169,7 +168,7 @@ class State {
         var removed = entities.remove(entity);
         if (removed) {
             entity.state = null;
-            trace("Removed entity '" + entity.id + "' from state '" + name + "'");
+            app.log.debug(LogCategory.STATE, "Removed entity '" + entity.id + "' from state '" + name + "'");
         }
         return removed;
     }
@@ -231,38 +230,25 @@ class State {
     }
 
     public function release():Void {
-        // Called once when the state is destroyed.
-        trace("State '" + name + "' released");
+        clearEntities(app.renderer);
     }
 
     public function onActivate():Void {
-        // Called each time this state becomes the current state.
         active = true;
-        trace("State '" + name + "' activated");
+        app.log.debug(LogCategory.STATE, "State '" + name + "' activated");
     }
 
     public function onDeactivate():Void {
-        // Called each time another state becomes the current state.
         active = false;
-        trace("State '" + name + "' deactivated");
+        app.log.debug(LogCategory.STATE, "State '" + name + "' deactivated");
     }
 
     public function onWindowResized(width:Int, height:Int):Void {
         
     }
     
-    /**
-     * Get current entity count
-     */
     public function getEntityCount():Int {
         return entities.length;
-    }
-    
-    /**
-     * Get debug info about this state
-     */
-    public function getDebugInfo():String {
-        return 'State "${name}" (ID: ${id}) - Entities: ${entities.length}, Active: ${active}';
     }
     
     /**

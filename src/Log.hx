@@ -22,6 +22,8 @@ enum abstract LogCategory(Int) from Int to Int {
     var TEST = 8;         // SDL_LOG_CATEGORY_TEST
     var RUNTIME = 19;     // SDL_LOG_CATEGORY_CUSTOM
     var RESOURCES = 20;   // SDL_LOG_CATEGORY_CUSTOM + 1
+
+    var STATE = 21;       // SDL_LOG_CATEGORY_CUSTOM + 2
 }
 
 class Log {
