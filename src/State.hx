@@ -21,9 +21,10 @@ class State {
     
     // Privates
     private var __app:App;
-    private static var __nextId:Int = 0;
     private var __cameraDirty:Bool = true;
     private var __cameraDebug:Bool = true;
+
+    private static var __nextId:Int = 0;
     
     public function new(name:String, app:App) {
         this.name = name;
@@ -36,8 +37,7 @@ class State {
         this.camera = new Camera();
         resetCamera();
         
-        trace("Created state '" + name + "' with ID " + id + " and camera");
-        app.log.debug(LogCategory.SYSTEM, "Created state '" + name + "' with ID " + id + " and camera");
+        app.log.debug(LogCategory.STATE, "Created state '" + name + "' with ID " + id + " and camera");
     }
     
     /**
@@ -243,9 +243,7 @@ class State {
         app.log.debug(LogCategory.STATE, "State '" + name + "' deactivated");
     }
 
-    public function onWindowResized(width:Int, height:Int):Void {
-        
-    }
+    public function onWindowResized(width:Int, height:Int):Void {}
     
     public function getEntityCount():Int {
         return entities.length;

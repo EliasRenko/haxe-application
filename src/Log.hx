@@ -27,7 +27,7 @@ enum abstract LogCategory(Int) from Int to Int {
 }
 
 class Log {
-    
+
     // Publics
     public var active:Bool = true;
     public var logHistory(get, null):String;
@@ -51,6 +51,7 @@ class Log {
             enablePriorityForCategory(LogCategory.TEST, LogPriority.DEBUG);
             enablePriorityForCategory(LogCategory.RUNTIME, LogPriority.DEBUG);
             enablePriorityForCategory(LogCategory.RESOURCES, LogPriority.DEBUG);
+            enablePriorityForCategory(LogCategory.STATE, LogPriority.DEBUG);
         }
     }
 
