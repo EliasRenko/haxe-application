@@ -18,7 +18,6 @@ class App extends Runtime {
     private var __resources:Resources;
     private var __renderer:Renderer;
     private var __log:Log;
-
     private var __states:SlotArray<State> = new SlotArray<State>();
     private var __lastTime:Float = 0.0;
     private var __currentTime:Float = 0.0;
