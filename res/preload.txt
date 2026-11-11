@@ -31,23 +31,3 @@ textures/nokia.tga
 textures/sky.tga
 textures/cat.tga
 textures/font_atlas.tga
-
-# Shaders
-shaders/basic.vert
-shaders/basic.frag
-shaders/simple.vert
-shaders/simple.frag
-shaders/textured.vert
-shaders/textured.frag
-shaders/mono.vert
-shaders/mono.frag
-shaders/text.frag
-shaders/ui.frag
-shaders/line.vert
-shaders/line.frag
-shaders/grid.vert
-shaders/grid.frag
-shaders/light.vert
-shaders/light.frag
-shaders/postprocess.vert
-shaders/postprocess.frag

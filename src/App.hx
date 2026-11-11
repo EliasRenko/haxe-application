@@ -2,6 +2,7 @@ package;
 
 import Log.LogCategory;
 import ds.SlotArray;
+import display.PostProcessing;
 
 class App extends Runtime {
     
@@ -10,6 +11,7 @@ class App extends Runtime {
     public var resources(get, null):Resources;
     public var log(get, null):Log;
     public var renderer(get, null):Renderer;
+    public var postProcessing(get, null):PostProcessing;
     public var states(get, null):SlotArray<State>;
     public var currentState:State = null;
 
@@ -17,6 +19,7 @@ class App extends Runtime {
     private var __input:Input;
     private var __resources:Resources;
     private var __renderer:Renderer;
+    private var __postProcessing:PostProcessing;
     private var __log:Log;
     private var __states:SlotArray<State> = new SlotArray<State>();
     private var __lastTime:Float = 0.0;
@@ -42,10 +45,7 @@ class App extends Runtime {
         // Initialize timing
         __lastTime = getTicks() / 1000.0;
         
-        // Initialize post-processing framebuffer
-        __renderer.initializePostProcessing();
-
-        __renderer.usePostProcessing = true; // Enable post-processing by default
+        __postProcessing = new PostProcessing(__renderer);
     }
 
     override function release():Void {
@@ -61,6 +61,8 @@ class App extends Runtime {
 
         __input.release();
         __resources.release();
+        __postProcessing.release();
+        __postProcessing = null;
         __renderer.release();
         __log.release();
 
@@ -219,10 +221,10 @@ class App extends Runtime {
 
     override function render():Void {
         __renderer.render();
-        if (__renderer.usePostProcessing) {
+        if (__postProcessing.enabled) {
+            var activePass = __postProcessing.activePass;
             // STEP 1: Render scene to framebuffer
-            //__renderer.bindFramebuffer(); // BIND FRAMEBUFFER DISPLAY OBJECT
-            __renderer.bindFramebuffer(__renderer.postProcessDisplayObject.framebufferId);
+            __renderer.bindFramebuffer(activePass.framebufferId);
             __renderer.clearScreen();
             //GL.glClear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
             //__renderer.initializeRenderState();
@@ -233,11 +235,11 @@ class App extends Runtime {
             }
             
             // STEP 2: Render framebuffer to screen with post-processing
-            __renderer.unbindFramebuffer(__renderer.postProcessDisplayObject.framebufferId); // UNBIND FRAMEBUFFER DISPLAY OBJECT
+            __renderer.unbindFramebuffer(activePass.framebufferId); // UNBIND FRAMEBUFFER DISPLAY OBJECT
             __renderer.clearScreen(); // Clear the screen framebuffer
             
             //__renderer.renderToScreen(); // RENDER FRAMEBUFFER DISPLAY OBJECT TO SCREEN WITH POST-PROCESSING
-            __renderer.postProcessDisplayObject.render(__renderer);
+            activePass.render(__renderer);
         } else {
             // Direct rendering (no post-processing)
             __renderer.clearScreen();
@@ -323,6 +325,7 @@ class App extends Runtime {
     // Window event handlers
     override function onWindowResized(windowId:Int, width:Int, height:Int):Void {
         renderer.resize(width, height);
+        postProcessing.resize(width, height);
 
         for (state in states) {
             state.onWindowResized(width, height);
@@ -403,6 +406,10 @@ class App extends Runtime {
 
     private function get_renderer():Renderer {
         return __renderer;
+    }
+
+    private function get_postProcessing():PostProcessing {
+        return __postProcessing;
     }
 
     private function get_states():SlotArray<State> {

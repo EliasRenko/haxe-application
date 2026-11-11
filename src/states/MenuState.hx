@@ -207,11 +207,11 @@ class MenuState extends State {
         super.update(deltaTime);
 
         if (app.input.keyboard.released(ScanCode.EQUALS) || app.input.keyboard.released(ScanCode.KP_PLUS)) {
-            app.renderer.cyclePostProcess(1);
+            app.postProcessing.cycle(1);
         }
         
         if (app.input.keyboard.released(ScanCode.MINUS) || app.input.keyboard.released(ScanCode.KP_MINUS)) {
-            app.renderer.cyclePostProcess(-1);
+            app.postProcessing.cycle(-1);
         }
 
         var prevIndex = selectedIndex;

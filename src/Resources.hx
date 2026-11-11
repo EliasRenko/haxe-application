@@ -10,7 +10,7 @@ typedef Resource = {
     var size:Int;
 }
 
-private class __Resources {
+class Resources {
     // Publics
     public var count(get, null):Int;
     public var preDefinedPath(get, set):String;
@@ -166,5 +166,3 @@ private class __Resources {
         return __preDefinedPath;
     }
 }
-
-typedef Resources = __Resources;
