@@ -243,7 +243,7 @@ class MenuState extends State {
     //  Helpers
     // -------------------------------------------------------------------------
 
-    private function _resolutionFromLabel(label:String):Null<{x:Float, y:Float}> {
+    private function _resolutionFromLabel(label:String):Null<{x:Int, y:Int}> {
         return switch (label) {
             case "1920 x 1080": {x: 1920, y: 1080};
             case "1280 x 720":  {x: 1280, y: 720};

@@ -1,6 +1,5 @@
 package;
 
-import Log.LogCategory;
 import input.Keyboard;
 import input.Mouse;
 

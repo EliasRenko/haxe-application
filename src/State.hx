@@ -21,7 +21,6 @@ class State {
     
     // Privates
     private var __app:App;
-    private var __cameraDirty:Bool = true;
     private var __cameraDebug:Bool = true;
 
     private static var __nextId:Int = 0;
@@ -123,11 +122,10 @@ class State {
     public function preRender(renderer:Renderer):Void {
         if (!active) return;
 
-        var size = app.window.size;
+        var size = app.window.size; // Change on resize, not every frame
         camera.viewWidth = size.x;
         camera.viewHeight = size.y;
-        __cameraDirty = camera.getProjectionMatrix(); // TODO: Kinda weird, must improve
-        renderer.matrix = camera.getMatrix(); // TODO: Make better and more elegant 
+        renderer.matrix = camera.getProjectionMatrix();
     }
 
     /**

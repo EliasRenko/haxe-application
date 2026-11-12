@@ -5,7 +5,6 @@ import ds.SlotArray;
 import display.PostProcessing;
 
 class App extends Runtime {
-    
     // Publics
     public var input(get, null):Input;
     public var resources(get, null):Resources;
@@ -69,9 +68,6 @@ class App extends Runtime {
         super.release();
     }
 
-    /**
-     * Add a state to the states array
-     */
     public function addState(state:State):Int {
         if (state == null) {
             __log.warn(LogCategory.APP,"Warning: Attempted to add null state");
@@ -90,9 +86,6 @@ class App extends Runtime {
         return id;
     }
     
-    /**
-     * Remove a state from the states array
-     */
     public function removeState(id:Int):Bool {
         var state = states.get(id);
         if (state == null) return false;
@@ -119,9 +112,6 @@ class App extends Runtime {
         return true;
     }
     
-    /**
-     * Remove state by name
-     */
     public function removeStateByName(name:String):Bool {
         for (state in states) {
             if (state.name == name) {
@@ -132,9 +122,6 @@ class App extends Runtime {
         return false;
     }
     
-    /**
-     * Switch to a specific state
-     */
     public function switchToState(state:State):Bool {
         if (state == null) {
             return false;
@@ -168,9 +155,6 @@ class App extends Runtime {
         return true;
     }
     
-    /**
-     * Switch to state by name
-     */
     public function switchToStateByName(name:String):Bool {
         for (state in states) {
             if (state.name == name) {
@@ -181,9 +165,6 @@ class App extends Runtime {
         return false;
     }
     
-    /**
-     * Get state by name
-     */
     public function getState(name:String):State {
         for (state in states) {
             if (state.name == name) {
@@ -283,9 +264,13 @@ class App extends Runtime {
     }
     #end
 
+    override function onTextEditing(text:String, start:Int, length:Int, windowId:Int) {
+        @:privateAccess __input.keyboard.onTextEditing(text, start, length);
+    }
+
     // Mouse event handlers
     override function onMouseButtonDown(x:Float, y:Float, button:Int, windowId:Int):Void {
-        // SDL3 uses 1-based button indices (1=left, 2=middle, 3=right).
+        // SDL3 uses 1-based button indices (1 = left, 2 = middle, 3 = right).
         // Normalize to 0-based to match the DOM MouseEvent convention used on web.
         #if !js
         button -= 1;
@@ -324,12 +309,14 @@ class App extends Runtime {
 
     // Window event handlers
     override function onWindowResized(windowId:Int, width:Int, height:Int):Void {
-        renderer.resize(width, height);
-        postProcessing.resize(width, height);
-
         for (state in states) {
             state.onWindowResized(width, height);
         }
+    }
+
+    override function onWindowPixelSizeChanged(windowId:Int, pixelWidth:Int, pixelHeight:Int):Void {
+        renderer.resize(pixelWidth, pixelHeight);
+        postProcessing.resize(pixelWidth, pixelHeight);
     }
 
     // DLL API methods - expose frame control for external callers
