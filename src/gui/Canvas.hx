@@ -3,10 +3,7 @@ package gui;
 import data.Shader;
 import data.Vertices;
 import data.Indices;
-import display.ManagedTileBatch.AtlasRegion;
-import display.ManagedTileBatch;
 import display.IFontSource;
-import display.Image;
 import display.Tile;
 import Entity;
 import State;
@@ -30,8 +27,7 @@ import data.TileBatch;
  * exactly matches the control tree, eliminating the text-over-graphics issue.
  */
 class Canvas extends Entity {
-    
-    // Public properties
+    // Publics
     public var tilemap:UIBatch;
     public var font(get, null):IFontSource;
     public var width:Float = 640;

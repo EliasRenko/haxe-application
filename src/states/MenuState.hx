@@ -14,7 +14,6 @@ import gui.TabPage;
 import gui.Window;
 import loaders.FontLoader;
 import ScanCode;
-import entity.DisplayEntity;
 
 /**
  * MenuState - Main menu screen
@@ -52,23 +51,16 @@ class MenuState extends State {
         camera.ortho = true;
 
         var renderer = app.renderer;
+        var spriteTexture = renderer.uploadTexture(app.resources.getTexture("textures/gui.tga"));
 
-        // renderer.createProgramInfo("ui", null,
-        //     app.resources.getText("shaders/ui.frag"));
-
-        var spriteTexture = renderer.uploadTexture(
-            app.resources.getTexture("textures/gui.tga"));
-
-        var fontTexture = renderer.uploadTexture(
-            app.resources.getTexture("textures/font_atlas.tga"));
-        var fontData = FontLoader.load(
-            app.resources.getText("fonts/gohu14.json"));
+        var fontTexture = renderer.uploadTexture(app.resources.getTexture("textures/font_atlas.tga"));
+        var fontData = FontLoader.load(app.resources.getText("fonts/gohu14.json"));
 
         var ws = app.window.size;
         canvas = new Canvas(this, ws.x, ws.y);
         canvas.initializeGraphics(renderer, spriteTexture, fontTexture, fontData);
         canvas.addFontFace(FontLoader.load(app.resources.getText("fonts/nokia.json")));
-        canvas.setTint(0.588, 0.690, 0.518);  // HL1 olive-green tint
+        canvas.setTint(0.588, 0.690, 0.518);  // Olive-green tint
         canvas.importSets(app.resources.getText("textures/gui.json"));
         addEntity(canvas);
 
@@ -76,11 +68,6 @@ class MenuState extends State {
 
         console = new DebugConsole(app, canvas);
         console.visible = false;
-
-        trace("MenuState: initialized");
-
-        var image = new display.Image(app.renderer, spriteTexture);
-        addEntity(new DisplayEntity(image));
     }
 
     // -------------------------------------------------------------------------
@@ -296,7 +283,7 @@ class MenuState extends State {
             case 3:
                 app.switchToStateByName("GUITest");
             case 4:
-                app.switchToStateByName("FontBaker");
+                app.switchToStateByName("FontEditor");
             case 5:
                 app.switchToStateByName("Packer");
             case 6:

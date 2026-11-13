@@ -3,7 +3,6 @@ package gui;
 import display.Text;
 import display.Tile;
 import gui.NineSlice;
-import gui.Strip;
 import gui.ControlEventType;
 
 /**

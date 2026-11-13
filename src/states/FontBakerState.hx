@@ -2,7 +2,6 @@ package states;
 
 import gui.Button;
 import gui.Canvas;
-import gui.Control;
 import gui.ControlEventType;
 import gui.Dropdown;
 import gui.ImageView;
@@ -12,10 +11,11 @@ import gui.TextField;
 import gui.Toolstripmenu;
 import gui.Window;
 import loaders.FontLoader;
-import ScanCode;
+import math.Matrix;
 import utils.BakedFontData;
 import utils.FontBaker;
 import utils.NativeDialog;
+import ScanCode;
 
 /**
  * FontBakerState - Tool for baking one or more TTF fonts into a shared atlas.
@@ -69,25 +69,13 @@ class FontBakerState extends State {
         camera.ortho = true;
 
         var renderer = app.renderer;
-        // renderer.createProgramInfo("ui", null,
-        //     app.resources.getText("shaders/ui.frag"));
-        // renderer.createProgramInfo("textured",
-        //     app.resources.getText("shaders/textured.vert"),
-        //     app.resources.getText("shaders/textured.frag"));
-
-        var spriteTexture = renderer.uploadTexture(
-            app.resources.getTexture("textures/gui.tga"));
-
-        // Shared font atlas — all 3 faces live in this one texture
-        var fontTexture = renderer.uploadTexture(
-            app.resources.getTexture("textures/font_atlas.tga"));
-        var fontData = FontLoader.load(
-            app.resources.getText("fonts/gohu14.json"));
-
+        var spriteTexture = renderer.uploadTexture(app.resources.getTexture("textures/gui.tga"));
+        var fontTexture = renderer.uploadTexture(app.resources.getTexture("textures/font_atlas.tga"));
+        var fontData = FontLoader.load(app.resources.getText("fonts/gohu14.json"));
         var ws = app.window.size;
+
         _canvas = new Canvas(this, ws.x, ws.y);
         _canvas.initializeGraphics(renderer, spriteTexture, fontTexture, fontData);
-        // Register the other two faces — they share the same fontTexture atlas
         _canvas.addFontFace(FontLoader.load(app.resources.getText("fonts/gohu11.json")));
         _canvas.addFontFace(FontLoader.load(app.resources.getText("fonts/nokia.json")));
         _canvas.setTint(0.588, 0.690, 0.518);
@@ -103,6 +91,25 @@ class FontBakerState extends State {
             app.switchToStateByName("Menu");
     }
 
+    override public function render(renderer:Renderer):Void {
+        if (!active) return;
+
+        for (entity in entities) {
+            if (entity != null && entity != _canvas && entity.active && entity.visible)
+                entity.render(renderer);
+        }
+
+        if (_canvas != null) {
+            var size = app.window.size;
+            renderer.matrix = Matrix.createOrthoMatrix(0, size.x, size.y, 0, -1, 1);
+            renderer.setDepthTest(false);
+            renderer.setDepthWrite(false);
+            _canvas.render(renderer);
+            renderer.setDepthWrite(true);
+            renderer.setDepthTest(true);
+        }
+    }
+
     override public function onWindowResized(width:Int, height:Int):Void {
         super.onWindowResized(width, height);
         if (_canvas != null) _canvas.resize(width, height);
@@ -116,13 +123,14 @@ class FontBakerState extends State {
         // ── Menu bar ──────────────────────────────────────────────────────────
         var menu = new Toolstripmenu();
         menu.addItem("File", ["Open TTF", "Export", "Back"], _onFileMenu);
-        menu.addItem("Bake", ["Bake All"],                   _onBakeMenu);
+        menu.addItem("Bake", ["Bake All"], _onBakeMenu);
         _canvas.addControl(menu);
+        menu.width = _canvas.width;
+        @:privateAccess menu.__strip.width = _canvas.width;
 
         // ── Left panel — font list + editor ──────────────────────────────────
         var panelH:Float = ws.y - MENU_H - MARGIN * 2;
-        var panel = new Window("Fonts", OPTIONS_W, panelH,
-                               MARGIN, MENU_H + MARGIN);
+        var panel = new Window("Fonts", OPTIONS_W, panelH, MARGIN, MENU_H + MARGIN);
         _canvas.addControl(panel);
 
         // Scrollable list of added fonts
