@@ -1,4 +1,4 @@
-package;
+package gui;
 
 import gui.Canvas;
 import gui.TextBox;

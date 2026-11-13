@@ -1,6 +1,6 @@
 package states;
 
-import DebugConsole;
+import gui.DebugConsole;
 import gui.Button;
 import gui.Canvas;
 import gui.Checkbox;

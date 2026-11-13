@@ -96,7 +96,6 @@ class Resources {
         return new Promise<TextureData>((resolve, reject) -> {
             try {
                 var bytes = __parent.loadBytes(fullPath);
-                // Parse TGA
                 var textureData = TGALoader.loadFromBytes(bytes, fullPath);
                 if (cache) {
                     __resources.set(path, {type: 'texture', data: textureData, size: bytes.length});
@@ -106,6 +105,28 @@ class Resources {
                 reject("Failed to load texture: " + e);
             }
         });
+    }
+
+    public function remove(name:String, relative:Bool = true):Bool {
+        var fullPath = relative ? __preDefinedPath + "/" + name : name;
+        if (__resources.exists(fullPath)) {
+            var resource = __resources.get(fullPath);
+            if (resource != null) {
+                // Dispose texture data if it's a texture
+                if (resource.type == 'texture') {
+                    var textureData:TextureData = cast(resource.data, TextureData);
+                    if (textureData != null) {
+                        textureData.dispose();
+                    }
+                }
+
+                __resources.remove(fullPath);
+                
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function clear():Void {
@@ -132,27 +153,7 @@ class Resources {
         __preDefinedPath = null;
     }
 
-    public function remove(name:String, relative:Bool = true):Bool {
-        var fullPath = relative ? __preDefinedPath + "/" + name : name;
-        if (__resources.exists(fullPath)) {
-            var resource = __resources.get(fullPath);
-            if (resource != null) {
-                // Dispose texture data if it's a texture
-                if (resource.type == 'texture') {
-                    var textureData:TextureData = cast(resource.data, TextureData);
-                    if (textureData != null) {
-                        textureData.dispose();
-                    }
-                }
-
-                __resources.remove(fullPath);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // Getters/Setters
+    // Getters and setters
     public function get_count():Int {
         return Lambda.count(__resources);
     }

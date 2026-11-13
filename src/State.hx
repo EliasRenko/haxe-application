@@ -10,9 +10,11 @@ import App;
  * States manage collections of entities and handle state-specific logic
  */
 class State {
-    
-    // State properties
-    public var active:Bool = false;
+    // Statics
+    private static var NEXT_ID:Int = 0;
+
+    // Publics
+    public var active(get, null):Bool = false;
     public var app(get, null):App;
     public var camera:Camera;
     public var entities:Array<Entity> = [];
@@ -20,16 +22,15 @@ class State {
     public var id:Int;
     
     // Privates
+    private var __active:Bool = false;
     private var __app:App;
     private var __cameraDebug:Bool = true;
-
-    private static var __nextId:Int = 0;
     
     public function new(name:String, app:App) {
         this.name = name;
         this.__app = app;
 
-        this.id = __nextId++;
+        this.id = NEXT_ID++;
         this.entities = [];
         
         // Initialize camera for this state
@@ -57,7 +58,7 @@ class State {
      * Override in subclasses for state-specific behavior
      */
     public function update(deltaTime:Float):Void {
-        if (!active) return;
+        if (!__active) return;
         
         // Update all active entities in this state
         for (entity in entities) {
@@ -120,9 +121,9 @@ class State {
     }
     
     public function preRender(renderer:Renderer):Void {
-        if (!active) return;
+        if (!__active) return;
 
-        var size = app.window.size; // Change on resize, not every frame
+        var size = app.window.pixelSize; // Change on resize, not every frame
         camera.viewWidth = size.x;
         camera.viewHeight = size.y;
         renderer.matrix = camera.getProjectionMatrix();
@@ -133,7 +134,7 @@ class State {
      * Override in subclasses for custom rendering order/effects
      */
     public function render(renderer:Renderer):Void {
-        if (!active) return;
+        if (!__active) return;
         
         for (entity in entities) {
             if (entity != null && entity.active && entity.visible) {
@@ -232,12 +233,12 @@ class State {
     }
 
     public function onActivate():Void {
-        active = true;
+        __active = true;
         app.log.debug(LogCategory.STATE, "State '" + name + "' activated");
     }
 
     public function onDeactivate():Void {
-        active = false;
+        __active = false;
         app.log.debug(LogCategory.STATE, "State '" + name + "' deactivated");
     }
 
@@ -247,10 +248,12 @@ class State {
         return entities.length;
     }
     
-    /**
-     * Get app reference
-     */
+    // Getters and setters
     private function get_app():App {
         return __app;
+    }
+
+    private function get_active():Bool {
+        return __active;
     }
 }

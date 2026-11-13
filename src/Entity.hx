@@ -1,23 +1,20 @@
 package;
 
 import State;
-import math.Matrix;
 import utils.Rect;
 
 class Entity {
-    
-    // Entity properties
+    // Statics
+    private static var NEXT_ID:Int = 0;
+
+    // Publics
     public var active:Bool = true;
     public var id:String;
     public var state:State = null; // Reference to parent state
-    public var hitbox:Rect; // Collision hitbox
     public var visible:Bool = true;
     
-    // Private entity counter for auto-generating IDs
-    private static var __nextId:Int = 0;
-    
     public function new(id:String = null) {
-        this.id = id != null ? id : "entity_" + (__nextId++);
+        this.id = id != null ? id : "entity_" + (NEXT_ID++);
     }
     
     /**
@@ -37,7 +34,6 @@ class Entity {
     
     /**
      * Called every frame to render this entity
-     * Now accepts the view-projection matrix from the State's camera
      */
     public function render(renderer:Renderer):Void {
         if (!active || !visible) {
