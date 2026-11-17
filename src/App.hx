@@ -6,6 +6,7 @@ import display.PostProcessing;
 
 class App extends Runtime {
     // Publics
+    public var audio(get, null):Audio;
     public var input(get, null):Input;
     public var resources(get, null):Resources;
     public var log(get, null):Log;
@@ -15,6 +16,7 @@ class App extends Runtime {
     public var currentState:State = null;
 
     // Privates
+    private var __audio:Audio;
     private var __input:Input;
     private var __resources:Resources;
     private var __renderer:Renderer;
@@ -59,13 +61,23 @@ class App extends Runtime {
         saveBytes("output.txt", __log.logHistory);
 
         __input.release();
+        __input = null;
         __resources.release();
+        __resources = null;
         __postProcessing.release();
         __postProcessing = null;
         __renderer.release();
+        __renderer = null;
         __log.release();
+        __log = null;
+        __audio.release();
+        __audio = null;
 
         super.release();
+    }
+
+    private function get_audio():Audio {
+        return __audio;
     }
 
     public function addState(state:State):Int {
