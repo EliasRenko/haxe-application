@@ -18,6 +18,7 @@ class State {
     public var app(get, null):App;
     public var camera:Camera;
     public var entities:Array<Entity> = [];
+    public var physics(default, null):Physics;
     public var name:String;
     public var id:Int;
     
@@ -32,6 +33,7 @@ class State {
 
         this.id = NEXT_ID++;
         this.entities = [];
+        this.physics = new Physics(this);
         
         // Initialize camera for this state
         this.camera = new Camera();
@@ -73,6 +75,8 @@ class State {
                 entity.lateUpdate(deltaTime);
             }
         }
+
+        physics.update();
 
         // Debug control: Toggle camera debug mode with 'C' key
         // if (app.input.keyboard.released(Scancode.C)) {
@@ -166,6 +170,7 @@ class State {
         
         var removed = entities.remove(entity);
         if (removed) {
+            physics.removeEntity(entity);
             entity.state = null;
             app.log.debug(LogCategory.STATE, "Removed entity '" + entity.id + "' from state '" + name + "'");
         }
@@ -214,6 +219,7 @@ class State {
      */
     public function clearEntities(renderer:Renderer):Void {
         trace("Clearing " + entities.length + " entities from state '" + name + "'");
+        physics.clear();
         for (entity in entities) {
             if (entity != null) {
                 entity.state = null;

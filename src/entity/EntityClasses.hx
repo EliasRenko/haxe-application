@@ -1,5 +1,7 @@
 package entity;
 
+import macros.EntityMacro;
+
 /**
  * Central manifest of all self-registering map entity classes.
  *
