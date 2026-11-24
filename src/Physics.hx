@@ -1,6 +1,6 @@
-import differ.shapes.Circle;
-import differ.shapes.Polygon;
-import differ.shapes.Shape;
+import physics.shapes.Circle;
+import physics.shapes.Polygon;
+import physics.shapes.Shape;
 
 /**
  * Uniform-grid broad phase for entity collision shapes.

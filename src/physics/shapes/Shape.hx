@@ -1,9 +1,9 @@
-package differ.shapes;
+package physics.shapes;
 
-import differ.math.*;
+import math.*;
 import math.Vec2;
-import differ.shapes.*;
-import differ.data.*;
+import physics.shapes.*;
+import physics.data.*;
 
 /** A base collision shape */
 class Shape {

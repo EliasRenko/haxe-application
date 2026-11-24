@@ -1,4 +1,4 @@
-package differ.math;
+package math;
 
 @:publicFields
 class Util {

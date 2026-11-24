@@ -1,5 +1,5 @@
-import differ.shapes.Circle;
-import differ.shapes.Polygon;
+import physics.shapes.Circle;
+import physics.shapes.Polygon;
 
 class PhysicsSmoke {
     static function check(ok:Bool, message:String):Void {

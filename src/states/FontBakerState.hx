@@ -14,7 +14,6 @@ import loaders.FontLoader;
 import math.Matrix;
 import utils.BakedFontData;
 import utils.FontBaker;
-import utils.NativeDialog;
 import ScanCode;
 
 /**
@@ -269,28 +268,27 @@ class FontBakerState extends State {
     // ── Actions ───────────────────────────────────────────────────────────────
 
     private function _onOpen():Void {
-        var path = NativeDialog.openFontFile();
-        if (path == null) return;
+        app.showOpenFileDialog(function(files:Array<String>, filter:Int):Void {
+            if (files.length == 0) return;
 
-        // Auto-derive name from filename
-        var lastSlash = Std.int(Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\")));
-        var baseName  = path.substring(lastSlash + 1);
-        var dotPos    = baseName.lastIndexOf(".");
-        var fontName  = dotPos > 0 ? baseName.substring(0, dotPos) : baseName;
+            var path = files[0];
+            var lastSlash = Std.int(Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\")));
+            var baseName = path.substring(lastSlash + 1);
+            var dotPos = baseName.lastIndexOf(".");
+            var fontName = dotPos > 0 ? baseName.substring(0, dotPos) : baseName;
 
-        if (_selectedIdx >= 0 && _selectedIdx < _entries.length) {
-            // Fill the selected entry
-            _entries[_selectedIdx].path = path;
-            _entries[_selectedIdx].name = fontName;
-            _selectEntry(_selectedIdx);
-            _rebuildList();
-        } else {
-            // No selection — create a new entry
-            _entries.push({ path: path, size: DEFAULT_SIZE, name: fontName });
-            _rebuildList();
-            _selectEntry(_entries.length - 1);
-        }
-        _statusLabel.text = "Ready: " + path;
+            if (_selectedIdx >= 0 && _selectedIdx < _entries.length) {
+                _entries[_selectedIdx].path = path;
+                _entries[_selectedIdx].name = fontName;
+                _selectEntry(_selectedIdx);
+                _rebuildList();
+            } else {
+                _entries.push({ path: path, size: DEFAULT_SIZE, name: fontName });
+                _rebuildList();
+                _selectEntry(_entries.length - 1);
+            }
+            _statusLabel.text = "Ready: " + path;
+        }, null, false);
     }
 
     private function _onBakeAll():Void {

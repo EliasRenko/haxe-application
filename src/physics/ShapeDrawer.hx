@@ -1,9 +1,9 @@
-package differ;
+package physics;
 
-import differ.math.*;
+import math.*;
 import math.Vec2;
-import differ.shapes.*;
-import differ.data.*;
+import physics.shapes.*;
+import physics.data.*;
 
 /** To implement your own debug drawing class, you only need to override drawLine function and implement it
     the rest is handled internally. You can override specifics if you want, but it's not required */

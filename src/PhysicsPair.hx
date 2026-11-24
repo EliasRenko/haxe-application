@@ -1,4 +1,4 @@
-import differ.shapes.Shape;
+import physics.shapes.Shape;
 
 /** A pair of entities whose collider AABBs overlap in the broad phase. */
 class PhysicsPair {

@@ -1,7 +1,6 @@
 package states;
 
 import gui.Control;
-import utils.NativeDialog;
 import gui.Button;
 import gui.Label;
 import gui.ScrollableContainer;
@@ -97,27 +96,26 @@ class FontEditor extends State {
     }
 
     private function openFont(control:Control, type:Int):Void {
-        var path = NativeDialog.openFontFile();
-        if (path == null) return;
+        app.showOpenFileDialog(function(files:Array<String>, filter:Int):Void {
+            if (files.length == 0) return;
 
-        // Auto-derive name from filename
-        var lastSlash = Std.int(Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\")));
-        var baseName  = path.substring(lastSlash + 1);
-        var dotPos    = baseName.lastIndexOf(".");
-        var fontName  = dotPos > 0 ? baseName.substring(0, dotPos) : baseName;
+            var path = files[0];
+            var lastSlash = Std.int(Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\")));
+            var baseName = path.substring(lastSlash + 1);
+            var dotPos = baseName.lastIndexOf(".");
+            var fontName = dotPos > 0 ? baseName.substring(0, dotPos) : baseName;
 
-        if (_selectedIdx >= 0 && _selectedIdx < entries.length) {
-            // Fill the selected entry
-            entries[_selectedIdx].path = path;
-            entries[_selectedIdx].name = fontName;
-            selectEntry(_selectedIdx);
-            rebuildList();
-        } else {
-            // No selection — create a new entry
-            entries.push({ path: path, size: DEFAULT_SIZE, name: fontName });
-            rebuildList();
-            selectEntry(entries.length - 1);
-        }
+            if (_selectedIdx >= 0 && _selectedIdx < entries.length) {
+                entries[_selectedIdx].path = path;
+                entries[_selectedIdx].name = fontName;
+                selectEntry(_selectedIdx);
+                rebuildList();
+            } else {
+                entries.push({ path: path, size: DEFAULT_SIZE, name: fontName });
+                rebuildList();
+                selectEntry(entries.length - 1);
+            }
+        }, null, false);
         //_statusLabel.text = "Ready: " + path;
     }
 

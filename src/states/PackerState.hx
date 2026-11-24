@@ -14,7 +14,6 @@ import gui.Window;
 import loaders.FontLoader;
 import loaders.TGAExporter;
 import ScanCode;
-import utils.NativeDialog;
 import utils.TexturePacker;
 
 /**
@@ -204,22 +203,23 @@ class PackerState extends State {
     // ── Entry management ──────────────────────────────────────────────────────
 
     private function _onOpen():Void {
-        var paths = NativeDialog.openImageFiles();
-        if (paths.length == 0) return;
+        app.showOpenFileDialog(function(paths:Array<String>, filter:Int):Void {
+            if (paths.length == 0) return;
 
-        for (path in paths) {
-            var lastSlash = Std.int(Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\")));
-            var baseName  = path.substring(lastSlash + 1);
-            var dotPos    = baseName.lastIndexOf(".");
-            var imgName   = dotPos > 0 ? baseName.substring(0, dotPos) : baseName;
-            _entries.push({ path: path, name: imgName });
-        }
+            for (path in paths) {
+                var lastSlash = Std.int(Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\")));
+                var baseName = path.substring(lastSlash + 1);
+                var dotPos = baseName.lastIndexOf(".");
+                var imgName = dotPos > 0 ? baseName.substring(0, dotPos) : baseName;
+                _entries.push({ path: path, name: imgName });
+            }
 
-        _rebuildList();
-        _selectEntry(_entries.length - 1);
-        _statusLabel.text = paths.length == 1
-            ? "Added: " + _entries[_entries.length - 1].name
-            : "Added " + paths.length + " images";
+            _rebuildList();
+            _selectEntry(_entries.length - 1);
+            _statusLabel.text = paths.length == 1
+                ? "Added: " + _entries[_entries.length - 1].name
+                : "Added " + paths.length + " images";
+        }, null, true);
     }
 
     private function _removeSelected():Void {

@@ -1,10 +1,10 @@
-package differ.shapes;
+package physics.shapes;
 
-import differ.math.*;
+import math.*;
 import math.Vec2;
-import differ.shapes.*;
-import differ.data.*;
-import differ.sat.*;
+import physics.shapes.*;
+import physics.data.*;
+import physics.sat.*;
 
 /** A polygonal collision shape */
 class Polygon extends Shape {

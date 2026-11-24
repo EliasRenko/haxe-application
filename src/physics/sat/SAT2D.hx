@@ -1,9 +1,9 @@
-package differ.sat;
+package physics.sat;
 
-import differ.math.*;
-import differ.shapes.*;
-import differ.data.*;
-import differ.math.Util.*;
+import math.*;
+import physics.shapes.*;
+import physics.data.*;
+import math.Util.*;
 import math.Vec2;
 
 /** Implementation details for the 2D SAT collision queries.

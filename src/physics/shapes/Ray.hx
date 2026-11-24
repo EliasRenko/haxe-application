@@ -1,9 +1,9 @@
-package differ.shapes;
+package physics.shapes;
 
-import differ.math.*;
+import math.*;
 import math.Vec2;
-import differ.shapes.*;
-import differ.data.*;
+import physics.shapes.*;
+import physics.data.*;
 
 /** A ray with a start, end, direction 
     and infinite state for collision queries. */

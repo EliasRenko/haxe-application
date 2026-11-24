@@ -1,8 +1,8 @@
-package differ.data;
+package physics.data;
 
-import differ.math.*;
-import differ.shapes.*;
-import differ.data.*;
+import math.*;
+import physics.shapes.*;
+import physics.data.*;
 
 /** Collision data, obtained by testing two shapes for a collision. */
 @:publicFields

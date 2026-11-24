@@ -1,9 +1,9 @@
-package differ;
+package physics;
 
-import differ.math.*;
-import differ.shapes.*;
-import differ.data.*;
-import differ.sat.*;
+import math.*;
+import physics.shapes.*;
+import physics.data.*;
+import physics.sat.*;
 
 class Collision {
 
