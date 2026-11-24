@@ -28,7 +28,7 @@ import ScanCode;
  */
 class MenuState extends State {
 
-    private static final ITEMS:Array<String> = ["New game", "Load game", "Options", "GUI Test", "Font Baker", "Packer", "Quit"];
+    private static final ITEMS:Array<String> = ["New game", "Load game", "Options", "GUI Test", "Font Baker", "Packer", "Physics", "Quit"];
 
     private static inline var MARGIN_LEFT:Float   = 60.0;
     private static inline var MARGIN_BOTTOM:Float = 140.0;
@@ -287,6 +287,8 @@ class MenuState extends State {
             case 5:
                 app.switchToStateByName("Packer");
             case 6:
+                app.switchToStateByName("Physics");
+            case 7:
                 trace("MenuState: Quit");
                 @:privateAccess app.__active = false;
         }
