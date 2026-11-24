@@ -172,7 +172,7 @@ class MenuState extends State {
         menuLabels = [];
         selectedIndex = 0;
 
-        var listY = app.WINDOW_HEIGHT - MARGIN_BOTTOM - (ITEMS.length - 1) * 28.0;
+        var listY = app.window.pixelSize.x - MARGIN_BOTTOM - (ITEMS.length - 1) * 28.0;
 
         menuList = new MenuList(200, MARGIN_LEFT, listY);
         menuList.addListener(_onItemClick, ON_ITEM_CLICK);
