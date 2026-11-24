@@ -8,7 +8,7 @@ import loaders.FontData.FontChar;
  * IFontSource — common interface consumed by Text for glyph tile management.
  *
  * Implemented by:
- *   - BitmapFont  (standalone rendering via its own ManagedTileBatch)
+ *   - BitmapFont  (standalone rendering via its own TileManager)
  *   - UIFont      (private class inside Canvas, proxies into the unified UIBatch)
  *
  * Text only depends on this interface, so it works transparently in both

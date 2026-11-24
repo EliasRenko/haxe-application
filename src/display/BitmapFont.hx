@@ -4,20 +4,21 @@ import Texture;
 import Renderer;
 import loaders.FontData;
 import display.IFontSource;
-import display.ManagedTileBatch;
+import display.TileManager;
 import display.Tile;
-import display.ManagedTileBatch.AtlasRegion;
+import display.TileManager.AtlasRegion;
+import ds.SlotArray;
 
 /**
  * BitmapFont - Manages a bitmap font atlas and character metrics.
  *
- * Uses a ManagedTileBatch to manage atlas regions, glyph tiles, and rendering.
+ * Uses a TileManager to manage atlas regions, glyph tiles, and rendering.
  */
 class BitmapFont implements IFontSource {
 
     public var fontData:FontData;
-    public var tileBatch(default, null):ManagedTileBatch;
-    public var atlasRegions(get, never):Map<Int, AtlasRegion>;
+    public var tileBatch(default, null):TileManager;
+    public var atlasRegions(get, never):SlotArray<AtlasRegion>;
 
     private var charCodeToRegion:Map<Int, Int> = new Map();
 
@@ -29,7 +30,7 @@ class BitmapFont implements IFontSource {
      */
     public function new(renderer:Renderer, texture:Texture, fontData:FontData) {
         this.fontData = fontData;
-        this.tileBatch = new ManagedTileBatch(renderer, texture);
+        this.tileBatch = new TileManager(renderer, texture);
 
         defineCharacterRegions();
     }
@@ -101,7 +102,7 @@ class BitmapFont implements IFontSource {
         tileBatch.render(renderer);
     }
 
-    private function get_atlasRegions():Map<Int, AtlasRegion> {
+    private function get_atlasRegions():SlotArray<AtlasRegion> {
         return tileBatch.atlasRegions;
     }
 

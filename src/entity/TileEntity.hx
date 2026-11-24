@@ -1,11 +1,11 @@
 package entity;
 
 import Entity;
-import display.ManagedTileBatch;
+import display.TileManager;
 import display.Tile;
 
 /**
- * TileEntity - An entity that owns a single tile inside a ManagedTileBatch.
+ * TileEntity - An entity that owns a single tile inside a TileManager.
  *
  * Instead of attaching a TileComp to a plain Entity, subclass TileEntity
  * directly.  The tile coordinates, size and batch reference live here, no
@@ -26,7 +26,7 @@ class TileEntity extends Entity {
      * Bind this entity to a tile that was already added to a batch.
      * Called by the map loader immediately after construction.
      */
-    public function bindTile(batch:ManagedTileBatch, tileId:Int):Void {
+    public function bindTile(batch:TileManager, tileId:Int):Void {
         this.tile = batch.getTile(tileId);
     }
 

@@ -590,7 +590,7 @@ class Canvas extends Entity {
 // =============================================================================
 // UIBatch — unified 10-float-per-vertex tile batch for the UI shader.
 //
-// Extends ManagedTileBatch without touching the primitive TileBatch or Tile
+// Uses the primitive TileBatch and Tile with a custom UI vertex layout
 // classes. Per-vertex layout: x y z u v ti r g b a
 //   ti:    0.0 → uGraphics (sprite atlas, unit 0)
 //          1.0 → uFont    (bitmap font atlas, unit 1)

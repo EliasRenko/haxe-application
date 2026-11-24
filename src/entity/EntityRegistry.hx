@@ -5,7 +5,7 @@ import Entity;
 /**
  * Factory function type.  Each entity class registers one of these.
  *
- * @param batch  The ManagedTileBatch for this entity's tileset.  The factory
+ * @param batch  The TileManager for this entity's tileset.  The factory
  *               can call batch.addTile() zero, one, or many times as needed,
  *               or ignore it entirely for non-visual entities.
  * @param inst   The raw JSON placement object (x, y, plus any custom
@@ -13,7 +13,7 @@ import Entity;
  * @param def    The entity type definition (width, height, class, region
  *               coordinates, and any type-level custom properties).
  */
-typedef EntityFactory = (batch:display.ManagedTileBatch, inst:Dynamic, def:Dynamic) -> Entity;
+typedef EntityFactory = (batch:display.TileManager, inst:Dynamic, def:Dynamic) -> Entity;
 
 class EntityRegistry {
 
@@ -32,12 +32,12 @@ class EntityRegistry {
 
     /**
      * Create an entity by class name, forwarding the full JSON context.
-     * @param batch  The ManagedTileBatch for this entity's tileset.
+     * @param batch  The TileManager for this entity's tileset.
      * @param inst   Placement instance data from the map.
      * @param def    Entity type definition from the map.
      * @return  The new Entity, or null if no factory is registered.
      */
-    public static function create(name:String, batch:display.ManagedTileBatch, inst:Dynamic, def:Dynamic):Entity {
+    public static function create(name:String, batch:display.TileManager, inst:Dynamic, def:Dynamic):Entity {
         var factory = _factories.get(name);
         if (factory == null) {
             trace('EntityRegistry: no factory for "$name"');
