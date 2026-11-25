@@ -3,6 +3,9 @@ package;
 import Log.LogCategory;
 import ds.SlotArray;
 import display.PostProcessing;
+import display.ScanlineScreenPass;
+import display.GrayscaleScreenPass;
+import display.DepthVisualizationScreenPass;
 
 class App extends Runtime {
     // Publics
@@ -47,6 +50,15 @@ class App extends Runtime {
         __lastTime = getTicks() / 1000.0;
         
         __postProcessing = new PostProcessing(__renderer);
+        var size = __renderer.app.window.getWindowSizeInPixels();
+        try {
+            __postProcessing.addPass(new ScanlineScreenPass(__renderer, size.width, size.height));
+            __postProcessing.addPass(new GrayscaleScreenPass(__renderer, size.width, size.height));
+            __postProcessing.addPass(new DepthVisualizationScreenPass(__renderer, size.width, size.height));
+        } catch (error:Dynamic) {
+            __postProcessing.release();
+            throw error;
+        }
     }
 
     override function release():Void {
@@ -70,14 +82,22 @@ class App extends Runtime {
         __renderer = null;
         __log.release();
         __log = null;
-        __audio.release();
-        __audio = null;
+        if (__audio != null) {
+            __audio.release();
+            __audio = null;
+        }
 
         super.release();
     }
 
     private function get_audio():Audio {
+        #if no_audio
+        throw "Audio is disabled";
+        #else
+        if (!@:privateAccess __audioEnabled) throw "Audio must not open before runtime initialization";
+        if (__audio == null) __audio = new Audio();
         return __audio;
+        #end
     }
 
     public function addState(state:State):Int {
@@ -214,35 +234,12 @@ class App extends Runtime {
 
     override function render():Void {
         __renderer.render();
-        if (__postProcessing.enabled) {
-            var activePass = __postProcessing.activePass;
-            // STEP 1: Render scene to framebuffer
-            __renderer.bindFramebuffer(activePass.framebufferId);
-            __renderer.clearScreen();
-            //GL.glClear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
-            //__renderer.initializeRenderState();
-            
+        __postProcessing.render(__renderer, function():Void {
             if (currentState != null && currentState.active) {
                 currentState.preRender(__renderer);
                 currentState.render(__renderer);
             }
-            
-            // STEP 2: Render framebuffer to screen with post-processing
-            __renderer.unbindFramebuffer(activePass.framebufferId); // UNBIND FRAMEBUFFER DISPLAY OBJECT
-            __renderer.clearScreen(); // Clear the screen framebuffer
-            
-            //__renderer.renderToScreen(); // RENDER FRAMEBUFFER DISPLAY OBJECT TO SCREEN WITH POST-PROCESSING
-            activePass.render(__renderer);
-        } else {
-            // Direct rendering (no post-processing)
-            __renderer.clearScreen();
-            //__renderer.initializeRenderState();
-            
-            if (currentState != null && currentState.active) {
-                currentState.preRender(__renderer);
-                currentState.render(__renderer);
-            }
-        }
+        });
     }
 
     // Keyboard event handlers

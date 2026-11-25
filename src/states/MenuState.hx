@@ -14,6 +14,7 @@ import gui.TabPage;
 import gui.Window;
 import loaders.FontLoader;
 import ScanCode;
+import Audio;
 
 /**
  * MenuState - Main menu screen
@@ -40,6 +41,9 @@ class MenuState extends State {
     private var optionsWindow:MenuOptionsWindow;
     private var newGameWindow:MenuNewGameWindow;
     private var console:DebugConsole;
+    private var backgroundMusic:Sound;
+    private var muteCheckbox:Checkbox;
+    private var musicVolume:Float = 0.4;
 
     public function new(app:App) {
         super("Menu", app);
@@ -68,6 +72,14 @@ class MenuState extends State {
 
         console = new DebugConsole(app, canvas);
         console.visible = false;
+
+        backgroundMusic = app.audio.loadBytes(
+            app.loadBytes("res/music/Balatro.ogg"),
+            true,
+            "Balatro.ogg"
+        );
+        backgroundMusic.volume = 0.4;
+        backgroundMusic.setLoops(-1);
     }
 
     // -------------------------------------------------------------------------
@@ -159,8 +171,9 @@ class MenuState extends State {
         // ── Audio tab ─────────────────────────────────────────────────────
         var audio:TabPage = tabs.addTab("Audio");
 
-        var cbMute = new Checkbox(false, 8, 8, "Mute audio");
-        audio.addControl(cbMute);
+        muteCheckbox = new Checkbox(false, 8, 8, "Mute audio");
+        muteCheckbox.addListener(_onMuteToggle, LEFT_CLICK);
+        audio.addControl(muteCheckbox);
 
         // ── Close button ──────────────────────────────────────────────────
         var btnClose = new Button("Close", 80, Math.round((w - 80) / 2), h - 28 - 38);
@@ -172,7 +185,7 @@ class MenuState extends State {
         menuLabels = [];
         selectedIndex = 0;
 
-        var listY = app.window.pixelSize.x - MARGIN_BOTTOM - (ITEMS.length - 1) * 28.0;
+        var listY = app.window.pixelSize.y - MARGIN_BOTTOM - (ITEMS.length - 1) * 28.0;
 
         menuList = new MenuList(200, MARGIN_LEFT, listY);
         menuList.addListener(_onItemClick, ON_ITEM_CLICK);
@@ -262,6 +275,33 @@ class MenuState extends State {
 
     private function _onOptionsClose(control:Control, type:UInt):Void {
         if (optionsWindow != null) optionsWindow.visible = false;
+    }
+
+    private function _onMuteToggle(control:Control, type:UInt):Void {
+        if (muteCheckbox == null || backgroundMusic == null) return;
+        backgroundMusic.volume = muteCheckbox.value ? 0.0 : musicVolume;
+    }
+
+    override public function onActivate():Void {
+        super.onActivate();
+        if (backgroundMusic != null && !backgroundMusic.playing) {
+            backgroundMusic.play();
+        }
+    }
+
+    override public function onDeactivate():Void {
+        if (backgroundMusic != null && backgroundMusic.playing) {
+            backgroundMusic.stop();
+        }
+        super.onDeactivate();
+    }
+
+    override public function release():Void {
+        if (backgroundMusic != null) {
+            backgroundMusic.release();
+            backgroundMusic = null;
+        }
+        super.release();
     }
 
     private function onSelect(index:Int):Void {
