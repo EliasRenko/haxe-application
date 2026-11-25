@@ -36,7 +36,7 @@ class Checkbox extends Control {
     override function init():Void {
         __initGraphics();
 
-        __graphic.parent = ____canvas.tilemap;
+        __graphic.parent = ____canvas.tilemap.tileBatch;
         __graphic.visible = visible;
         ____canvas.tilemap.addTileInstance(__graphic);
         __width = __graphic.width;

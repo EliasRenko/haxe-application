@@ -9,7 +9,6 @@ typedef Listener<T> = {
 }
 
 class EventDispacher<T> {
-	
 	// Privates
 	private var __listeners:Array<Listener<T>> = new Array<Listener<T>>();
 	

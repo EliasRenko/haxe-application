@@ -1,6 +1,6 @@
 package states;
 
-import DebugConsole;
+import gui.DebugConsole;
 import gui.Button;
 import gui.Canvas;
 import gui.Checkbox;
@@ -14,6 +14,9 @@ import gui.TabPage;
 import gui.Window;
 import loaders.FontLoader;
 import ScanCode;
+import Audio;
+import data.SoundData;
+import Log.LogCategory;
 
 /**
  * MenuState - Main menu screen
@@ -28,7 +31,7 @@ import ScanCode;
  */
 class MenuState extends State {
 
-    private static final ITEMS:Array<String> = ["New game", "Load game", "Options", "GUI Test", "Font Baker", "Packer", "Quit"];
+    private static final ITEMS:Array<String> = ["New game", "Load game", "Options", "GUI Test", "Font Baker", "Packer", "Physics", "Quit"];
 
     private static inline var MARGIN_LEFT:Float   = 60.0;
     private static inline var MARGIN_BOTTOM:Float = 140.0;
@@ -40,6 +43,9 @@ class MenuState extends State {
     private var optionsWindow:MenuOptionsWindow;
     private var newGameWindow:MenuNewGameWindow;
     private var console:DebugConsole;
+    private var backgroundMusic:Sound;
+    private var muteCheckbox:Checkbox;
+    private var musicVolume:Float = 0.4;
 
     public function new(app:App) {
         super("Menu", app);
@@ -51,23 +57,16 @@ class MenuState extends State {
         camera.ortho = true;
 
         var renderer = app.renderer;
+        var spriteTexture = renderer.uploadTexture(app.resources.getTexture("textures/gui.tga"));
 
-        renderer.createProgramInfo("ui", null,
-            app.resources.getText("shaders/ui.frag"));
-
-        var spriteTexture = renderer.uploadTexture(
-            app.resources.getTexture("textures/gui.tga"));
-
-        var fontTexture = renderer.uploadTexture(
-            app.resources.getTexture("textures/font_atlas.tga"));
-        var fontData = FontLoader.load(
-            app.resources.getText("fonts/gohu14.json"));
+        var fontTexture = renderer.uploadTexture(app.resources.getTexture("textures/font_atlas.tga"));
+        var fontData = FontLoader.load(app.resources.getText("fonts/gohu14.json"));
 
         var ws = app.window.size;
         canvas = new Canvas(this, ws.x, ws.y);
         canvas.initializeGraphics(renderer, spriteTexture, fontTexture, fontData);
         canvas.addFontFace(FontLoader.load(app.resources.getText("fonts/nokia.json")));
-        canvas.setTint(0.588, 0.690, 0.518);  // HL1 olive-green tint
+        canvas.setTint(0.588, 0.690, 0.518);  // Olive-green tint
         canvas.importSets(app.resources.getText("textures/gui.json"));
         addEntity(canvas);
 
@@ -76,7 +75,13 @@ class MenuState extends State {
         console = new DebugConsole(app, canvas);
         console.visible = false;
 
-        trace("MenuState: initialized");
+        app.resources.loadSound("music/Balatro.ogg").then(function(soundData:SoundData) {
+            backgroundMusic = app.audio.loadSound(soundData);
+            backgroundMusic.volume = 0.4;
+            backgroundMusic.setLoops(-1);
+        }).onError(function(error:String) {
+            app.log.error(LogCategory.RENDERER, "Failed to load menu music: " + error);
+        });
     }
 
     // -------------------------------------------------------------------------
@@ -168,8 +173,9 @@ class MenuState extends State {
         // ── Audio tab ─────────────────────────────────────────────────────
         var audio:TabPage = tabs.addTab("Audio");
 
-        var cbMute = new Checkbox(false, 8, 8, "Mute audio");
-        audio.addControl(cbMute);
+        muteCheckbox = new Checkbox(false, 8, 8, "Mute audio");
+        muteCheckbox.addListener(_onMuteToggle, LEFT_CLICK);
+        audio.addControl(muteCheckbox);
 
         // ── Close button ──────────────────────────────────────────────────
         var btnClose = new Button("Close", 80, Math.round((w - 80) / 2), h - 28 - 38);
@@ -181,7 +187,7 @@ class MenuState extends State {
         menuLabels = [];
         selectedIndex = 0;
 
-        var listY = app.WINDOW_HEIGHT - MARGIN_BOTTOM - (ITEMS.length - 1) * 28.0;
+        var listY = app.window.pixelSize.y - MARGIN_BOTTOM - (ITEMS.length - 1) * 28.0;
 
         menuList = new MenuList(200, MARGIN_LEFT, listY);
         menuList.addListener(_onItemClick, ON_ITEM_CLICK);
@@ -201,6 +207,14 @@ class MenuState extends State {
 
     override public function update(deltaTime:Float):Void {
         super.update(deltaTime);
+
+        if (app.input.keyboard.released(ScanCode.EQUALS) || app.input.keyboard.released(ScanCode.KP_PLUS)) {
+            app.postProcessing.cycle(1);
+        }
+        
+        if (app.input.keyboard.released(ScanCode.MINUS) || app.input.keyboard.released(ScanCode.KP_MINUS)) {
+            app.postProcessing.cycle(-1);
+        }
 
         var prevIndex = selectedIndex;
 
@@ -231,7 +245,7 @@ class MenuState extends State {
     //  Helpers
     // -------------------------------------------------------------------------
 
-    private function _resolutionFromLabel(label:String):Null<{x:Float, y:Float}> {
+    private function _resolutionFromLabel(label:String):Null<{x:Int, y:Int}> {
         return switch (label) {
             case "1920 x 1080": {x: 1920, y: 1080};
             case "1280 x 720":  {x: 1280, y: 720};
@@ -265,6 +279,33 @@ class MenuState extends State {
         if (optionsWindow != null) optionsWindow.visible = false;
     }
 
+    private function _onMuteToggle(control:Control, type:UInt):Void {
+        if (muteCheckbox == null || backgroundMusic == null) return;
+        backgroundMusic.volume = muteCheckbox.value ? 0.0 : musicVolume;
+    }
+
+    override public function onActivate():Void {
+        super.onActivate();
+        if (backgroundMusic != null && !backgroundMusic.playing) {
+            backgroundMusic.play();
+        }
+    }
+
+    override public function onDeactivate():Void {
+        if (backgroundMusic != null && backgroundMusic.playing) {
+            backgroundMusic.stop();
+        }
+        super.onDeactivate();
+    }
+
+    override public function release():Void {
+        if (backgroundMusic != null) {
+            backgroundMusic.release();
+            backgroundMusic = null;
+        }
+        super.release();
+    }
+
     private function onSelect(index:Int):Void {
         switch (index) {
             case 0:
@@ -284,10 +325,12 @@ class MenuState extends State {
             case 3:
                 app.switchToStateByName("GUITest");
             case 4:
-                app.switchToStateByName("FontBaker");
+                app.switchToStateByName("FontEditor");
             case 5:
                 app.switchToStateByName("Packer");
             case 6:
+                app.switchToStateByName("Physics");
+            case 7:
                 trace("MenuState: Quit");
                 @:privateAccess app.__active = false;
         }

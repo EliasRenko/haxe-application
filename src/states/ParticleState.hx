@@ -1,6 +1,6 @@
 package states;
 
-import display.TileBatch;
+import display.TileManager;
 import display.ParticleEmitter;
 import entity.DisplayEntity;
 
@@ -61,7 +61,7 @@ class ParticleState extends State {
         var texture = renderer.uploadTexture(texData);
 
         // -- TileBatch --------------------------------------------------------
-        var batch = new TileBatch(renderer, program, texture);
+        var batch = new TileManager(renderer, texture);
 
         // Define a 16×16 particle region from the top-left of the atlas.
         // Tweak the pixel coordinates if you want a different sprite.

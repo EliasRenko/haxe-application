@@ -4,40 +4,42 @@ import Log.LogCategory;
 import Entity;
 import Camera;
 import App;
-import math.Matrix;
 
 /**
  * Base class for game states (worlds/scenes/levels)
  * States manage collections of entities and handle state-specific logic
  */
 class State {
-    
-    // State properties
-    public var active:Bool = false;
+    // Statics
+    private static var NEXT_ID:Int = 0;
+
+    // Publics
+    public var active(get, null):Bool = false;
     public var app(get, null):App;
     public var camera:Camera;
     public var entities:Array<Entity> = [];
+    public var physics(default, null):Physics;
     public var name:String;
     public var id:Int;
     
     // Privates
+    private var __active:Bool = false;
     private var __app:App;
-    private static var __nextId:Int = 0;
-    private var __cameraDirty:Bool = true;
-    private var cameraDebug:Bool = true;
+    private var __cameraDebug:Bool = true;
     
     public function new(name:String, app:App) {
         this.name = name;
-        this.id = __nextId++;
-        this.entities = [];
         this.__app = app;
+
+        this.id = NEXT_ID++;
+        this.entities = [];
+        this.physics = new Physics(this);
         
         // Initialize camera for this state
         this.camera = new Camera();
         resetCamera();
         
-        trace("Created state '" + name + "' with ID " + id + " and camera");
-        app.log.debug(LogCategory.SYSTEM, "Created state '" + name + "' with ID " + id + " and camera");
+        app.log.debug(LogCategory.STATE, "Created state '" + name + "' with ID " + id + " and camera");
     }
     
     /**
@@ -58,7 +60,7 @@ class State {
      * Override in subclasses for state-specific behavior
      */
     public function update(deltaTime:Float):Void {
-        if (!active) return;
+        if (!__active) return;
         
         // Update all active entities in this state
         for (entity in entities) {
@@ -74,10 +76,12 @@ class State {
             }
         }
 
+        physics.update();
+
         // Debug control: Toggle camera debug mode with 'C' key
         // if (app.input.keyboard.released(Scancode.C)) {
-        //     cameraDebug = !cameraDebug;
-        //     app.log.debug(LogCategory.SYSTEM, "Camera debug mode: " + (cameraDebug ? "ON" : "OFF"));
+        //     __cameraDebug = !__cameraDebug;
+        //     app.log.debug(LogCategory.SYSTEM, "Camera debug mode: " + (__cameraDebug ? "ON" : "OFF"));
         // }
 
         // if (app.input.keyboard.released(Scancode.R)) {
@@ -86,7 +90,7 @@ class State {
         // }
 
         // // If camera debug mode is active, allow camera movement with arrow keys
-        // if (cameraDebug) {
+        // if (__cameraDebug) {
             
         //     var moveSpeed:Float = 1000.0 * deltaTime;
         //     if (app.input.keyboard.check(Scancode.A)) {
@@ -121,13 +125,12 @@ class State {
     }
     
     public function preRender(renderer:Renderer):Void {
-        if (!active) return;
+        if (!__active) return;
 
-        var size = app.window.size;
+        var size = app.window.pixelSize; // Change on resize, not every frame
         camera.viewWidth = size.x;
         camera.viewHeight = size.y;
-        __cameraDirty = camera.getProjectionMatrix(); // TODO: Kinda weird, must improve
-        renderer.matrix = camera.getMatrix(); // TODO: Make better and more elegant 
+        renderer.matrix = camera.getProjectionMatrix();
     }
 
     /**
@@ -135,7 +138,7 @@ class State {
      * Override in subclasses for custom rendering order/effects
      */
     public function render(renderer:Renderer):Void {
-        if (!active) return;
+        if (!__active) return;
         
         for (entity in entities) {
             if (entity != null && entity.active && entity.visible) {
@@ -149,14 +152,13 @@ class State {
      */
     public function addEntity(entity:Entity):Entity {
         if (entity == null) {
-            trace("Warning: Attempted to add null entity to state '" + name + "'");
             return null;
         }
         
         entities.push(entity);
         entity.state = this;
         
-        trace("Added entity '" + entity.id + "' to state '" + name + "'");
+        app.log.debug(LogCategory.STATE, "Added entity '" + entity.id + "' to state '" + name + "'");
         return entity;
     }
     
@@ -168,8 +170,9 @@ class State {
         
         var removed = entities.remove(entity);
         if (removed) {
+            physics.removeEntity(entity);
             entity.state = null;
-            trace("Removed entity '" + entity.id + "' from state '" + name + "'");
+            app.log.debug(LogCategory.STATE, "Removed entity '" + entity.id + "' from state '" + name + "'");
         }
         return removed;
     }
@@ -216,6 +219,7 @@ class State {
      */
     public function clearEntities(renderer:Renderer):Void {
         trace("Clearing " + entities.length + " entities from state '" + name + "'");
+        physics.clear();
         for (entity in entities) {
             if (entity != null) {
                 entity.state = null;
@@ -231,44 +235,31 @@ class State {
     }
 
     public function release():Void {
-        // Called once when the state is destroyed.
-        trace("State '" + name + "' released");
+        clearEntities(app.renderer);
     }
 
     public function onActivate():Void {
-        // Called each time this state becomes the current state.
-        active = true;
-        trace("State '" + name + "' activated");
+        __active = true;
+        app.log.debug(LogCategory.STATE, "State '" + name + "' activated");
     }
 
     public function onDeactivate():Void {
-        // Called each time another state becomes the current state.
-        active = false;
-        trace("State '" + name + "' deactivated");
+        __active = false;
+        app.log.debug(LogCategory.STATE, "State '" + name + "' deactivated");
     }
 
-    public function onWindowResized(width:Int, height:Int):Void {
-        
-    }
+    public function onWindowResized(width:Int, height:Int):Void {}
     
-    /**
-     * Get current entity count
-     */
     public function getEntityCount():Int {
         return entities.length;
     }
     
-    /**
-     * Get debug info about this state
-     */
-    public function getDebugInfo():String {
-        return 'State "${name}" (ID: ${id}) - Entities: ${entities.length}, Active: ${active}';
-    }
-    
-    /**
-     * Get app reference
-     */
+    // Getters and setters
     private function get_app():App {
         return __app;
+    }
+
+    private function get_active():Bool {
+        return __active;
     }
 }

@@ -19,13 +19,15 @@ import gui.ControlEventType;
  *   grid.addBool("Visible",  true);
  *   grid.addEnum("Mode",     "Walk", ["Walk", "Run", "Fly"]);
  *   grid.addListener(onChanged, ON_PROPERTY_CHANGE);
+ *   grid.setProperties(properties); // properties extends PropertySet
  *
  *   function onChanged(ctrl:Control, type:UInt):Void {
  *       var g = cast(ctrl, PropertyGrid);
  *       trace(g.lastChangedName + " = " + Std.string(g.lastChangedValue));
  *   }
  *
- * Note: addString / addFloat / etc. must be called AFTER canvas.addControl(grid).
+ * Note: addString / addFloat / etc. and setProperties must be called AFTER
+ * canvas.addControl(grid).
  */
 class PropertyGrid extends Container<Control> {
 
@@ -48,6 +50,7 @@ class PropertyGrid extends Container<Control> {
     private var __panel:Panel;
     private var __scroll:ScrollableContainer;
     private var __rows:Array<PropertyRow> = [];
+    private var __boundProperties:Map<String, PropertyDefinition> = [];
 
     public function new(width:Float, height:Float, x:Float, y:Float) {
         super(width, height, x, y);
@@ -100,6 +103,34 @@ class PropertyGrid extends Container<Control> {
         __addRow(new PropertyRow(name, ENUM, value, options, __rows.length, __rowWidth()));
     }
 
+    /** Display and edit every property exposed by a property set. */
+    public function setProperties(propertySet:PropertySet):Void {
+        clear();
+        __boundProperties = [];
+        for (property in propertySet.properties) {
+            __boundProperties.set(property.name, property);
+            switch (property.kind) {
+                case PropertyKind.STRING:
+                    addString(property.name, Std.string(property.getValue()));
+                case PropertyKind.FLOAT:
+                    addFloat(property.name, cast property.getValue());
+                case PropertyKind.INT:
+                    addInt(property.name, cast property.getValue());
+                case PropertyKind.BOOL:
+                    addBool(property.name, cast property.getValue());
+                case PropertyKind.ENUM:
+                    addEnum(property.name, Std.string(property.getValue()), property.options);
+            }
+        }
+    }
+
+    /** Re-read values from the bound property set without rebuilding its rows. */
+    public function refreshProperties():Void {
+        for (property in __boundProperties) {
+            setValue(property.name, property.getValue());
+        }
+    }
+
     /**
      * Get the current value of a named property.
      * Returns Float for float rows, Int for int rows, Bool for bool rows,
@@ -145,6 +176,8 @@ class PropertyGrid extends Container<Control> {
     private function __onRowChanged(row:PropertyRow):Void {
         lastChangedName  = row.propName;
         lastChangedValue = row.getValue();
+        var property = __boundProperties.get(row.propName);
+        if (property != null) property.setValue(lastChangedValue);
         dispatchEvent(this, ON_PROPERTY_CHANGE);
     }
 
@@ -235,7 +268,8 @@ private class PropertyRow extends Container<Control> {
                 @:privateAccess __controls.add(cast __textField);
 
             case BOOL:
-                __checkbox = new Checkbox(initValue == "true", valueX + 2, valueY);
+                var checkboxX = valueX + (valueWidth - Checkbox.DEFAULT_TILE_WIDTH) * 0.5;
+                __checkbox = new Checkbox(initValue == "true", checkboxX, valueY);
                 @:privateAccess __controls.add(cast __checkbox);
 
             case ENUM:
@@ -263,6 +297,7 @@ private class PropertyRow extends Container<Control> {
 
         // Centre the name label vertically now that the font height is known.
         __nameLabel.y = Std.int((PropertyGrid.ROW_HEIGHT - ____canvas.font.fontData.lineHeight) / 2);
+        __nameLabel.text = __truncateLabel(propName);
 
         // Wire change listeners after children are active.
         if (__textField != null)
@@ -339,5 +374,17 @@ private class PropertyRow extends Container<Control> {
 
     private function __onValueChanged(ctrl:Control, type:UInt):Void {
         if (__onChangeCb != null) __onChangeCb(this);
+    }
+
+    private function __truncateLabel(text:String):String {
+        var maxWidth = __width * PropertyGrid.LABEL_RATIO - PropertyGrid.PAD_X * 2;
+        if (____canvas.font.measureTextWidth(text) <= maxWidth) return text;
+
+        var ellipsis = "...";
+        var end = text.length;
+        while (end > 0 && ____canvas.font.measureTextWidth(text.substring(0, end) + ellipsis) > maxWidth) {
+            end--;
+        }
+        return text.substring(0, end) + ellipsis;
     }
 }

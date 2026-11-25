@@ -2,23 +2,30 @@ package;
 
 import Log.LogCategory;
 import ds.SlotArray;
+import display.PostProcessing;
+import display.ScanlineScreenPass;
+import display.GrayscaleScreenPass;
+import display.DepthVisualizationScreenPass;
 
 class App extends Runtime {
-    
     // Publics
+    public var audio(get, null):Audio;
     public var input(get, null):Input;
     public var resources(get, null):Resources;
     public var log(get, null):Log;
     public var renderer(get, null):Renderer;
-    public var states:SlotArray<State> = new SlotArray<State>();
+    public var postProcessing(get, null):PostProcessing;
+    public var states(get, null):SlotArray<State>;
     public var currentState:State = null;
 
     // Privates
+    private var __audio:Audio;
     private var __input:Input;
     private var __resources:Resources;
     private var __renderer:Renderer;
+    private var __postProcessing:PostProcessing;
     private var __log:Log;
-
+    private var __states:SlotArray<State> = new SlotArray<State>();
     private var __lastTime:Float = 0.0;
     private var __currentTime:Float = 0.0;
 
@@ -42,11 +49,16 @@ class App extends Runtime {
         // Initialize timing
         __lastTime = getTicks() / 1000.0;
         
-        // Initialize post-processing framebuffer
-        __renderer.initializePostProcessing();
-
-        
-        __renderer.usePostProcessing = true; // Enable post-processing by default
+        __postProcessing = new PostProcessing(__renderer);
+        var size = __renderer.app.window.getWindowSizeInPixels();
+        try {
+            __postProcessing.addPass(new ScanlineScreenPass(__renderer, size.width, size.height));
+            __postProcessing.addPass(new GrayscaleScreenPass(__renderer, size.width, size.height));
+            __postProcessing.addPass(new DepthVisualizationScreenPass(__renderer, size.width, size.height));
+        } catch (error:Dynamic) {
+            __postProcessing.release();
+            throw error;
+        }
     }
 
     override function release():Void {
@@ -61,16 +73,33 @@ class App extends Runtime {
         saveBytes("output.txt", __log.logHistory);
 
         __input.release();
+        __input = null;
         __resources.release();
+        __resources = null;
+        __postProcessing.release();
+        __postProcessing = null;
         __renderer.release();
+        __renderer = null;
         __log.release();
+        __log = null;
+        if (__audio != null) {
+            __audio.release();
+            __audio = null;
+        }
 
         super.release();
     }
 
-    /**
-     * Add a state to the states array
-     */
+    private function get_audio():Audio {
+        #if no_audio
+        throw "Audio is disabled";
+        #else
+        if (!@:privateAccess __audioEnabled) throw "Audio must not open before runtime initialization";
+        if (__audio == null) __audio = new Audio();
+        return __audio;
+        #end
+    }
+
     public function addState(state:State):Int {
         if (state == null) {
             __log.warn(LogCategory.APP,"Warning: Attempted to add null state");
@@ -89,9 +118,6 @@ class App extends Runtime {
         return id;
     }
     
-    /**
-     * Remove a state from the states array
-     */
     public function removeState(id:Int):Bool {
         var state = states.get(id);
         if (state == null) return false;
@@ -118,9 +144,6 @@ class App extends Runtime {
         return true;
     }
     
-    /**
-     * Remove state by name
-     */
     public function removeStateByName(name:String):Bool {
         for (state in states) {
             if (state.name == name) {
@@ -131,12 +154,8 @@ class App extends Runtime {
         return false;
     }
     
-    /**
-     * Switch to a specific state
-     */
     public function switchToState(state:State):Bool {
         if (state == null) {
-            trace("Warning: Attempted to switch to null state");
             return false;
         }
         
@@ -168,9 +187,6 @@ class App extends Runtime {
         return true;
     }
     
-    /**
-     * Switch to state by name
-     */
     public function switchToStateByName(name:String):Bool {
         for (state in states) {
             if (state.name == name) {
@@ -181,9 +197,6 @@ class App extends Runtime {
         return false;
     }
     
-    /**
-     * Get state by name
-     */
     public function getState(name:String):State {
         for (state in states) {
             if (state.name == name) {
@@ -208,7 +221,6 @@ class App extends Runtime {
         if (__input != null) {
             __input.update();
         }
-        
         // Update current state if one is active
         if (currentState != null && currentState.active) {
             currentState.update(deltaTime);
@@ -222,34 +234,12 @@ class App extends Runtime {
 
     override function render():Void {
         __renderer.render();
-        if (__renderer.usePostProcessing) {
-            // STEP 1: Render scene to framebuffer
-            //__renderer.bindFramebuffer(); // BIND FRAMEBUFFER DISPLAY OBJECT
-            __renderer.bindFramebuffer(__renderer.postProcessDisplayObject.framebufferId);
-            __renderer.clearScreen();
-            //GL.glClear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
-            __renderer.initializeRenderState();
-            
+        __postProcessing.render(__renderer, function():Void {
             if (currentState != null && currentState.active) {
                 currentState.preRender(__renderer);
                 currentState.render(__renderer);
             }
-            
-            // STEP 2: Render framebuffer to screen with post-processing
-            __renderer.unbindFramebuffer(__renderer.postProcessDisplayObject.framebufferId); // UNBIND FRAMEBUFFER DISPLAY OBJECT
-            __renderer.clearScreen(); // Clear the screen framebuffer
-            
-            //__renderer.renderToScreen(); // RENDER FRAMEBUFFER DISPLAY OBJECT TO SCREEN WITH POST-PROCESSING
-            __renderer.postProcessDisplayObject.render(__renderer);
-        } else {
-            // Direct rendering (no post-processing)
-            __renderer.clearScreen();
-            __renderer.initializeRenderState();
-            
-            if (currentState != null && currentState.active) {
-                currentState.render(__renderer);
-            }
-        }
+        });
     }
 
     // Keyboard event handlers
@@ -283,9 +273,13 @@ class App extends Runtime {
     }
     #end
 
+    override function onTextEditing(text:String, start:Int, length:Int, windowId:Int) {
+        @:privateAccess __input.keyboard.onTextEditing(text, start, length);
+    }
+
     // Mouse event handlers
     override function onMouseButtonDown(x:Float, y:Float, button:Int, windowId:Int):Void {
-        // SDL3 uses 1-based button indices (1=left, 2=middle, 3=right).
+        // SDL3 uses 1-based button indices (1 = left, 2 = middle, 3 = right).
         // Normalize to 0-based to match the DOM MouseEvent convention used on web.
         #if !js
         button -= 1;
@@ -324,11 +318,14 @@ class App extends Runtime {
 
     // Window event handlers
     override function onWindowResized(windowId:Int, width:Int, height:Int):Void {
-        renderer.resize(width, height);
-
         for (state in states) {
             state.onWindowResized(width, height);
         }
+    }
+
+    override function onWindowPixelSizeChanged(windowId:Int, pixelWidth:Int, pixelHeight:Int):Void {
+        renderer.resize(pixelWidth, pixelHeight);
+        postProcessing.resize(pixelWidth, pixelHeight);
     }
 
     // DLL API methods - expose frame control for external callers
@@ -367,6 +364,10 @@ class App extends Runtime {
 							{
 								files.push(__resources.loadTexture(path));
 							}
+						case "ogg" | "wav" | "mp3" | "flac":
+							{
+								files.push(__resources.loadSound(path));
+							}
 						case "vert" | "frag" | "json":
 							{
 								files.push(__resources.loadText(path));
@@ -391,19 +392,27 @@ class App extends Runtime {
 	}
 
     // Getters and setters
-    public function get_input():Input {
+    private function get_input():Input {
         return __input;
     }
 
-    public function get_resources():Resources {
+    private function get_resources():Resources {
         return __resources;
     }
 
-    public function get_log():Log {
+    private function get_log():Log {
         return __log;
     }
 
-    public function get_renderer():Renderer {
+    private function get_renderer():Renderer {
         return __renderer;
+    }
+
+    private function get_postProcessing():PostProcessing {
+        return __postProcessing;
+    }
+
+    private function get_states():SlotArray<State> {
+        return __states;
     }
 }

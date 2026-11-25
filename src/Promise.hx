@@ -16,7 +16,6 @@ enum PromiseState {
 typedef PromiseFunc<T> = (resolve:(T)->Void, reject:(String)->Void) -> Void;
 
 class Promise<T> {
-
     // Publics
     public var isComplete(get, null):Bool;
     public var state(get, null):PromiseState;
@@ -172,7 +171,6 @@ class Promise<T> {
     }
 
     // Setters and getters
-
     private function get_isComplete():Bool {
         return __state == COMPLETE || __state == REJECTED;
     }

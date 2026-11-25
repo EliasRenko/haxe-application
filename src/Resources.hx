@@ -3,6 +3,7 @@ package;
 import Promise;
 import loaders.TGALoader;
 import data.TextureData;
+import data.SoundData;
 
 typedef Resource = {
     var type:String;
@@ -10,18 +11,18 @@ typedef Resource = {
     var size:Int;
 }
 
-private class __Resources {
+class Resources {
     // Publics
     public var count(get, null):Int;
     public var preDefinedPath(get, set):String;
 
     // Privates
+    private var __app:App;
     private var __resources:Map<String, Resource> = new Map<String, Resource>();
-    private var __parent:App;
     private var __preDefinedPath:String;
 
     public function new(app:App, preDefinedPath:String = "res") {
-        this.__parent = app;
+        this.__app = app;
         this.__preDefinedPath = preDefinedPath;
     }
 
@@ -57,11 +58,23 @@ private class __Resources {
         throw "Resource not found: " + name;
     }
 
+    public function getSound(name:String):SoundData {
+        if (__resources.exists(name)) {
+            var resource:Resource = __resources.get(name);
+            if (resource == null || resource.type != "sound") {
+                return null;
+            }
+            return cast(resource.data, SoundData);
+        }
+
+        throw "Resource not found: " + name;
+    }
+
     public function loadText(path:String, relative:Bool = true, cache:Bool = true):Promise<String> {
         var fullPath = relative ? __preDefinedPath + "/" + path : path;
         return new Promise<String>((resolve, reject) -> {
             try {
-                var bytes = __parent.loadBytes(fullPath);
+                var bytes = __app.loadBytes(fullPath);
                 var data:String = bytes.toString();
                 if (cache) __resources.set(path, {type: 'text', data: data, size: bytes.length});
                 resolve(data);
@@ -76,8 +89,8 @@ private class __Resources {
         var fullFragmentPath = relative ? __preDefinedPath + "/" + fragmentPath : fragmentPath;
         return new Promise<{vertex:String, fragment:String}>((resolve, reject) -> {
             try {
-                var vertexBytes = __parent.loadBytes(fullVertexPath);
-                var fragmentBytes = __parent.loadBytes(fullFragmentPath);
+                var vertexBytes = __app.loadBytes(fullVertexPath);
+                var fragmentBytes = __app.loadBytes(fullFragmentPath);
                 var vertex = vertexBytes.toString();
                 var fragment = fragmentBytes.toString();
                 if (cache) {
@@ -95,8 +108,7 @@ private class __Resources {
         var fullPath = relative ? __preDefinedPath + "/" + path : path;
         return new Promise<TextureData>((resolve, reject) -> {
             try {
-                var bytes = __parent.loadBytes(fullPath);
-                // Parse TGA
+                var bytes = __app.loadBytes(fullPath);
                 var textureData = TGALoader.loadFromBytes(bytes, fullPath);
                 if (cache) {
                     __resources.set(path, {type: 'texture', data: textureData, size: bytes.length});
@@ -106,6 +118,51 @@ private class __Resources {
                 reject("Failed to load texture: " + e);
             }
         });
+    }
+
+    public function loadSound(path:String, relative:Bool = true, cache:Bool = true):Promise<SoundData> {
+        var fullPath = relative ? __preDefinedPath + "/" + path : path;
+        return new Promise<SoundData>((resolve, reject) -> {
+            try {
+                var bytes = __app.loadBytes(fullPath);
+                var soundData = new SoundData(bytes, path);
+                if (cache) {
+                    __resources.set(path, {type: "sound", data: soundData, size: bytes.length});
+                }
+                resolve(soundData);
+            } catch (e:Dynamic) {
+                reject("Failed to load sound: " + fullPath + " - " + e);
+            }
+        });
+    }
+
+    public function remove(name:String, relative:Bool = true):Bool {
+        if (__resources.exists(name)) {
+            var resource = __resources.get(name);
+            if (resource != null) {
+                // Dispose texture data if it's a texture
+                if (resource.type == 'texture') {
+                    var textureData:TextureData = cast(resource.data, TextureData);
+                    if (textureData != null) {
+                        textureData.dispose();
+                    }
+                }
+
+                // Dispose sound data if it's a sound
+                if (resource.type == "sound") {
+                    var soundData:SoundData = cast(resource.data, SoundData);
+                    if (soundData != null) {
+                        soundData.dispose();
+                    }
+                }
+
+                __resources.remove(name);
+                
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function clear():Void {
@@ -121,6 +178,12 @@ private class __Resources {
                         textureData.dispose();
                     }
                 }
+                if (resource.type == "sound") {
+                    var soundData:SoundData = cast(resource.data, SoundData);
+                    if (soundData != null) {
+                        soundData.dispose();
+                    }
+                }
             }
         }
 
@@ -132,27 +195,7 @@ private class __Resources {
         __preDefinedPath = null;
     }
 
-    public function remove(name:String, relative:Bool = true):Bool {
-        var fullPath = relative ? __preDefinedPath + "/" + name : name;
-        if (__resources.exists(fullPath)) {
-            var resource = __resources.get(fullPath);
-            if (resource != null) {
-                // Dispose texture data if it's a texture
-                if (resource.type == 'texture') {
-                    var textureData:TextureData = cast(resource.data, TextureData);
-                    if (textureData != null) {
-                        textureData.dispose();
-                    }
-                }
-
-                __resources.remove(fullPath);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // Getters/Setters
+    // Getters and setters
     public function get_count():Int {
         return Lambda.count(__resources);
     }
@@ -166,5 +209,3 @@ private class __Resources {
         return __preDefinedPath;
     }
 }
-
-typedef Resources = __Resources;

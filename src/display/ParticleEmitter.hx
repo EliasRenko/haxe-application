@@ -1,6 +1,7 @@
 package display;
 
 import ds.Pool;
+import display.TileManager;
 
 /**
  * Per-particle data: physics + the Tile used for rendering.
@@ -18,7 +19,7 @@ typedef ParticleData = {
  * ParticleEmitter
  *
  * Manages a fixed-size pool of particles, each backed by a Tile in a
- * TileBatch.  Every frame:
+ * TileManager.  Every frame:
  *   1. Call update(dt)  — advances physics and feeds tile geometry into the batch.
  *   2. Let the TileBatch render normally (e.g. via a DisplayEntity).
  *
@@ -27,7 +28,7 @@ typedef ParticleData = {
 class ParticleEmitter {
 
     /** The underlying tile batch used for rendering. */
-    public var tileBatch:TileBatch;
+    public var tileBatch:TileManager;
 
     /** All currently alive particles. */
     public var particles:Array<ParticleData>;
@@ -47,7 +48,7 @@ class ParticleEmitter {
 
     // -------------------------------------------------------------------------
 
-    public function new(tileBatch:TileBatch, poolSize:Int = 256) {
+    public function new(tileBatch:TileManager, poolSize:Int = 256) {
         this.tileBatch = tileBatch;
         this.particles = [];
         pool = new Pool<ParticleData>(poolSize, poolSize, createParticle);

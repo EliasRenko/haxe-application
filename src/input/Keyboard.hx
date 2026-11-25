@@ -63,8 +63,13 @@ class Keyboard {
 		__releaseCount++;
     }
 
+    // Private access
     private function onTextInput(text:String) {
         __textInput = text;
+    }
+
+    private function onTextEditing(text:String, start:Int, length:Int) {
+
     }
 
     // Getters and setters

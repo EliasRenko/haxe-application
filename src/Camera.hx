@@ -3,7 +3,7 @@ package;
 import math.Matrix;
 
 class Camera {
-
+    // Publics
     public var ortho(get, set):Bool;
     public var x(get, set):Float;
     public var y(get, set):Float;
@@ -20,6 +20,7 @@ class Camera {
     public var viewWidth(get, set):Float;
     public var viewHeight(get, set):Float;
 
+    // Privates
     private var __dirty:Bool = true;
     private var __matrix:Matrix = new Matrix();
     private var __ortho:Bool = false;
@@ -40,9 +41,9 @@ class Camera {
 
     public function new() {}
 
-    // Returns true if the matrix was rebuilt this frame.
-    public function getProjectionMatrix():Bool {
-        if (!__dirty) return false;
+    public function getProjectionMatrix():Matrix {
+        if (!__dirty) return __matrix;
+        if (__viewWidth <= 0 || __viewHeight <= 0) return __matrix;
         __dirty = false;
 
         __matrix.identity();
@@ -65,7 +66,8 @@ class Camera {
             var aspect = __viewWidth / __viewHeight;
             __matrix.append(Matrix.createPerspectiveMatrix(__fov * Math.PI / 180.0, aspect, __nearPlane, __farPlane));
         }
-        return true;
+
+        return __matrix;
     }
 
     public function getMatrix():Matrix { return __matrix; }

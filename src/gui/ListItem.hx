@@ -20,7 +20,7 @@ class ListItem<T:Control> extends Container<T> {
 
     override function init():Void {
         __graphic.regionId = ____canvas.sets.get('empty');
-        __graphic.parent = ____canvas.tilemap;
+        __graphic.parent = ____canvas.tilemap.tileBatch;
         __graphic.visible = false;
         ____canvas.tilemap.addTileInstance(__graphic);
 
