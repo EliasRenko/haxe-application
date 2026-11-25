@@ -364,6 +364,10 @@ class App extends Runtime {
 							{
 								files.push(__resources.loadTexture(path));
 							}
+						case "ogg" | "wav" | "mp3" | "flac":
+							{
+								files.push(__resources.loadSound(path));
+							}
 						case "vert" | "frag" | "json":
 							{
 								files.push(__resources.loadText(path));

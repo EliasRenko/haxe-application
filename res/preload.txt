@@ -31,3 +31,6 @@ textures/nokia.tga
 textures/sky.tga
 textures/cat.tga
 textures/font_atlas.tga
+
+# Music
+music/Balatro.ogg

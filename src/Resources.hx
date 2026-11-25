@@ -3,6 +3,7 @@ package;
 import Promise;
 import loaders.TGALoader;
 import data.TextureData;
+import data.SoundData;
 
 typedef Resource = {
     var type:String;
@@ -16,12 +17,12 @@ class Resources {
     public var preDefinedPath(get, set):String;
 
     // Privates
+    private var __app:App;
     private var __resources:Map<String, Resource> = new Map<String, Resource>();
-    private var __parent:App;
     private var __preDefinedPath:String;
 
     public function new(app:App, preDefinedPath:String = "res") {
-        this.__parent = app;
+        this.__app = app;
         this.__preDefinedPath = preDefinedPath;
     }
 
@@ -57,11 +58,23 @@ class Resources {
         throw "Resource not found: " + name;
     }
 
+    public function getSound(name:String):SoundData {
+        if (__resources.exists(name)) {
+            var resource:Resource = __resources.get(name);
+            if (resource == null || resource.type != "sound") {
+                return null;
+            }
+            return cast(resource.data, SoundData);
+        }
+
+        throw "Resource not found: " + name;
+    }
+
     public function loadText(path:String, relative:Bool = true, cache:Bool = true):Promise<String> {
         var fullPath = relative ? __preDefinedPath + "/" + path : path;
         return new Promise<String>((resolve, reject) -> {
             try {
-                var bytes = __parent.loadBytes(fullPath);
+                var bytes = __app.loadBytes(fullPath);
                 var data:String = bytes.toString();
                 if (cache) __resources.set(path, {type: 'text', data: data, size: bytes.length});
                 resolve(data);
@@ -76,8 +89,8 @@ class Resources {
         var fullFragmentPath = relative ? __preDefinedPath + "/" + fragmentPath : fragmentPath;
         return new Promise<{vertex:String, fragment:String}>((resolve, reject) -> {
             try {
-                var vertexBytes = __parent.loadBytes(fullVertexPath);
-                var fragmentBytes = __parent.loadBytes(fullFragmentPath);
+                var vertexBytes = __app.loadBytes(fullVertexPath);
+                var fragmentBytes = __app.loadBytes(fullFragmentPath);
                 var vertex = vertexBytes.toString();
                 var fragment = fragmentBytes.toString();
                 if (cache) {
@@ -95,7 +108,7 @@ class Resources {
         var fullPath = relative ? __preDefinedPath + "/" + path : path;
         return new Promise<TextureData>((resolve, reject) -> {
             try {
-                var bytes = __parent.loadBytes(fullPath);
+                var bytes = __app.loadBytes(fullPath);
                 var textureData = TGALoader.loadFromBytes(bytes, fullPath);
                 if (cache) {
                     __resources.set(path, {type: 'texture', data: textureData, size: bytes.length});
@@ -107,10 +120,25 @@ class Resources {
         });
     }
 
+    public function loadSound(path:String, relative:Bool = true, cache:Bool = true):Promise<SoundData> {
+        var fullPath = relative ? __preDefinedPath + "/" + path : path;
+        return new Promise<SoundData>((resolve, reject) -> {
+            try {
+                var bytes = __app.loadBytes(fullPath);
+                var soundData = new SoundData(bytes, path);
+                if (cache) {
+                    __resources.set(path, {type: "sound", data: soundData, size: bytes.length});
+                }
+                resolve(soundData);
+            } catch (e:Dynamic) {
+                reject("Failed to load sound: " + fullPath + " - " + e);
+            }
+        });
+    }
+
     public function remove(name:String, relative:Bool = true):Bool {
-        var fullPath = relative ? __preDefinedPath + "/" + name : name;
-        if (__resources.exists(fullPath)) {
-            var resource = __resources.get(fullPath);
+        if (__resources.exists(name)) {
+            var resource = __resources.get(name);
             if (resource != null) {
                 // Dispose texture data if it's a texture
                 if (resource.type == 'texture') {
@@ -120,7 +148,15 @@ class Resources {
                     }
                 }
 
-                __resources.remove(fullPath);
+                // Dispose sound data if it's a sound
+                if (resource.type == "sound") {
+                    var soundData:SoundData = cast(resource.data, SoundData);
+                    if (soundData != null) {
+                        soundData.dispose();
+                    }
+                }
+
+                __resources.remove(name);
                 
                 return true;
             }
@@ -140,6 +176,12 @@ class Resources {
                     var textureData:TextureData = cast(resource.data, TextureData);
                     if (textureData != null) {
                         textureData.dispose();
+                    }
+                }
+                if (resource.type == "sound") {
+                    var soundData:SoundData = cast(resource.data, SoundData);
+                    if (soundData != null) {
+                        soundData.dispose();
                     }
                 }
             }

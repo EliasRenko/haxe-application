@@ -15,6 +15,8 @@ import gui.Window;
 import loaders.FontLoader;
 import ScanCode;
 import Audio;
+import data.SoundData;
+import Log.LogCategory;
 
 /**
  * MenuState - Main menu screen
@@ -73,13 +75,13 @@ class MenuState extends State {
         console = new DebugConsole(app, canvas);
         console.visible = false;
 
-        backgroundMusic = app.audio.loadBytes(
-            app.loadBytes("res/music/Balatro.ogg"),
-            true,
-            "Balatro.ogg"
-        );
-        backgroundMusic.volume = 0.4;
-        backgroundMusic.setLoops(-1);
+        app.resources.loadSound("music/Balatro.ogg").then(function(soundData:SoundData) {
+            backgroundMusic = app.audio.loadSound(soundData);
+            backgroundMusic.volume = 0.4;
+            backgroundMusic.setLoops(-1);
+        }).onError(function(error:String) {
+            app.log.error(LogCategory.RENDERER, "Failed to load menu music: " + error);
+        });
     }
 
     // -------------------------------------------------------------------------
