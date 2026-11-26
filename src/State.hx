@@ -61,18 +61,12 @@ class State {
      */
     public function update(deltaTime:Float):Void {
         if (!__active) return;
+        camera.update(deltaTime);
         
         // Update all active entities in this state
         for (entity in entities) {
             if (entity != null && entity.active) {
                 entity.update(deltaTime);
-            }
-        }
-        
-        // Late update all active entities
-        for (entity in entities) {
-            if (entity != null && entity.active) {
-                entity.lateUpdate(deltaTime);
             }
         }
 
@@ -127,10 +121,12 @@ class State {
     public function preRender(renderer:Renderer):Void {
         if (!__active) return;
 
-        var size = app.window.pixelSize; // Change on resize, not every frame
-        camera.viewWidth = size.x;
-        camera.viewHeight = size.y;
+        var size = app.window.pixelSize;
+        camera.setViewportSize(size.x, size.y);
         renderer.matrix = camera.getProjectionMatrix();
+        var viewport = camera.viewport;
+        if (viewport != null)
+            renderer.setCameraViewport(Std.int(viewport.x), Std.int(viewport.y), Std.int(viewport.width), Std.int(viewport.height));
     }
 
     /**

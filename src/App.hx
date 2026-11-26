@@ -237,7 +237,13 @@ class App extends Runtime {
         __postProcessing.render(__renderer, function():Void {
             if (currentState != null && currentState.active) {
                 currentState.preRender(__renderer);
-                currentState.render(__renderer);
+                try {
+                    currentState.render(__renderer);
+                } catch (error:Dynamic) {
+                    __renderer.resetCameraViewport();
+                    throw error;
+                }
+                __renderer.resetCameraViewport();
             }
         });
     }

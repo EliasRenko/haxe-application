@@ -26,13 +26,6 @@ class Entity {
     }
     
     /**
-     * Called after all updates for late processing
-     */
-    public function lateUpdate(deltaTime:Float):Void {
-        if (!active) return;
-    }
-    
-    /**
      * Called every frame to render this entity
      */
     public function render(renderer:Renderer):Void {
