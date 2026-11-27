@@ -2,10 +2,7 @@ package;
 
 import Log.LogCategory;
 import ds.SlotArray;
-import display.PostProcessing;
-import display.ScanlineScreenPass;
-import display.GrayscaleScreenPass;
-import display.DepthVisualizationScreenPass;
+import PostProcessing;
 
 class App extends Runtime {
     // Publics
@@ -50,15 +47,6 @@ class App extends Runtime {
         __lastTime = getTicks() / 1000.0;
         
         __postProcessing = new PostProcessing(__renderer);
-        var size = __renderer.app.window.getWindowSizeInPixels();
-        try {
-            __postProcessing.addPass(new ScanlineScreenPass(__renderer, size.width, size.height));
-            __postProcessing.addPass(new GrayscaleScreenPass(__renderer, size.width, size.height));
-            __postProcessing.addPass(new DepthVisualizationScreenPass(__renderer, size.width, size.height));
-        } catch (error:Dynamic) {
-            __postProcessing.release();
-            throw error;
-        }
     }
 
     override function release():Void {
@@ -82,6 +70,7 @@ class App extends Runtime {
         __renderer = null;
         __log.release();
         __log = null;
+        
         if (__audio != null) {
             __audio.release();
             __audio = null;
@@ -240,10 +229,10 @@ class App extends Runtime {
                 try {
                     currentState.render(__renderer);
                 } catch (error:Dynamic) {
-                    __renderer.resetCameraViewport();
+            __renderer.resetViewport();
                     throw error;
                 }
-                __renderer.resetCameraViewport();
+        __renderer.resetViewport();
             }
         });
     }
@@ -330,7 +319,7 @@ class App extends Runtime {
     }
 
     override function onWindowPixelSizeChanged(windowId:Int, pixelWidth:Int, pixelHeight:Int):Void {
-        renderer.resize(pixelWidth, pixelHeight);
+        renderer.updateRenderTargetSize(pixelWidth, pixelHeight);
         postProcessing.resize(pixelWidth, pixelHeight);
     }
 

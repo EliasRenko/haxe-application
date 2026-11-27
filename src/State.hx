@@ -126,7 +126,7 @@ class State {
         renderer.matrix = camera.getProjectionMatrix();
         var viewport = camera.viewport;
         if (viewport != null)
-            renderer.setCameraViewport(Std.int(viewport.x), Std.int(viewport.y), Std.int(viewport.width), Std.int(viewport.height));
+            renderer.setViewport(Std.int(viewport.x), Std.int(viewport.y), Std.int(viewport.width), Std.int(viewport.height));
     }
 
     /**
