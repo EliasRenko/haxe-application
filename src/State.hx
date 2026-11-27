@@ -10,9 +10,6 @@ import App;
  * States manage collections of entities and handle state-specific logic
  */
 class State {
-    // Statics
-    private static var NEXT_ID:Int = 0;
-
     // Publics
     public var active(get, null):Bool = false;
     public var app(get, null):App;
@@ -20,18 +17,18 @@ class State {
     public var entities:Array<Entity> = [];
     public var physics(default, null):Physics;
     public var name:String;
-    public var id:Int;
+    public var id(get, null):Int;
     
     // Privates
     private var __active:Bool = false;
     private var __app:App;
     private var __cameraDebug:Bool = true;
+    private var __id:Int; 
     
     public function new(name:String, app:App) {
         this.name = name;
         this.__app = app;
 
-        this.id = NEXT_ID++;
         this.entities = [];
         this.physics = new Physics(this);
         
@@ -253,6 +250,10 @@ class State {
     // Getters and setters
     private function get_app():App {
         return __app;
+    }
+
+    private function get_id():Int {
+        return __id;
     }
 
     private function get_active():Bool {

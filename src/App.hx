@@ -50,16 +50,18 @@ class App extends Runtime {
     }
 
     override function release():Void {
-        for (state in states) {
+        for (state in __states) {
             state.release();
             state.clearEntities(__renderer);
         }
 
-        states = null;
+        __states = null;
         currentState = null;
 
         saveBytes("output.txt", __log.logHistory);
 
+        __audio.release();
+        __audio = null;
         __input.release();
         __input = null;
         __resources.release();
@@ -70,48 +72,36 @@ class App extends Runtime {
         __renderer = null;
         __log.release();
         __log = null;
-        
-        if (__audio != null) {
-            __audio.release();
-            __audio = null;
-        }
 
         super.release();
     }
 
-    private function get_audio():Audio {
-        #if no_audio
-        throw "Audio is disabled";
-        #else
-        if (!@:privateAccess __audioEnabled) throw "Audio must not open before runtime initialization";
-        if (__audio == null) __audio = new Audio();
-        return __audio;
-        #end
-    }
-
-    public function addState(state:State):Int {
+    public function addState(state:State):State {
         if (state == null) {
             __log.warn(LogCategory.APP,"Warning: Attempted to add null state");
-            return -1;
+            return null;
         }
         
-        var id = states.add(state);
+        var id = __states.add(state);
+        @:privateAccess state.__id = id;
+        __log.info(LogCategory.APP,"Added state '" + state.name + "' to app");
         state.init();
-        __log.info(LogCategory.APP,"Added state '" + state.name + "' to app (total states: " + states.count + ")");
         
         // If no current state, make this the current one
         if (currentState == null) {
             switchToState(state);
         }
         
-        return id;
+        return state;
     }
     
-    public function removeState(id:Int):Bool {
-        var state = states.get(id);
+    public function removeState(state:State):Bool {
         if (state == null) return false;
+
+        var id = @:privateAccess state.__id;
+        if (id < 0) return false;
         
-        states.remove(id);
+        __states.remove(id);
         __log.info(LogCategory.APP, "Removed state '" + state.name + "' from app");
         
         // Deactivate if it was the current state
@@ -120,9 +110,12 @@ class App extends Runtime {
             currentState = null;
             
             // Switch to first available state if any
-            if (states.count > 0) {
+            if (__states.count > 0) {
                 var firstState:State = null;
-                for (s in states) { firstState = s; break; }
+                for (s in __states) { 
+                    firstState = s;
+                    break; 
+                }
                 if (firstState != null) switchToState(firstState);
             }
         }
@@ -134,15 +127,15 @@ class App extends Runtime {
     }
     
     public function removeStateByName(name:String):Bool {
-        for (state in states) {
+        for (state in __states) {
             if (state.name == name) {
-                var id = states.indexOf(state);
-                if (id >= 0) return removeState(id);
+                var id = @:privateAccess state.__id;
+                if (id >= 0) return removeState(state);
             }
         }
         return false;
     }
-    
+
     public function switchToState(state:State):Bool {
         if (state == null) {
             return false;
@@ -150,7 +143,7 @@ class App extends Runtime {
         
         // Check if state exists in our states array
         var stateExists = false;
-        for (s in states) {
+        for (s in __states) {
             if (s == state) {
                 stateExists = true;
                 break;
@@ -177,7 +170,7 @@ class App extends Runtime {
     }
     
     public function switchToStateByName(name:String):Bool {
-        for (state in states) {
+        for (state in __states) {
             if (state.name == name) {
                 return switchToState(state);
             }
@@ -187,7 +180,7 @@ class App extends Runtime {
     }
     
     public function getState(name:String):State {
-        for (state in states) {
+        for (state in __states) {
             if (state.name == name) {
                 return state;
             }
@@ -386,7 +379,11 @@ class App extends Runtime {
 		});
 	}
 
-    // Getters and setters
+	// Getters and setters
+	private function get_audio():Audio {
+		return __audio;
+	}
+
     private function get_input():Input {
         return __input;
     }

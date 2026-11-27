@@ -7,8 +7,6 @@ import physics.data.*;
 
 /** A base collision shape */
 class Shape {
-
-
         /** The state of this shape, if inactive can be ignored in results */
     public var active : Bool = true;
         /** The name of this shape, to help in debugging */
@@ -41,10 +39,6 @@ class Shape {
     var _transformed : Bool = false;
     var _transformMatrix : Matrix2D;
 
-
-//Public API
-
-
     /** Create a new shape at give position x,y */
     public function new( _x:Float, _y:Float ) {
 
@@ -60,38 +54,30 @@ class Shape {
         _transformMatrix = new Matrix2D();
         _transformMatrix.makeTranslation( _position.x, _position.y );
 
-    } //new
+    }
 
-//Implemented in subclasses
-
-        /** Test this shape against another shape. */
+    /** Test this shape against another shape. */
     public function test( shape:Shape, ?into:ShapeCollision ) : ShapeCollision return null;
-        /** Test this shape against a circle. */
+    /** Test this shape against a circle. */
     public function testCircle( circle:Circle, ?into:ShapeCollision, flip:Bool = false ) : ShapeCollision return null;
-        /** Test this shape against a polygon. */
+    /** Test this shape against a polygon. */
     public function testPolygon( polygon:Polygon, ?into:ShapeCollision, flip:Bool = false ) : ShapeCollision return null;
-        /** Test this shape against a ray. */
+    /** Test this shape against a ray. */
     public function testRay( ray:Ray, ?into:RayCollision ) : RayCollision return null;
 
-        /** clean up and destroy this shape */
+    /** clean up and destroy this shape */
     public function destroy():Void {
 
         _position = null;
         _scale = null;
         _transformMatrix = null;
 
-    } //destroy
-
-//Getters/Setters
-
-    function refresh_transform() {
-
-        _transformMatrix.compose( _position, _rotation_radians, _scale );
-        _transformed = false;
-
     }
 
-//.position
+    function refresh_transform() {
+        _transformMatrix.compose( _position, _rotation_radians, _scale );
+        _transformed = false;
+    }
 
     function get_position() : Vec2 {
         return _position;
@@ -103,8 +89,6 @@ class Shape {
         return _position;
     }
 
-//.x
-
     function get_x() : Float {
         return _position.x;
     }
@@ -114,8 +98,6 @@ class Shape {
         refresh_transform();
         return _position.x;
     }
-
-//.y
 
     function get_y() : Float {
         return _position.y;
@@ -127,23 +109,15 @@ class Shape {
         return _position.y;
     }
 
-//.rotation
-
     function get_rotation() : Float {
         return _rotation;
     }
 
     function set_rotation( v : Float ) : Float {
-
         _rotation_radians = v * (Math.PI / 180);
-
         refresh_transform();
-
         return _rotation = v;
-
-    } //set_rotation
-
-//.scaleX
+    }
 
     function get_scaleX():Float {
         return _scaleX;
@@ -155,8 +129,6 @@ class Shape {
         refresh_transform();
         return _scaleX;
     }
-
-//.scaleY
 
     function get_scaleY():Float {
         return _scaleY;
